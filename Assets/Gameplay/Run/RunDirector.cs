@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 // ==================================================
 // SCRIPT ROLE: CONTROLS FLOW
@@ -20,6 +21,11 @@ public enum RoomRole
 public class RunDirector : MonoBehaviour
 {
     private List<RoomRole> demoRun;
+    private void Awake()
+    {
+        DontDestroyOnLoad(gameObject);
+        Debug.Log("RunDirector persistent.");
+    }
 
     private void Start()
     {
@@ -33,6 +39,10 @@ public class RunDirector : MonoBehaviour
             RoomRole.Boss
         };
 
+        Debug.Log("RunDirector ready.");
+    }
+    public void BeginRun()
+    {
         GameStateManager.Instance.StartNewRun();
         EnterNextRoom();
     }
@@ -48,13 +58,26 @@ public class RunDirector : MonoBehaviour
         }
 
         RoomRole role = demoRun[run.currentRoomIndex];
-        Debug.Log($"Entering room {run.currentRoomIndex}: {role}");
+        Debug.Log($"Loading room {run.currentRoomIndex}: {role}");
 
         ApplyTension(role);
         run.currentRoomIndex++;
 
-        Invoke(nameof(EnterNextRoom), 1f);
+        SceneManager.LoadScene(GetSceneName(role));
     }
+    string GetSceneName(RoomRole role) //Helper
+    {
+        return role switch
+        {
+            RoomRole.Entry => "Room_Entry",
+            RoomRole.Combat => "Room_Combat",
+            RoomRole.Breather => "Room_Breather",
+            RoomRole.PressureSpike => "Room_PressureSpike",
+            RoomRole.Boss => "Room_Boss",
+            _ => "Room_Entry"
+        };
+    }
+
 
     void ApplyTension(RoomRole role)
     {
@@ -68,4 +91,9 @@ public class RunDirector : MonoBehaviour
 
         Debug.Log("Run tension: " + run.runTension);
     }
+    public void OnRoomCompleted()
+    {
+        EnterNextRoom();
+    }
+
 }

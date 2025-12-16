@@ -14,7 +14,9 @@ public class DamageOnContact : MonoBehaviour
         Health health = other.GetComponentInParent<Health>();
         if (health != null)
         {
-            health.TakeDamage(damage);
+            Vector2 dir = (other.transform.position - transform.position).normalized;
+            health.TakeDamage(damage, dir);
         }
     }
+
 }

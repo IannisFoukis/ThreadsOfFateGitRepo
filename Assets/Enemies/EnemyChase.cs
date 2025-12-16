@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class EnemyChase : MonoBehaviour
@@ -7,6 +8,7 @@ public class EnemyChase : MonoBehaviour
 
     Transform player;
     Rigidbody2D rb;
+    bool stunned = false;
 
     void Awake()
     {
@@ -20,9 +22,23 @@ public class EnemyChase : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (!player) return;
+        if (!player || stunned) return;
 
         Vector2 dir = (player.position - transform.position).normalized;
         rb.linearVelocity = dir * speed;
+    }
+
+    public void Stun(float duration)
+    {
+        if (!stunned)
+            StartCoroutine(StunRoutine(duration));
+    }
+
+    IEnumerator StunRoutine(float duration)
+    {
+        stunned = true;
+        rb.linearVelocity = Vector2.zero;
+        yield return new WaitForSeconds(duration);
+        stunned = false;
     }
 }

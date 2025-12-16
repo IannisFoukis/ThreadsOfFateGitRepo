@@ -10,15 +10,28 @@ public class Health : MonoBehaviour
         currentHealth = maxHealth;
     }
 
-    public void TakeDamage(int amount)
+    public void TakeDamage(int amount, Vector2 hitDirection)
     {
+        Invincibility iframe = GetComponent<Invincibility>();
+        if (iframe != null && iframe.IsInvincible)
+            return;
+
         currentHealth -= amount;
 
-        Debug.Log($"{gameObject.name} took {amount} damage. HP: {currentHealth}");
+        Knockback kb = GetComponent<Knockback>();
+        if (kb != null)
+            kb.Apply(hitDirection);
+
+        if (iframe != null)
+            iframe.Trigger();
+
+        if (HitStop.Instance != null)
+            HitStop.Instance.Stop(0.15f);
 
         if (currentHealth <= 0)
             Die();
     }
+
 
 
     void Die()

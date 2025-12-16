@@ -443,6 +443,8 @@ GameObject:
   - component: {fileID: 729959791}
   - component: {fileID: 729959796}
   - component: {fileID: 729959797}
+  - component: {fileID: 729959799}
+  - component: {fileID: 729959798}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -477,7 +479,7 @@ Rigidbody2D:
   m_UseAutoMass: 0
   m_Mass: 1
   m_LinearDamping: 0
-  m_AngularDamping: 0.05
+  m_AngularDamping: 0
   m_GravityScale: 0
   m_Material: {fileID: 0}
   m_IncludeLayers:
@@ -532,7 +534,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 494b0c36641c17541861a8e561a8aed0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 3
+  maxHealth: 10
   currentHealth: 0
 --- !u!114 &729959797
 MonoBehaviour:
@@ -549,6 +551,32 @@ MonoBehaviour:
   attackCollider: {fileID: 1472729669}
   attackDuration: 0.2
   attackCooldown: 0.4
+--- !u!114 &729959798
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 729959790}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 669a7b76302c5834e8f39016baf48bbd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  duration: 5
+--- !u!114 &729959799
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 729959790}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9cf25b94e1d23fa4d86a362548e3081d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  force: 1000
 --- !u!1 &875781145
 GameObject:
   m_ObjectHideFlags: 0

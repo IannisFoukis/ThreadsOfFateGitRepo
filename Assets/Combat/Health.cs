@@ -21,6 +21,12 @@ public class Health : MonoBehaviour
         Knockback kb = GetComponent<Knockback>();
         if (kb != null)
             kb.Apply(hitDirection);
+
+        PlayerVisualFeedback pv = GetComponent<PlayerVisualFeedback>();
+        if (pv != null)
+            pv.OnHit();
+
+
         EnemyVisualFeedback fx = GetComponent<EnemyVisualFeedback>();
         if (fx != null)
             fx.OnHit();

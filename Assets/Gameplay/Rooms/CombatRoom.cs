@@ -1,30 +1,70 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class CombatRoom : RoomController
 {
     public GameObject enemyPrefab;
-    public int enemyCount = 3;
+    public EncounterType encounterType;
 
     protected override void Start()
     {
         base.Start();
-        SpawnEnemies();
+        SpawnEncounter();
     }
 
-    void SpawnEnemies()
+    void SpawnEncounter()
     {
-        for (int i = 0; i < enemyCount; i++)
+        switch (encounterType)
+        {
+            case EncounterType.Skirmish:
+                Spawn(EnemyRole.Melee, 2);
+                break;
+
+            case EncounterType.Crossfire:
+                Spawn(EnemyRole.Ranged, 2);
+                Spawn(EnemyRole.Melee, 1);
+                break;
+
+            case EncounterType.BurstThreat:
+                Spawn(EnemyRole.Charger, 1);
+                Spawn(EnemyRole.Melee, 1);
+                break;
+
+            case EncounterType.Mixed:
+                Spawn(EnemyRole.Melee, 1);
+                Spawn(EnemyRole.Ranged, 1);
+                Spawn(EnemyRole.Charger, 1);
+                break;
+
+            case EncounterType.Lockdown:
+                Spawn(EnemyRole.Melee, 2);
+                Spawn(EnemyRole.Ranged, 2);
+                Spawn(EnemyRole.Charger, 1);
+                break;
+        }
+    }
+
+    void Spawn(EnemyRole role, int count)
+    {
+        for (int i = 0; i < count; i++)
         {
             Vector2 offset = Random.insideUnitCircle * 3f;
-            Instantiate(enemyPrefab, transform.position + (Vector3)offset, Quaternion.identity);
+            GameObject enemy = Instantiate(
+                enemyPrefab,
+                transform.position + (Vector3)offset,
+                Quaternion.identity
+            );
+
+            ConfigureEnemy(enemy, role);
         }
     }
 
-    void Update()
+    void ConfigureEnemy(GameObject enemy, EnemyRole role)
     {
-        if (!isCompleted && Enemy.AliveCount <= 0)
-        {
-            CompleteRoom();
-        }
+        enemy.GetComponent<EnemyRoleController>().role = role;
+
+        enemy.GetComponent<EnemyMelee>().enabled = role == EnemyRole.Melee;
+        enemy.GetComponent<EnemyRanged>().enabled = role == EnemyRole.Ranged;
+        enemy.GetComponent<EnemyCharger>().enabled = role == EnemyRole.Charger;
     }
 }

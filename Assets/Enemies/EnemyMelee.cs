@@ -22,6 +22,8 @@ public class EnemyMelee : MonoBehaviour
 
     void FixedUpdate()
     {
+        if (GameLock.IsLocked) return;
+
         if (!player || state.CurrentState == EnemyState.Hit || state.CurrentState == EnemyState.Dead)
             return;
 

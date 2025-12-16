@@ -25,6 +25,8 @@ public class EnemyCharger : MonoBehaviour
 
     void Update()
     {
+        if (GameLock.IsLocked) return;
+
         if (!player || !canCharge || state.CurrentState == EnemyState.Dead)
             return;
 

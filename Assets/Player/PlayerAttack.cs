@@ -11,6 +11,8 @@ public class PlayerAttack : MonoBehaviour
 
     void Update()
     {
+        if (GameLock.IsLocked) return;
+
         ReadDirection();
         HandleAttackInput();
     }

@@ -47,7 +47,7 @@ public class EnemyChase : MonoBehaviour
         rb.linearVelocity = Vector2.zero;
         yield return new WaitForSeconds(duration);
         stunned = false;
-        state?.SetState(EnemyState.Hit);
+        //state?.SetState(EnemyState.Hit);
 
     }
 }

@@ -20,6 +20,8 @@ public class PlayerMotor : MonoBehaviour
 
     void FixedUpdate()
     {
+        if (GameLock.IsLocked) return;
+
         rb.linearVelocity = input * moveSpeed;
     }
 }

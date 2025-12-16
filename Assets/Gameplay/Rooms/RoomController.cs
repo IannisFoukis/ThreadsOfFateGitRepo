@@ -25,5 +25,6 @@ public abstract class RoomController : MonoBehaviour
         RunDirector director = FindFirstObjectByType<RunDirector>();
 
         director.OnRoomCompleted();
+
     }
 }

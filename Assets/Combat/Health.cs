@@ -5,59 +5,55 @@ public class Health : MonoBehaviour
     public int maxHealth = 3;
     public int currentHealth;
 
-    private void Awake()
+    Invincibility invincibility;
+    Knockback knockback;
+    EnemyVisualFeedback enemyFX;
+    PlayerVisualFeedback playerFX;
+
+    void Awake()
     {
         currentHealth = maxHealth;
+
+        // Cache components once (NO allocations later)
+        TryGetComponent(out invincibility);
+        TryGetComponent(out knockback);
+        TryGetComponent(out enemyFX);
+        TryGetComponent(out playerFX);
     }
 
     public void TakeDamage(int amount, Vector2 hitDirection)
     {
-        Invincibility iframe = GetComponent<Invincibility>();
-        if (iframe != null && iframe.IsInvincible)
+        if (invincibility != null && invincibility.IsInvincible)
             return;
 
         currentHealth -= amount;
 
-        Knockback kb = GetComponent<Knockback>();
-        if (kb != null)
-            kb.Apply(hitDirection);
+        if (knockback != null)
+            knockback.Apply(hitDirection);
 
-        PlayerVisualFeedback pv = GetComponent<PlayerVisualFeedback>();
-        if (pv != null)
-            pv.OnHit();
+        if (invincibility != null)
+            invincibility.Trigger();
 
+        if (enemyFX != null)
+            enemyFX.OnHit();
 
-        EnemyVisualFeedback fx = GetComponent<EnemyVisualFeedback>();
-        if (fx != null)
-            fx.OnHit();
-
-        if (iframe != null)
-            iframe.Trigger();
+        if (playerFX != null)
+            playerFX.OnHit();
 
         if (HitStop.Instance != null)
-            HitStop.Instance.Stop(0.15f);
+            HitStop.Instance.Stop(0.06f);
 
         if (currentHealth <= 0)
             Die();
     }
 
-
-
     void Die()
     {
-        EnemyStateController state = GetComponent<EnemyStateController>();
-        if (state != null)
-            state.SetState(EnemyState.Dead);
-
-        EnemyVisualFeedback fx = GetComponent<EnemyVisualFeedback>();
-        if (fx != null)
+        // Joker kill path
+        if (TryGetComponent<Joker>(out _))
         {
-            fx.OnDeath();
-            Destroy(gameObject, 0.3f);
-        }
-        else
-        {
-            Destroy(gameObject);
+            if (JokerManager.Instance != null)
+                JokerManager.Instance.OnJokerKilled();
         }
 
         Destroy(gameObject);

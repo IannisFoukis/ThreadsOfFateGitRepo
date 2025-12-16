@@ -14,7 +14,7 @@ public class Health : MonoBehaviour
     {
         currentHealth -= amount;
 
-        //Debug.Log($"{gameObject.name} took {amount} damage. HP: {currentHealth}");
+        Debug.Log($"{gameObject.name} took {amount} damage. HP: {currentHealth}");
 
         if (currentHealth <= 0)
             Die();

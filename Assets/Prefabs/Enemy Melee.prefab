@@ -279,10 +279,8 @@ GameObject:
   - component: {fileID: 3182194424012283448}
   - component: {fileID: 1606375910734574110}
   - component: {fileID: 2909332014248045100}
-  - component: {fileID: 5515608192190167746}
-  - component: {fileID: 1012162979977339158}
   m_Layer: 0
-  m_Name: Enemy
+  m_Name: Enemy Melee
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -416,37 +414,9 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8686355838142782365}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8a96fd080b102134897bb86a3e4ce683, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 2
---- !u!114 &5515608192190167746
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8686355838142782365}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bab5cd40f26a95345b3218871da675b1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  chargeForce: 8
-  chargeCooldown: 2
---- !u!114 &1012162979977339158
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8686355838142782365}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3d878b3151a3abd4696c2d701ac4fb5f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  keepDistance: 5
-  speed: 1.5

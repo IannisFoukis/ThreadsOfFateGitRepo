@@ -8,13 +8,26 @@ public class CameraFollow : MonoBehaviour
 
     void LateUpdate()
     {
-        if (!target) return;
+        if (!target)
+        {
+            Debug.LogWarning("CameraFollow: No target assigned");
+            return;
+        }
+
+        Debug.Log("CameraFollow updating");
 
         Vector3 desired = target.position + offset;
+
+        CameraClamp clamp = GetComponent<CameraClamp>();
+        if (clamp != null)
+            desired = clamp.Clamp(desired);
+
         transform.position = Vector3.Lerp(
             transform.position,
             desired,
             smoothSpeed * Time.deltaTime
+        
+
         );
     }
 }

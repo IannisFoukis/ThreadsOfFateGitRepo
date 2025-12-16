@@ -21,6 +21,9 @@ public class Health : MonoBehaviour
         Knockback kb = GetComponent<Knockback>();
         if (kb != null)
             kb.Apply(hitDirection);
+        EnemyVisualFeedback fx = GetComponent<EnemyVisualFeedback>();
+        if (fx != null)
+            fx.OnHit();
 
         if (iframe != null)
             iframe.Trigger();
@@ -36,6 +39,21 @@ public class Health : MonoBehaviour
 
     void Die()
     {
+        EnemyStateController state = GetComponent<EnemyStateController>();
+        if (state != null)
+            state.SetState(EnemyState.Dead);
+
+        EnemyVisualFeedback fx = GetComponent<EnemyVisualFeedback>();
+        if (fx != null)
+        {
+            fx.OnDeath();
+            Destroy(gameObject, 0.3f);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+
         Destroy(gameObject);
     }
 }

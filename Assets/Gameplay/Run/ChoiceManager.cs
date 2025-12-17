@@ -49,6 +49,8 @@ public class ChoiceManager : MonoBehaviour
         ChoicePending = false;
 
         RunCorruptionState.Instance.AcceptCorruption();
+        GodDirector.Instance?.EvaluateRun();
+
     }
 
     void Reject()
@@ -59,6 +61,7 @@ public class ChoiceManager : MonoBehaviour
         GameLock.IsLocked = false;
 
         RunCorruptionState.Instance?.RejectCorruption();
+        GodDirector.Instance?.EvaluateRun();
 
         if (EliteSpawner.Instance != null)
         {
@@ -70,6 +73,7 @@ public class ChoiceManager : MonoBehaviour
             Debug.LogError("EliteSpawner.Instance is NULL — did you forget to add it to Bootstrap?");
         }
     }
+
 
 
 

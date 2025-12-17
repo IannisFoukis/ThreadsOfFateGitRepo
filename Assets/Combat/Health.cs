@@ -43,6 +43,14 @@ public class Health : MonoBehaviour
         if (HitStop.Instance != null)
             HitStop.Instance.Stop(0.06f);
 
+        if (CombatModifiers.GlobalEnemyLifesteal > 0 &&
+    gameObject.CompareTag("Enemy"))
+        {
+            int heal = CombatModifiers.GlobalEnemyLifesteal;
+            currentHealth += heal;
+        }
+
+
         if (currentHealth <= 0)
             Die();
     }

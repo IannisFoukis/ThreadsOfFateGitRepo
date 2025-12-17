@@ -537,6 +537,7 @@ GameObject:
   - component: {fileID: 729959799}
   - component: {fileID: 729959798}
   - component: {fileID: 729959800}
+  - component: {fileID: 729959801}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -681,6 +682,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 348c2aaa2e4c9ee4984328de5d92dffb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &729959801
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 729959790}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb267d5a782b66d46bb32ab24f09027d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 5
+  currentHealth: 0
 --- !u!1 &875781145
 GameObject:
   m_ObjectHideFlags: 0
@@ -879,6 +894,7 @@ GameObject:
   - component: {fileID: 1478279904}
   - component: {fileID: 1478279905}
   - component: {fileID: 1478279906}
+  - component: {fileID: 1478279907}
   m_Layer: 0
   m_Name: GameStateManager
   m_TagString: Untagged
@@ -951,6 +967,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   eliteEnemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+--- !u!114 &1478279907
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1478279901}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30c4bc41e69c36b478dda4899e171bd4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  activeGod: 0
+  currentDemand: 0
 --- !u!1 &1565341415
 GameObject:
   m_ObjectHideFlags: 0

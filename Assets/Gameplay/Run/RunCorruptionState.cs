@@ -31,5 +31,28 @@ public class RunCorruptionState : MonoBehaviour
     {
         Debug.Log("CORRUPTION RESISTED");
     }
+    public bool IsLocked { get; private set; }
+
+    public void Reduce(int amount)
+    {
+        if (IsLocked) return;
+
+        CorruptionLevel = Mathf.Max(0, CorruptionLevel - amount);
+        Debug.Log("Corruption reduced to " + CorruptionLevel);
+    }
+
+    public void Increase(int amount)
+    {
+        if (IsLocked) return;
+
+        CorruptionLevel += amount;
+        Debug.Log("Corruption increased to " + CorruptionLevel);
+    }
+
+    public void LockCorruption()
+    {
+        IsLocked = true;
+        Debug.Log("Corruption LOCKED");
+    }
 
 }

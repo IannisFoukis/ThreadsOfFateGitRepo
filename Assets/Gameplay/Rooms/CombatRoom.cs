@@ -5,6 +5,7 @@ public class CombatRoom : RoomController
 {
     public GameObject enemyPrefab;
     public EncounterType encounterType;
+    public Shrine shrine;
 
     private readonly List<GameObject> spawnedEnemies = new();
 
@@ -12,7 +13,11 @@ public class CombatRoom : RoomController
     {
         base.Start();
         SpawnEncounter();
+
+        if (shrine != null)
+            shrine.Activate();
     }
+
 
     void Update()
     {

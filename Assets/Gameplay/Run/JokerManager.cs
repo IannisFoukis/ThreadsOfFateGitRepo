@@ -20,13 +20,13 @@ public class JokerManager : MonoBehaviour
 
     public void AssignJoker(GameObject enemy)
     {
-        if (jokerActive) return;
-
         enemy.AddComponent<Joker>();
-        jokerActive = true;
+        enemy.AddComponent<JokerVisual>();
 
         Debug.Log("JOKER ASSIGNED");
     }
+
+
 
     public void OnJokerKilled()
     {

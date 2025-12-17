@@ -23,6 +23,7 @@ public abstract class RoomController : MonoBehaviour
         Debug.Log($"Room completed: {GetType().Name}");
 
         RunDirector director = FindFirstObjectByType<RunDirector>();
+        Object.FindAnyObjectByType<RoomDemandTracker>()?.Resolve();
 
         director.OnRoomCompleted();
 

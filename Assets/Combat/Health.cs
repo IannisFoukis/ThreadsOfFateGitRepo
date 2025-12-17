@@ -50,6 +50,9 @@ public class Health : MonoBehaviour
             currentHealth += heal;
         }
 
+        Object.FindAnyObjectByType<RoomDemandTracker>()?.OnPlayerHit();
+
+
 
         if (currentHealth <= 0)
             Die();

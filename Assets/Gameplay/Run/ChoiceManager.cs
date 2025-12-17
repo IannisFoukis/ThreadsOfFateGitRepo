@@ -34,6 +34,8 @@ public class ChoiceManager : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.C))
         {
+            Object.FindAnyObjectByType<RoomDemandTracker>()?.OnCorruptionAccepted();
+
             Accept();
         }
         else if (Input.GetKeyDown(KeyCode.F))

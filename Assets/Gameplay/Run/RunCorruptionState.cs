@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class RunCorruptionState : MonoBehaviour
 {
@@ -6,6 +6,8 @@ public class RunCorruptionState : MonoBehaviour
 
     public int corruptionLevel = 0;
     public bool corruptionAcceptedThisRun = false;
+
+    public int CorruptionLevel { get; private set; }
 
     void Awake()
     {
@@ -21,14 +23,13 @@ public class RunCorruptionState : MonoBehaviour
 
     public void AcceptCorruption()
     {
-        corruptionLevel++;
-        corruptionAcceptedThisRun = true;
-
-        Debug.Log($"CORRUPTION ACCEPTED — Level {corruptionLevel}");
+        CorruptionLevel++;
+        Debug.Log("CORRUPTION INCREASED â†’ Level " + CorruptionLevel);
     }
 
     public void RejectCorruption()
     {
-        Debug.Log("CORRUPTION REJECTED — CONSEQUENCE TRIGGERED");
+        Debug.Log("CORRUPTION RESISTED");
     }
+
 }

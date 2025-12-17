@@ -87,6 +87,8 @@ public class CombatRoom : RoomController
             );
 
             ConfigureEnemy(enemy, role);
+            CorruptionEffects.Apply(enemy);
+
             spawnedEnemies.Add(enemy);
         }
     }

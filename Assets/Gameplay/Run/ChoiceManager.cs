@@ -53,12 +53,24 @@ public class ChoiceManager : MonoBehaviour
 
     void Reject()
     {
-        GameLock.IsLocked = false;
-        ChoicePending = false;
+        Debug.Log("Reject pressed");
 
-        RunCorruptionState.Instance.RejectCorruption();
-        TriggerFightConsequence();
+        ChoicePending = false;
+        GameLock.IsLocked = false;
+
+        RunCorruptionState.Instance?.RejectCorruption();
+
+        if (EliteSpawner.Instance != null)
+        {
+            EliteSpawner.Instance.SpawnElite();
+            Debug.Log("CONSEQUENCE: Elite Spawned");
+        }
+        else
+        {
+            Debug.LogError("EliteSpawner.Instance is NULL — did you forget to add it to Bootstrap?");
+        }
     }
+
 
 
 

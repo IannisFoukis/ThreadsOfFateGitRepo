@@ -475,6 +475,51 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58a4f8e4843b2e349a7f43b5df2668e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &549660746
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 549660748}
+  - component: {fileID: 549660747}
+  m_Layer: 0
+  m_Name: 'EliteSpawner '
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!114 &549660747
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 549660746}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec586346086485744be1ecf668bd4b4b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  eliteEnemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+--- !u!4 &549660748
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 549660746}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -14.289608, y: -3.400804, z: -0.2632385}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &729959790
 GameObject:
   m_ObjectHideFlags: 0
@@ -833,6 +878,7 @@ GameObject:
   - component: {fileID: 1478279903}
   - component: {fileID: 1478279904}
   - component: {fileID: 1478279905}
+  - component: {fileID: 1478279906}
   m_Layer: 0
   m_Name: GameStateManager
   m_TagString: Untagged
@@ -892,6 +938,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 817a791993a742545ba92bb99e2d762e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1478279906
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1478279901}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec586346086485744be1ecf668bd4b4b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  eliteEnemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
 --- !u!1 &1565341415
 GameObject:
   m_ObjectHideFlags: 0
@@ -1079,3 +1138,4 @@ SceneRoots:
   - {fileID: 2136893859}
   - {fileID: 259487297}
   - {fileID: 292220238}
+  - {fileID: 549660748}

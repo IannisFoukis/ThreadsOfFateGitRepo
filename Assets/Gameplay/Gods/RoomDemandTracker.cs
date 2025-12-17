@@ -1,3 +1,4 @@
+using UnityEditor.Rendering.LookDev;
 using UnityEngine;
 
 public class RoomDemandTracker : MonoBehaviour
@@ -51,6 +52,10 @@ public class RoomDemandTracker : MonoBehaviour
             case GodDemand.DoNothing:
                 success = true;
                 break;
+        }
+        if (!success)
+        {
+            CameraShake.Instance?.Shake(0.15f, 0.1f);
         }
 
         Debug.Log($"DEMAND {demand} {(success ? "FULFILLED" : "FAILED")}");

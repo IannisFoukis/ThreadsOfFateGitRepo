@@ -6,7 +6,7 @@ public class GodDirector : MonoBehaviour
 
     public GodType activeGod;
     public GodDemand currentDemand;
-
+    [SerializeField] GodVisualFeedback visuals;
     void Awake()
     {
         Debug.Log("GodDirector awake");
@@ -23,6 +23,8 @@ public class GodDirector : MonoBehaviour
 
     public void EvaluateRun()
     {
+        Debug.Log("GodDirector.EvaluateRun CALLED");
+
         int corruption = RunCorruptionState.Instance.CorruptionLevel;
 
         if (corruption >= 3)
@@ -31,6 +33,7 @@ public class GodDirector : MonoBehaviour
             activeGod = GodType.Order;
         else
             activeGod = GodType.Blood;
+        CameraShake.Instance?.Shake(0.2f, 0.15f);
 
         AssignDemand();
     }
@@ -55,7 +58,7 @@ public class GodDirector : MonoBehaviour
                 currentDemand = GodDemand.DoNothing;
                 break;
         }
-
+        visuals?.Show(activeGod);
         Debug.Log($"GOD {activeGod} DEMANDS: {currentDemand}");
     }
 
@@ -74,5 +77,12 @@ public class GodDirector : MonoBehaviour
             Debug.Log("God angered");
             CombatModifiers.GlobalEnemyLifesteal += 1;
         }
+
+        foreach (var enemy in FindObjectsByType<EnemyPunishVisual>(FindObjectsSortMode.None))
+        {
+            enemy.ApplyPunish(CombatModifiers.GlobalEnemyLifesteal);
+        }
+
     }
+
 }

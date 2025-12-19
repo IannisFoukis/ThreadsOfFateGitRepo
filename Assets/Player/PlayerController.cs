@@ -2,13 +2,24 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    PlayerMotor motor;
+    
+    [Header("Core Components")]
+    [SerializeField] PlayerMotor motor;
+    [SerializeField] Health health;
 
+    public PlayerMotor Motor => motor;
+    public Health Health => health;
+
+    public Vector2 LastMoveDir { get; private set; }
     void Awake()
     {
         DontDestroyOnLoad(gameObject);
 
-        motor = GetComponent<PlayerMotor>();
+        if (motor == null)
+            motor = GetComponent<PlayerMotor>();
+
+        if (health == null)
+            health = GetComponent<Health>();
     }
 
     void Update()

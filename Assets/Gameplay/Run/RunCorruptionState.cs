@@ -8,6 +8,7 @@ public class RunCorruptionState : MonoBehaviour
     public bool corruptionAcceptedThisRun = false;
 
     public int CorruptionLevel { get; private set; }
+    public bool IsCorrupted;
 
     void Awake()
     {

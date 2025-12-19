@@ -1,28 +1,50 @@
-using UnityEngine;
+﻿using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody2D))]
 public class PlayerMotor : MonoBehaviour
 {
-    public float moveSpeed = 5f;
-    
-
     Rigidbody2D rb;
-    Vector2 input;
 
+    bool forceMoving;
+    Vector2 forceDir;
+    Vector2 moveInput;
+    float forceSpeed;
+    float forceTime;
+    [Header("Movement")]
+    [SerializeField] float moveSpeed = 6f;
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
     }
-
-    public void SetInput(Vector2 moveInput)
+    public void SetInput(Vector2 input)
     {
-        input = moveInput;
+        moveInput = input;
+    }
+    public void ForceMove(Vector2 direction, float speed, float duration)
+    {
+        forceMoving = true;
+        forceDir = direction.normalized;
+        forceSpeed = speed;
+        forceTime = duration;
+        Debug.Log("FORCE MOVE CALLED: " + direction);
+
     }
 
     void FixedUpdate()
     {
-        if (GameLock.IsLocked) return;
+        if (forceMoving)
+        {
+            rb.linearVelocity = forceDir * forceSpeed;
 
-        rb.linearVelocity = input * moveSpeed;
+            forceTime -= Time.fixedDeltaTime;
+            if (forceTime <= 0f)
+            {
+                forceMoving = false;
+                rb.linearVelocity = Vector2.zero;
+            }
+
+            return; // ⛔ skip normal movement while forcing
+        }
+        rb.linearVelocity = moveInput * moveSpeed;
+        // normal movement handled elsewhere
     }
 }

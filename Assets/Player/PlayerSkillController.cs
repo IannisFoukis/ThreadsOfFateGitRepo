@@ -17,7 +17,14 @@ public class PlayerSkillController : MonoBehaviour
         }
 
     }
+    private void Start()
+    {
+        if (dashSkill is Skill_Dash dash)
+        {
+            dash.AddModifier(new DashInvulnerable());
+        }
 
+    }
     void Update()
     {
         if (dashSkill == null) return;
@@ -35,6 +42,8 @@ public class PlayerSkillController : MonoBehaviour
             Debug.Log("[SKILL] Dash activated");
 
             dashSkill.Activate(player);
+            dashUI?.Pulse();
+
             dashSkill.ConsumeCharge();
         }
     }

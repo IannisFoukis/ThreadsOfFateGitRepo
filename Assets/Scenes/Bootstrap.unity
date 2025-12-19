@@ -431,6 +431,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   corruptionLevel: 5
   corruptionAcceptedThisRun: 0
+  IsCorrupted: 0
 --- !u!4 &292220238
 Transform:
   m_ObjectHideFlags: 0
@@ -837,7 +838,6 @@ GameObject:
   - component: {fileID: 729959798}
   - component: {fileID: 729959800}
   - component: {fileID: 729959801}
-  - component: {fileID: 729959802}
   - component: {fileID: 729959803}
   m_Layer: 0
   m_Name: Player
@@ -858,7 +858,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 09e5787c04d31af498dc8d93475f0a43, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 5
+  moveSpeed: 6
 --- !u!50 &729959793
 Rigidbody2D:
   serializedVersion: 5
@@ -898,6 +898,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d969293389db6fb43bcb9bb9d3110ba6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  motor: {fileID: 729959791}
+  health: {fileID: 729959796}
 --- !u!4 &729959795
 Transform:
   m_ObjectHideFlags: 0
@@ -997,18 +999,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxHealth: 5
   currentHealth: 4
---- !u!114 &729959802
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 729959790}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d969293389db6fb43bcb9bb9d3110ba6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &729959803
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1173,7 +1163,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_Sprite: {fileID: 0}
-  m_Type: 0
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -1816,6 +1806,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cooldownFill: {fileID: 173951707}
   chargesText: {fileID: 606282074}
+  corruptedColor: {r: 0.8, g: 0.1, b: 0.1, a: 0.8}
 --- !u!1 &2136893857
 GameObject:
   m_ObjectHideFlags: 0

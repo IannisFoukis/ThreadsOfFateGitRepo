@@ -4,7 +4,7 @@ public class Health : MonoBehaviour
 {
     public int maxHealth = 3;
     public int currentHealth;
-
+    bool invulnerable;
     Invincibility invincibility;
     Knockback knockback;
     EnemyVisualFeedback enemyFX;
@@ -25,7 +25,8 @@ public class Health : MonoBehaviour
     {
         if (invincibility != null && invincibility.IsInvincible)
             return;
-
+        if (invulnerable)
+            return;
         currentHealth -= amount;
 
         if (knockback != null)
@@ -69,4 +70,9 @@ public class Health : MonoBehaviour
 
         Destroy(gameObject);
     }
+    public void SetInvulnerable(bool value)
+    {
+        invulnerable = value;
+    }
+
 }

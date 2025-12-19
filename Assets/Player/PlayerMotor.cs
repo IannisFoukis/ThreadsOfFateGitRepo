@@ -31,6 +31,10 @@ public class PlayerMotor : MonoBehaviour
 
     void FixedUpdate()
     {
+        Debug.Log(
+    $"Motor FixedUpdate | forceMoving={forceMoving} | vel={rb.linearVelocity}"
+);
+
         if (forceMoving)
         {
             rb.linearVelocity = forceDir * forceSpeed;

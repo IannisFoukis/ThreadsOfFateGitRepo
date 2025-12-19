@@ -17,6 +17,6 @@ MonoBehaviour:
   cooldown: 1
   maxCharges: 1
   currentCharges: 1
-  cooldownTimer: -0.001878272
-  dashForce: 4
+  cooldownTimer: -0.002470521
+  dashForce: 14
   dashDuration: 0.15

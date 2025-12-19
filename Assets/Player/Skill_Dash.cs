@@ -1,3 +1,4 @@
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -20,13 +21,22 @@ public class Skill_Dash : ActiveSkillSO
         player.StartCoroutine(DashRoutine(player));
     }
 
-    System.Collections.IEnumerator DashRoutine(PlayerController player)
+    IEnumerator DashRoutine(PlayerController player)
     {
         foreach (var m in modifiers)
             m.OnDashStart(player);
 
+        Vector2 dir = player.LastMoveDir;
+
+        // 🛡 HARD GUARD — NEVER ZERO
+        if (dir.sqrMagnitude < 0.01f)
+        {
+            Debug.LogWarning("Dash dir was zero, using fallback");
+            dir = Vector2.right;
+        }
+
         player.Motor.ForceMove(
-            player.LastMoveDir.normalized,
+            dir,
             dashForce,
             dashDuration
         );

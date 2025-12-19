@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
@@ -10,7 +10,8 @@ public class PlayerController : MonoBehaviour
     public PlayerMotor Motor => motor;
     public Health Health => health;
 
-    public Vector2 LastMoveDir { get; private set; }
+    public Vector2 LastMoveDir { get; private set; } = Vector2.right;
+    Vector2 input;
     void Awake()
     {
         DontDestroyOnLoad(gameObject);
@@ -24,11 +25,18 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        Vector2 input = new Vector2(
+        input = new Vector2(
             Input.GetAxisRaw("Horizontal"),
             Input.GetAxisRaw("Vertical")
         );
 
+        // 🔒 LOCK LAST MOVE DIR
+        if (input.sqrMagnitude > 0.01f)
+            LastMoveDir = input.normalized;
+    }
+    void FixedUpdate()
+    {
         motor.SetInput(input.normalized);
     }
+
 }

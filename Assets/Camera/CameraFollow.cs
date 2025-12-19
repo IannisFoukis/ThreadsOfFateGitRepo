@@ -14,7 +14,7 @@ public class CameraFollow : MonoBehaviour
             return;
         }
 
-        Debug.Log("CameraFollow updating");
+        
 
         Vector3 desired = target.position + offset;
 

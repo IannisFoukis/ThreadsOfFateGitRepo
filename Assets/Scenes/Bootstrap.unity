@@ -551,6 +551,8 @@ GameObject:
   - component: {fileID: 729959798}
   - component: {fileID: 729959800}
   - component: {fileID: 729959801}
+  - component: {fileID: 729959802}
+  - component: {fileID: 729959803}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -682,7 +684,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9cf25b94e1d23fa4d86a362548e3081d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  force: 1000
+  force: 10
 --- !u!114 &729959800
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -708,7 +710,32 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHealth: 5
-  currentHealth: 0
+  currentHealth: 4
+--- !u!114 &729959802
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 729959790}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d969293389db6fb43bcb9bb9d3110ba6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &729959803
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 729959790}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f773643620b2d9944ba897120b260961, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dashSkill: {fileID: 11400000, guid: ea4c0275d6b03004ba0db9ea1e50fafe, type: 2}
 --- !u!1 &875781145
 GameObject:
   m_ObjectHideFlags: 0

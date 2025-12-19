@@ -4,6 +4,7 @@ using UnityEngine;
 public class PlayerMotor : MonoBehaviour
 {
     public float moveSpeed = 5f;
+    
 
     Rigidbody2D rb;
     Vector2 input;

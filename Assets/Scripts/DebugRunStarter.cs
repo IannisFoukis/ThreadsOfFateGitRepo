@@ -17,8 +17,8 @@ public class DebugRunStarter : MonoBehaviour
         if (gsm == null || director == null)
             return;
 
-        if (GameStateManager.Instance == null)
-            return;
+        //if (GameStateManager.Instance == null)
+           // return;
 
         CancelInvoke(nameof(TryStartRun));
 

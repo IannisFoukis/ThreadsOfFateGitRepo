@@ -25,16 +25,13 @@ public class PlayerMotor : MonoBehaviour
         forceDir = direction.normalized;
         forceSpeed = speed;
         forceTime = duration;
-        Debug.Log("FORCE MOVE CALLED: " + direction);
+        
 
     }
 
     void FixedUpdate()
     {
-        Debug.Log(
-    $"Motor FixedUpdate | forceMoving={forceMoving} | vel={rb.linearVelocity}"
-);
-
+       
         if (forceMoving)
         {
             rb.linearVelocity = forceDir * forceSpeed;

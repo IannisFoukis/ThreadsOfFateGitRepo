@@ -9,7 +9,7 @@ public class Health : MonoBehaviour
     Knockback knockback;
     EnemyVisualFeedback enemyFX;
     PlayerVisualFeedback playerFX;
-
+   
     void Awake()
     {
         currentHealth = maxHealth;
@@ -58,6 +58,11 @@ public class Health : MonoBehaviour
         if (currentHealth <= 0)
             Die();
     }
+    public void ScaleMaxHealth(float multiplier)
+    {
+        maxHealth = Mathf.RoundToInt(maxHealth * multiplier);
+        currentHealth = maxHealth;
+    }
 
     void Die()
     {
@@ -67,7 +72,7 @@ public class Health : MonoBehaviour
             if (JokerManager.Instance != null)
                 JokerManager.Instance.OnJokerKilled();
         }
-
+        
         Destroy(gameObject);
     }
     public void SetInvulnerable(bool value)

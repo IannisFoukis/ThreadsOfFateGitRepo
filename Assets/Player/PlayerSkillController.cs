@@ -35,11 +35,11 @@ public class PlayerSkillController : MonoBehaviour
         {
             if (!dashSkill.CanActivate())
             {
-                Debug.Log("[SKILL] Dash on cooldown");
+               
                 return;
             }
 
-            Debug.Log("[SKILL] Dash activated");
+           
 
             dashSkill.Activate(player);
             dashUI?.Pulse();

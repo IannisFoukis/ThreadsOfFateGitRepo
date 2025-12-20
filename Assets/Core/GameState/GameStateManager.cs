@@ -1,44 +1,44 @@
 using UnityEngine;
 
-// ==================================================
-// SCRIPT ROLE: CONTROLS FLOW
-// SYSTEM: Core
-// RESPONSIBILITY: Owns MetaState and RunState
-// ==================================================
-
 public class GameStateManager : MonoBehaviour
 {
-    public static GameStateManager Instance;
-
-    public MetaState MetaState { get; private set; }
+    public RunData RunData { get; private set; }
     public RunState RunState { get; private set; }
 
-    private void Awake()
+    void Awake()
     {
-        if (Instance != null)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
-        Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        MetaState = new MetaState();
+        RunData = new RunData();
+        RunState = new RunState();
     }
 
     public void StartNewRun()
     {
-        RunState = new RunState();
+        // Reset persistent run data
+        RunData.roomsCleared = 0;
+        RunData.tension = 0;
+        RunData.corruption = 0;
+
+        // Reset runtime state
+        RunState.currentRoomIndex = 0;
+        RunState.runTension = 0;
+
         Debug.Log("=== NEW RUN STARTED ===");
     }
 
+    public void OnRoomCleared()
+    {
+        RunData.roomsCleared++;
+    }
     public void EndRun()
     {
-        MetaState.runsCompleted++;
         Debug.Log("=== RUN ENDED ===");
-        Debug.Log("Runs completed: " + MetaState.runsCompleted);
 
-        RunState = null;
+        // Later:
+        // - Save run results
+        // - Return to hub
+        // - Apply meta progression
     }
+
 }

@@ -4,12 +4,22 @@ using static Shrine;
 
 public class CombatRoom : RoomController
 {
+    
+    bool roomCompleted;
+    private GameStateManager gsm;
+    private readonly List<GameObject> spawnedEnemies = new();
+    private readonly List<GameObject> activeEnemies = new();
+
+    [SerializeField] float escalationDelay = 8f;
+    bool escalationTriggered;
+    float escalationTimer;
+
     public GameObject enemyPrefab;
     public EncounterType encounterType;
     public Shrine shrine;
 
-    private GameStateManager gsm;
-    private readonly List<GameObject> spawnedEnemies = new();
+
+    
 
     protected override void Start()
     {
@@ -41,9 +51,45 @@ public class CombatRoom : RoomController
             gsm.OnRoomCleared();
             Debug.Log(
         $"[RUN DEBUG] roomsCleared AFTER = {gsm.RunData.roomsCleared}");
+            roomCompleted = true;
             CompleteRoom();
         }
+
+        if (!roomCompleted)
+        {
+            escalationTimer += Time.deltaTime;
+
+            if (!escalationTriggered &&
+             (escalationTimer >= escalationDelay ||
+             RunCorruptionState.Instance.Level >= 2))
+
+            {
+                TriggerMidFightEscalation();
+                escalationTriggered = true;
+            }
+        }
+
     }
+    void TriggerMidFightEscalation()
+    {
+        Debug.Log("[ESCALATION] Mid-fight escalation triggered");
+
+        foreach (var enemy in activeEnemies)
+        {
+            if (enemy == null) continue;
+
+            var behavior = enemy.GetComponent<EnemyBehaviorController>();
+            if (behavior == null) continue;
+
+            if (behavior.currentTier == EnemyBehaviorTier.Base)
+                behavior.ApplyTier(EnemyBehaviorTier.Aggressive);
+            else if (behavior.currentTier == EnemyBehaviorTier.Aggressive)
+                behavior.ApplyTier(EnemyBehaviorTier.Elite);
+
+            Debug.Log($"[ESCALATION] {enemy.name} → {behavior.currentTier}");
+        }
+    }
+
 
     void SpawnEncounter()
     {
@@ -99,6 +145,7 @@ public class CombatRoom : RoomController
             ApplyBehaviorEscalation(enemy);
             
             spawnedEnemies.Add(enemy);
+            activeEnemies.Add(enemy);
         }
     }
 
@@ -116,63 +163,36 @@ public class CombatRoom : RoomController
     // -------------------------
     void ApplyBehaviorEscalation(GameObject enemy)
     {
-        Debug.Log("[BEHAVIOR] ApplyBehaviorEscalation CALLED");
-
         var controller = enemy.GetComponent<EnemyBehaviorController>();
-        if (controller == null)
-        {
-            Debug.Log("[BEHAVIOR] No EnemyBehaviorController found");
-            return;
-        }
+        if (controller == null) return;
 
-        if (gsm == null)
-        {
-            Debug.Log("[BEHAVIOR] gsm is NULL → Base tier");
-            controller.ApplyTier(EnemyBehaviorTier.Base);
-            
-            return;
-        }
-
-        // Prefer the room's assigned shrine reference if you have it
         Shrine activeShrine = shrine != null ? shrine : FindAnyObjectByType<Shrine>();
-        if (activeShrine == null)
-        {
-            Debug.Log("[BEHAVIOR] gsm is NULL → Base tier");
-            controller.ApplyTier(EnemyBehaviorTier.Base);
-           
-            return;
-        }
-
-        RunState run = gsm.RunState;
-        if (run == null)
-        {
-            Debug.Log("[BEHAVIOR] gsm is NULL → Base tier");
-            controller.ApplyTier(EnemyBehaviorTier.Base);
-            
-            return;
-        }
+        RunState run = gsm?.RunState;
 
         EnemyBehaviorTier targetTier = EnemyBehaviorTier.Base;
 
-        if (activeShrine.currentTier == ShrineTier.Tier2 || run.runTension >= 4)
-        {
-            targetTier = EnemyBehaviorTier.Aggressive;
-            return;
-
-        }
-
-
-
-        if (activeShrine.currentTier == ShrineTier.Tier3 || run.runTension >= 7)
+        if ((activeShrine != null && activeShrine.currentTier == ShrineTier.Tier3) ||
+            (run != null && run.runTension >= 7))
         {
             targetTier = EnemyBehaviorTier.Elite;
-            return;
+        }
+        else if ((activeShrine != null && activeShrine.currentTier == ShrineTier.Tier2) ||
+                 (run != null && run.runTension >= 4))
+        {
+            targetTier = EnemyBehaviorTier.Aggressive;
         }
 
         controller.ApplyTier(targetTier);
-
         Debug.Log($"[ENEMY] Behavior tier = {controller.currentTier}");
+
+        // 🔥 CORRUPTION APPLIED HERE
+        if (RunCorruptionState.Instance.IsCorrupted)
+            controller.ApplyCorruption(RunCorruptionState.Instance.Level);
+
+        Debug.Log($"[ENEMY] Tier={controller.currentTier} | Corruption={RunCorruptionState.Instance.Level}");
+
     }
+
 
 
 

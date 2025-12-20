@@ -1,5 +1,6 @@
-﻿using UnityEngine;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using UnityEngine;
+using static Shrine;
 
 public class CombatRoom : RoomController
 {
@@ -94,7 +95,9 @@ public class CombatRoom : RoomController
             ConfigureEnemy(enemy, role);
             ApplyEnemyScaling(enemy);
             CorruptionEffects.Apply(enemy);
-
+            ApplyShrineScaling(enemy);
+            ApplyBehaviorEscalation(enemy);
+            
             spawnedEnemies.Add(enemy);
         }
     }
@@ -111,6 +114,67 @@ public class CombatRoom : RoomController
     // -------------------------
     // ENEMY SCALING
     // -------------------------
+    void ApplyBehaviorEscalation(GameObject enemy)
+    {
+        Debug.Log("[BEHAVIOR] ApplyBehaviorEscalation CALLED");
+
+        var controller = enemy.GetComponent<EnemyBehaviorController>();
+        if (controller == null)
+        {
+            Debug.Log("[BEHAVIOR] No EnemyBehaviorController found");
+            return;
+        }
+
+        if (gsm == null)
+        {
+            Debug.Log("[BEHAVIOR] gsm is NULL → Base tier");
+            controller.ApplyTier(EnemyBehaviorTier.Base);
+            
+            return;
+        }
+
+        // Prefer the room's assigned shrine reference if you have it
+        Shrine activeShrine = shrine != null ? shrine : FindAnyObjectByType<Shrine>();
+        if (activeShrine == null)
+        {
+            Debug.Log("[BEHAVIOR] gsm is NULL → Base tier");
+            controller.ApplyTier(EnemyBehaviorTier.Base);
+           
+            return;
+        }
+
+        RunState run = gsm.RunState;
+        if (run == null)
+        {
+            Debug.Log("[BEHAVIOR] gsm is NULL → Base tier");
+            controller.ApplyTier(EnemyBehaviorTier.Base);
+            
+            return;
+        }
+
+        EnemyBehaviorTier targetTier = EnemyBehaviorTier.Base;
+
+        if (activeShrine.currentTier == ShrineTier.Tier2 || run.runTension >= 4)
+        {
+            targetTier = EnemyBehaviorTier.Aggressive;
+            return;
+
+        }
+
+
+
+        if (activeShrine.currentTier == ShrineTier.Tier3 || run.runTension >= 7)
+        {
+            targetTier = EnemyBehaviorTier.Elite;
+            return;
+        }
+
+        controller.ApplyTier(targetTier);
+
+        Debug.Log($"[ENEMY] Behavior tier = {controller.currentTier}");
+    }
+
+
 
     void ApplyEnemyScaling(GameObject enemy)
     {
@@ -191,4 +255,22 @@ public class CombatRoom : RoomController
         JokerManager.Instance.AssignJoker(enemy);
         Debug.Log("JOKER ASSIGNED TO: " + enemy.name);
     }
+
+    void ApplyShrineScaling(GameObject enemy)
+    {
+        Shrine shrine = FindAnyObjectByType<Shrine>();
+        if (shrine == null) return;
+
+        var health = enemy.GetComponent<Health>();
+        var damage = enemy.GetComponent<DamageOnContact>();
+
+        if (health != null)
+            health.ScaleMaxHealth(shrine.GetEnemyHpMultiplier());
+
+        if (damage != null)
+            damage.damageMultiplier *= shrine.GetEnemyDamageMultiplier();
+
+        Debug.Log($"[SHRINE] Enemy scaled: HP x{shrine.GetEnemyHpMultiplier()}, DMG x{shrine.GetEnemyDamageMultiplier()}");
+    }
+
 }

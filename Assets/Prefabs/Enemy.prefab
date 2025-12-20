@@ -128,6 +128,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   damage: 1
+  damageMultiplier: 1
   targetType: 0
 --- !u!61 &8825166940936661317
 BoxCollider2D:
@@ -282,6 +283,7 @@ GameObject:
   - component: {fileID: 5515608192190167746}
   - component: {fileID: 1012162979977339158}
   - component: {fileID: 8394341910229455449}
+  - component: {fileID: 7350746542196925506}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Untagged
@@ -451,6 +453,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   keepDistance: 5
   speed: 1.5
+  fireCooldown: 1.5
 --- !u!114 &8394341910229455449
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -467,3 +470,16 @@ MonoBehaviour:
   maxHealth: 0
   damage: 0
   moveSpeed: 0
+--- !u!114 &7350746542196925506
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8686355838142782365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2131716bd2c983f4daf13688b4f098de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentTier: 0

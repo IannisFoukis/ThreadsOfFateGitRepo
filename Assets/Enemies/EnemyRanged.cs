@@ -10,6 +10,12 @@ public class EnemyRanged : MonoBehaviour
     Transform player;
     EnemyStateController state;
 
+    [Header("Ranged Stats")]
+    [SerializeField] float fireCooldown = 1.5f;
+   // [SerializeField] float projectileSpeed = 6f;
+
+    float fireTimer;
+
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -24,7 +30,12 @@ public class EnemyRanged : MonoBehaviour
     void FixedUpdate()
     {
         if (GameLock.IsLocked) return;
-
+        fireTimer -= Time.deltaTime;
+        if (fireTimer <= 0f)
+        {
+            Shoot();
+            fireTimer = fireCooldown;
+        }
         if (!player || state.CurrentState == EnemyState.Hit || state.CurrentState == EnemyState.Dead)
             return;
 
@@ -39,5 +50,15 @@ public class EnemyRanged : MonoBehaviour
         {
             rb.linearVelocity = Vector2.zero;
         }
+    }
+
+    public void MultiplyFireRate(float multiplier)
+    {
+        fireCooldown /= multiplier; // higher multiplier = faster firing
+    }
+
+    void Shoot()
+    {
+        // existing shooting logic
     }
 }

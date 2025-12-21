@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class Health : MonoBehaviour
 {
@@ -72,7 +72,23 @@ public class Health : MonoBehaviour
             if (JokerManager.Instance != null)
                 JokerManager.Instance.OnJokerKilled();
         }
-        
+
+        if (EliteSpawner.Instance != null &&
+    EliteSpawner.Instance.EliteAlive)
+        {
+            EliteSpawner.Instance.OnEliteKilled();
+
+            Enemy[] enemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
+            foreach (var enemy in enemies)
+            {
+                enemy.ForceAggro(4f);
+            }
+
+            Debug.Log("[ELITE] Elite killed → FORCED AGGRO");
+        }
+
+
+        gameObject.SetActive(false);
         Destroy(gameObject);
     }
     public void SetInvulnerable(bool value)

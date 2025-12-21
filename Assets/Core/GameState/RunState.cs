@@ -8,7 +8,8 @@ public class RunState
 {
     public int currentRoomIndex;
     public int runTension;
-
+    public int roomsCleared;
+    public int corruption;
     public RunState()
     {
         currentRoomIndex = 0;

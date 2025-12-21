@@ -134,6 +134,12 @@ public class Shrine : MonoBehaviour
 
         Debug.Log($"[SHRINE] Blood shrine applied {currentTier}");
     }
+    public void ForceHazards()
+    {
+        //ActivateHazards();
+        Debug.Log("[SHRINE] Hazards forced by corruption");
+    }
+
 
 
 }

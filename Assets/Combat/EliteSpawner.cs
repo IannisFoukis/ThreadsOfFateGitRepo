@@ -4,7 +4,7 @@ public class EliteSpawner : MonoBehaviour
 {
     public static EliteSpawner Instance;
     public GameObject eliteEnemyPrefab;
-
+    public bool EliteAlive { get; private set; }
     void Awake()
     {
         Instance = this;
@@ -12,6 +12,7 @@ public class EliteSpawner : MonoBehaviour
 
     public void SpawnElite()
     {
+        EliteAlive = true;
         Vector3 pos = Vector3.zero;
         GameObject elite = Instantiate(eliteEnemyPrefab, pos, Quaternion.identity);
 
@@ -23,4 +24,9 @@ public class EliteSpawner : MonoBehaviour
 
         Debug.Log("ELITE SPAWNED");
     }
+    public void OnEliteKilled()
+    {
+        EliteAlive = false;
+    }
+
 }

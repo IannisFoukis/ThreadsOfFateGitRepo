@@ -4,7 +4,8 @@ public enum EnemyRole
 {
     Melee,
     Ranged,
-    Charger
+    Charger,
+    Elite
 }
 
 public class EnemyRoleController : MonoBehaviour

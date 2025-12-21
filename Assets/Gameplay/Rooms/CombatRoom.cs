@@ -4,6 +4,10 @@ using static Shrine;
 
 public class CombatRoom : RoomController
 {
+    bool tensionSpike4Triggered;
+    bool tensionSpike7Triggered;
+    bool tensionSpike10Triggered;
+
     bool roomCompleted;
 
     GameStateManager gsm;
@@ -23,7 +27,7 @@ public class CombatRoom : RoomController
 
     bool lockdownActive;
 
-
+    
     protected override void Start()
     {
         base.Start();
@@ -67,6 +71,7 @@ public class CombatRoom : RoomController
 
     void Update()
     {
+        // 1️⃣ Room completion logic (unchanged)
         if (Enemy.AliveCount <= 0 && !roomCompleted)
         {
             if (lockdownActive && EliteSpawner.Instance != null && EliteSpawner.Instance.EliteAlive)
@@ -74,7 +79,6 @@ public class CombatRoom : RoomController
                 Debug.Log("[ROOM] Lockdown: Elite still alive");
                 return;
             }
-            
 
             if (ChoiceManager.Instance != null &&
                 ChoiceManager.Instance.ChoicePending)
@@ -89,8 +93,14 @@ public class CombatRoom : RoomController
             return;
         }
 
+        // 2️⃣ Active combat logic
         if (!roomCompleted)
         {
+
+            // 🔥 THIS goes here — every frame during combat
+            CheckTensionSpikes();
+
+            // ⏱️ Timed / corruption-based escalation (one-shot)
             escalationTimer += Time.deltaTime;
 
             if (!escalationTriggered &&
@@ -102,6 +112,7 @@ public class CombatRoom : RoomController
             }
         }
     }
+
 
     // ============================
     // ENCOUNTERS
@@ -159,9 +170,10 @@ public class CombatRoom : RoomController
             ApplyEnemyScaling(enemy);
             ApplyShrineScaling(enemy);
             ApplyBehaviorEscalation(enemy);
-
+            ApplyAbilityEscalation(enemy);
             spawnedEnemies.Add(enemy);
             activeEnemies.Add(enemy);
+
         }
     }
 
@@ -277,19 +289,38 @@ public class CombatRoom : RoomController
     {
         Debug.Log("[ESCALATION] Mid-fight escalation");
 
+        Shrine activeShrine = shrine != null ? shrine : FindAnyObjectByType<Shrine>();
+        ShrineTier shrineTier = activeShrine != null ? activeShrine.currentTier : ShrineTier.Tier1;
+        RunState run = gsm.RunState;
+
         foreach (var enemy in activeEnemies)
         {
             if (enemy == null) continue;
 
             var behavior = enemy.GetComponent<EnemyBehaviorController>();
-            if (behavior == null) continue;
+            var abilities = enemy.GetComponent<EnemyAbilityController>();
+            var role = enemy.GetComponent<EnemyRoleController>()?.role ?? EnemyRole.Melee;
 
-            if (behavior.currentTier == EnemyBehaviorTier.Base)
-                behavior.ApplyTier(EnemyBehaviorTier.Aggressive);
-            else if (behavior.currentTier == EnemyBehaviorTier.Aggressive)
-                behavior.ApplyTier(EnemyBehaviorTier.Elite);
+            if (behavior != null)
+            {
+                if (behavior.currentTier == EnemyBehaviorTier.Base)
+                    behavior.ApplyTier(EnemyBehaviorTier.Aggressive);
+                else
+                    behavior.ApplyTier(EnemyBehaviorTier.Elite);
+            }
+
+            if (abilities != null)
+            {
+                abilities.ApplyEscalation(
+                    role,
+                    shrineTier,
+                    run.runTension,
+                    midFight: true
+                );
+            }
         }
     }
+
 
     // ============================
     // JOKER / ELITE
@@ -318,5 +349,77 @@ public class CombatRoom : RoomController
             Debug.Log("[ELITE] Pressure applied");
         }
     }
+    void CheckTensionSpikes()
+    {
+        RunState run = gsm.RunState;
+        if (run == null) return;
+
+        if (run.runTension >= 4 && !tensionSpike4Triggered)
+        {
+            tensionSpike4Triggered = true;
+            Debug.Log("[TENSION] Spike 4 → Global Aggro");
+            Enemy.ForceImmediateAggro(2.5f);
+        }
+
+        if (run.runTension >= 7 && !tensionSpike7Triggered)
+        {
+            tensionSpike7Triggered = true;
+            Debug.Log("[TENSION] Spike 7 → Aggressive Panic");
+            Enemy.ForceImmediateAggro(4f);
+        }
+
+        if (run.runTension >= 10 && !tensionSpike10Triggered)
+        {
+            tensionSpike10Triggered = true;
+            Debug.Log("[TENSION] Spike 10 → FULL PANIC");
+            Enemy.ForceImmediateAggro(6f);
+        }
+    }
+
+    // ============================
+    // ABILITIES
+    // ============================
+    void ApplyAbilityEscalation(GameObject enemy)
+    {
+        var abilities = enemy.GetComponent<EnemyAbilityController>();
+        if (abilities == null) return;
+
+        var roleController = enemy.GetComponent<EnemyRoleController>();
+        if (roleController == null) return;
+
+        Shrine activeShrine = shrine != null ? shrine : FindAnyObjectByType<Shrine>();
+        ShrineTier shrineTier = activeShrine != null ? activeShrine.currentTier : ShrineTier.Tier1;
+
+        RunState run = gsm.RunState;
+
+        abilities.ApplyEscalation(
+            roleController.role,
+            shrineTier,
+            run.runTension,
+            midFight: false
+        );
+    }
+
+    void ApplyEnemyEscalation(GameObject enemy, bool midFight)
+    {
+        var ability = enemy.GetComponent<EnemyAbilityController>();
+        if (ability == null) return;
+
+        var roleController = enemy.GetComponent<EnemyRoleController>();
+        EnemyRole role = roleController != null
+            ? roleController.role
+            : EnemyRole.Melee; // safe fallback
+
+        Shrine shrine = FindAnyObjectByType<Shrine>();
+        RunState run = gsm.RunState;
+
+        ability.ApplyEscalation(
+            role,
+            shrine != null ? shrine.currentTier : ShrineTier.Tier1,
+            run.runTension,
+            midFight
+        );
+    }
+
 
 }

@@ -33,18 +33,26 @@ public class CombatRoom : RoomController
         base.Start();
 
         gsm = FindAnyObjectByType<GameStateManager>();
+
+        
+
         if (gsm == null)
         {
             Debug.LogError("CombatRoom: GameStateManager not found");
             return;
         }
 
-        SpawnEncounter();
 
         if (shrine != null)
             shrine.Activate();
+
         ApplyCorruptedRoomRules();
 
+        SpawnEncounter();
+
+        // 🔴 TEMP PROJECTILE TEST
+        TestProjectile();
+        
     }
     void ApplyCorruptedRoomRules()
     {
@@ -113,7 +121,20 @@ public class CombatRoom : RoomController
         }
     }
 
+    void TestProjectile()
+    {
+        var pool = FindAnyObjectByType<ProjectilePool>();
+        if (pool == null)
+        {
+            Debug.LogError("NO PROJECTILE POOL FOUND");
+            return;
+        }
 
+        var proj = pool.Get();
+        proj.transform.position = Vector3.zero;
+        proj.Fire(Vector2.right, 10f, 1);
+        
+    }
     // ============================
     // ENCOUNTERS
     // ============================
@@ -171,6 +192,8 @@ public class CombatRoom : RoomController
             ApplyShrineScaling(enemy);
             ApplyBehaviorEscalation(enemy);
             ApplyAbilityEscalation(enemy);
+            ApplyEnemyEscalation(enemy, false);
+
             spawnedEnemies.Add(enemy);
             activeEnemies.Add(enemy);
 
@@ -212,6 +235,9 @@ public class CombatRoom : RoomController
 
     void ApplyEnemyScaling(GameObject enemy)
     {
+        if (gsm == null || gsm.RunState == null)
+            return;
+
         RunState run = gsm.RunState;
 
         var health = enemy.GetComponent<Health>();
@@ -311,12 +337,8 @@ public class CombatRoom : RoomController
 
             if (abilities != null)
             {
-                abilities.ApplyEscalation(
-                    role,
-                    shrineTier,
-                    run.runTension,
-                    midFight: true
-                );
+                ApplyEnemyEscalation(enemy, true);
+
             }
         }
     }
@@ -351,8 +373,12 @@ public class CombatRoom : RoomController
     }
     void CheckTensionSpikes()
     {
+        if (gsm == null || gsm.RunState == null)
+            return;
+
         RunState run = gsm.RunState;
-        if (run == null) return;
+
+        //if (run == null) return;
 
         if (run.runTension >= 4 && !tensionSpike4Triggered)
         {
@@ -406,20 +432,24 @@ public class CombatRoom : RoomController
         if (ability == null) return;
 
         var roleController = enemy.GetComponent<EnemyRoleController>();
-        EnemyRole role = roleController != null
-            ? roleController.role
-            : EnemyRole.Melee; // safe fallback
+        if (roleController == null)
+        {
+            Debug.LogWarning("[ABILITY] EnemyRoleController missing");
+            return;
+        }
 
-        Shrine shrine = FindAnyObjectByType<Shrine>();
+        Shrine activeShrine = shrine != null ? shrine : FindAnyObjectByType<Shrine>();
         RunState run = gsm.RunState;
 
         ability.ApplyEscalation(
-            role,
-            shrine != null ? shrine.currentTier : ShrineTier.Tier1,
+            roleController.role,
+            activeShrine != null ? activeShrine.currentTier : ShrineTier.Tier1,
             run.runTension,
             midFight
         );
     }
+
+
 
 
 }

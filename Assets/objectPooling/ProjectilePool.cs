@@ -1,14 +1,14 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class ProjectilePool : MonoBehaviour
 {
     public static ProjectilePool Instance;
 
-    [SerializeField] PooledProjectile prefab;
-    [SerializeField] int preloadCount = 40;
+    [SerializeField] private Projectile projectilePrefab;
+    [SerializeField] private int initialSize = 20;
 
-    Queue<PooledProjectile> pool = new();
+    private readonly Queue<Projectile> pool = new();
 
     void Awake()
     {
@@ -21,18 +21,21 @@ public class ProjectilePool : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        for (int i = 0; i < preloadCount; i++)
+        for (int i = 0; i < initialSize; i++)
+        {
             Create();
+        }
     }
 
-    void Create()
+    private void Create()
     {
-        var p = Instantiate(prefab, transform);
-        p.gameObject.SetActive(false);
-        pool.Enqueue(p);
+        var proj = Instantiate(projectilePrefab, transform);
+        proj.AssignPool(this);
+        proj.gameObject.SetActive(false);
+        pool.Enqueue(proj);
     }
 
-    public PooledProjectile Get()
+    public Projectile Get()
     {
         if (pool.Count == 0)
             Create();
@@ -40,8 +43,8 @@ public class ProjectilePool : MonoBehaviour
         return pool.Dequeue();
     }
 
-    public void Return(PooledProjectile p)
+    public void Return(Projectile projectile)
     {
-        pool.Enqueue(p);
+        pool.Enqueue(projectile);
     }
 }

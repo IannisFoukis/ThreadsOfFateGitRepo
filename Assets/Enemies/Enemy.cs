@@ -13,6 +13,12 @@ public class Enemy : MonoBehaviour
     [Header("Scaling")]
     public float damageMultiplier = 1f;
 
+    public Transform Target { get; private set; }
+
+    void Start()
+    {
+        Target = FindAnyObjectByType<PlayerController>()?.transform;
+    }
     private void OnEnable()
     {
         AliveCount++;

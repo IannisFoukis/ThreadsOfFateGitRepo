@@ -1,44 +1,40 @@
-using UnityEngine;
+﻿using UnityEngine;
 
-public class PooledProjectile : MonoBehaviour
+public abstract class PooledProjectile : MonoBehaviour
 {
-    Rigidbody2D rb;
-    float lifetime;
-    float timer;
+    protected Rigidbody2D rb;
+    private ProjectilePool pool;
 
-    void Awake()
+    protected virtual void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
     }
 
-    public void Fire(Vector2 dir, float speed, float life)
+    public void AssignPool(ProjectilePool poolRef)
     {
-        lifetime = life;
-        timer = 0f;
-        rb.linearVelocity = dir.normalized * speed;
+        pool = poolRef;
+    }
+
+    public virtual void Fire(Vector2 dir, float speed, float lifetime)
+    {
         gameObject.SetActive(true);
+
+        rb.linearVelocity = Vector2.zero;
+        rb.angularVelocity = 0f;
+        rb.WakeUp();
+
+        rb.linearVelocity = dir * speed;
+
+        CancelInvoke();
+        Invoke(nameof(ReturnToPool), lifetime);
     }
 
-    void Update()
+    protected void ReturnToPool()
     {
-        timer += Time.deltaTime;
-        if (timer >= lifetime)
-            ReturnToPool();
-    }
-
-    void OnTriggerEnter2D(Collider2D other)
-    {
-        if (other.CompareTag("Player"))
-        {
-            // damage logic here
-            ReturnToPool();
-        }
-    }
-
-    void ReturnToPool()
-    {
+        CancelInvoke();
         rb.linearVelocity = Vector2.zero;
         gameObject.SetActive(false);
-        ProjectilePool.Instance.Return(this);
+
+        //pool?.Return(this);
     }
 }

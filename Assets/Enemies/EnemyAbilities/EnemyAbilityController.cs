@@ -3,77 +3,143 @@ using static Shrine;
 
 public class EnemyAbilityController : MonoBehaviour
 {
+    [Header("Current")]
     public EnemyAbilityTier currentTier = EnemyAbilityTier.Base;
 
-    // Cached optional abilities
-    EnemyDash dash;
-   // EnemyShield shield;
-   // EnemyTeleport teleport;
-  // EnemySummon summon;
+    [Header("Cooldowns")]
+    public float baseCooldown = 2f;
+    public float aggressiveCooldown = 1.4f;
+    public float eliteCooldown = 0.9f;
 
+    float cooldownTimer;
+    Enemy enemy;
+
+    [Header("Projectile Settings")]
+    [SerializeField] private int projectileDamage = 1;
+    [SerializeField] float projectileSpeed = 8f;
+    [SerializeField] float projectileLifetime = 3f;
     void Awake()
     {
-        dash = GetComponent<EnemyDash>();
-       // shield = GetComponent<EnemyShield>();
-        //teleport = GetComponent<EnemyTeleport>();
-        //summon = GetComponent<EnemySummon>();
-
-        DisableAll();
+        enemy = GetComponent<Enemy>();
     }
 
-    void DisableAll()
+    void Update()
     {
-        dash?.gameObject.SetActive(false);
-       // shield?.gameObject.SetActive(false);
-       // teleport?.gameObject.SetActive(false);
-       // summon?.gameObject.SetActive(false);
-    }
-
-    public void ApplyEscalation(
-    EnemyRole role,
-    ShrineTier shrineTier,
-    int runTension,
-    bool midFight)
-    {
-        DisableAll();
-
-        switch (role)
+        cooldownTimer -= Time.deltaTime;
+        if (cooldownTimer <= 0f)
         {
-            case EnemyRole.Melee:
-                if (shrineTier >= ShrineTier.Tier2 || runTension >= 5)
-                    dash?.gameObject.SetActive(true);
 
-               // if (shrineTier == ShrineTier.Tier3 || midFight)
-                   // shield?.gameObject.SetActive(true);
+            ExecuteAbility();
+            ResetCooldown();
+        }
+    }
+
+    // 🔥 NEW — escalation entry point
+    public void ApplyEscalation(
+        EnemyRole role,
+        ShrineTier shrineTier,
+        int runTension,
+        bool midFight
+    )
+    {
+        EnemyAbilityTier target = EnemyAbilityTier.Base;
+
+        if (shrineTier == ShrineTier.Tier3 || runTension >= 7)
+            target = EnemyAbilityTier.Elite;
+        else if (shrineTier == ShrineTier.Tier2 || runTension >= 4)
+            target = EnemyAbilityTier.Aggressive;
+
+        currentTier = target;
+
+        if (midFight)
+        {
+            cooldownTimer *= 0.5f; // instant pressure spike
+            Debug.Log($"[ABILITY] Mid-fight escalation → {currentTier}");
+        }
+        else
+        {
+            Debug.Log($"[ABILITY] Tier set → {currentTier}");
+        }
+    }
+
+    void ExecuteAbility()
+    {
+       
+        switch (currentTier)
+        {
+            case EnemyAbilityTier.Base:
+                BasicAttack();
                 break;
 
-            case EnemyRole.Ranged:
-               // if (shrineTier >= ShrineTier.Tier2 || runTension >= 4)
-                  // burstFire?.gameObject.SetActive(true);
-
-                //if (shrineTier == ShrineTier.Tier3 || midFight)
-                 //  teleport?.gameObject.SetActive(true);
+            case EnemyAbilityTier.Aggressive:
+                BasicAttack();
+                AggressiveBonus();
                 break;
 
-            case EnemyRole.Charger:
-                if (shrineTier >= ShrineTier.Tier2 || runTension >= 6)
-                    dash?.gameObject.SetActive(true);
-
-                //if (shrineTier == ShrineTier.Tier3 || midFight)
-                   // summon?.gameObject.SetActive(true);
+            case EnemyAbilityTier.Elite:
+                BasicAttack();
+                AggressiveBonus();
+                EliteAbility();
                 break;
         }
-
-        Debug.Log(
-     $"[ABILITY] {name} | Role={role} | Shrine={shrineTier} | Tension={runTension} | MidFight={midFight}"
- );
-
     }
-    public void FireProjectile(Vector2 dir)
+
+    void ResetCooldown()
     {
-        var p = ProjectilePool.Instance.Get();
-        p.transform.position = transform.position;
-        p.Fire(dir, 8f, 3f);
+        cooldownTimer = currentTier switch
+        {
+            EnemyAbilityTier.Aggressive => aggressiveCooldown,
+            EnemyAbilityTier.Elite => eliteCooldown,
+            _ => baseCooldown
+        };
     }
+
+    void BasicAttack()
+    {
+       // if (!enemy || enemy.Target == null) return;
+// Vector2 dir = (enemy.Target.position - transform.position).normalized;
+        Fire(GetFireDirection());
+    }
+
+    void AggressiveBonus()
+    {
+        Fire(Quaternion.Euler(0, 0, 25) * Vector2.right);
+        Fire(Quaternion.Euler(0, 0, -25) * Vector2.right);
+    }
+
+    void EliteAbility()
+    {
+        Fire(Quaternion.Euler(0, 0, 15) * GetFireDirection());
+        Fire(Quaternion.Euler(0, 0, -15) * GetFireDirection());
+    }
+
+
+    void Fire(Vector2 dir)
+    {
+        if (ProjectilePool.Instance == null)
+        {
+            Debug.LogError("NO PROJECTILE POOL FOUND");
+            return;
+        }
+            
+
+
+        var projectile = ProjectilePool.Instance.Get();
+        
+
+        projectile.transform.position = transform.position;
+        projectile.Fire(dir, projectileSpeed, projectileLifetime, projectileDamage);
+
+        Debug.Log("[ABILITY] Fired projectile");
+    }
+    Vector2 GetFireDirection()
+    {
+        var player = GameObject.FindWithTag("Player");
+        if (!player) return Vector2.right;
+
+        return (player.transform.position - transform.position).normalized;
+    }
+
+
 
 }

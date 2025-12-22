@@ -284,6 +284,7 @@ GameObject:
   - component: {fileID: 1012162979977339158}
   - component: {fileID: 8394341910229455449}
   - component: {fileID: 7350746542196925506}
+  - component: {fileID: 6050981039233163066}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Untagged
@@ -332,9 +333,9 @@ Rigidbody2D:
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_SleepingMode: 1
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
   m_Constraints: 4
 --- !u!114 &1411910646061602349
 MonoBehaviour:
@@ -399,6 +400,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 308b2744622f6254c98b949e30dcf614, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isAggro: 0
+  isAggressive: 0
+  ignoreAssistLogic: 0
+  damageMultiplier: 1
 --- !u!114 &1606375910734574110
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -483,3 +488,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   currentTier: 0
+  corruptionMoveSpeedBonus: 1
+  corruptionAttackSpeedBonus: 1
+--- !u!114 &6050981039233163066
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8686355838142782365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1332f84132453743aa4365c17f4e2cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentTier: 0
+  baseCooldown: 2
+  aggressiveCooldown: 1.4
+  eliteCooldown: 0.9
+  projectileDamage: 10
+  projectileSpeed: 20
+  projectileLifetime: 3

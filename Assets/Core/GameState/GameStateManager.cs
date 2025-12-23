@@ -4,6 +4,7 @@ public class GameStateManager : MonoBehaviour
 {
     public RunData RunData { get; private set; }
     public RunState RunState { get; private set; }
+    [SerializeField] private GameStateManager gsm;
 
     void Awake()
     {

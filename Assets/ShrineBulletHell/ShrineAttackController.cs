@@ -27,10 +27,15 @@ public class ShrineAttackController : MonoBehaviour
 
     [SerializeField] Shrine shrine;
 
+    GameStateManager gameState;
 
     Coroutine attackRoutine;
     Coroutine skullRoutine;
-    
+    void Awake()
+    {
+        gameState = FindAnyObjectByType<GameStateManager>();
+    }
+
     /* ===================== PUBLIC API ===================== */
 
     public void StartAttacksForTier(ShrineTier tier)
@@ -49,6 +54,28 @@ public class ShrineAttackController : MonoBehaviour
         // Skull storm only Tier 3
         if (tier == ShrineTier.Tier3)
             skullRoutine = StartCoroutine(SkullStormRoutine(GetSkullCount(tier)));
+    }
+    ProjectileModifiers GenerateRandomModifiers()
+    {
+        ProjectileModifiers mods = ProjectileModifiers.Default;
+
+        // Speed variation
+        mods.speedMultiplier = UnityEngine.Random.Range(0.7f, 1.4f);
+
+        // Occasional wobble
+        if (UnityEngine.Random.value < 0.35f)
+        {
+            mods.wobbleStrength = UnityEngine.Random.Range(0.2f, 0.6f);
+            mods.wobbleFrequency = UnityEngine.Random.Range(3f, 7f);
+        }
+
+        // Rare delayed explosion
+        if (UnityEngine.Random.value < 0.15f)
+        {
+            mods.explodeDelay = UnityEngine.Random.Range(0.5f, 1.2f);
+        }
+
+        return mods;
     }
 
     public void StopAllAttacks()
@@ -108,15 +135,22 @@ public class ShrineAttackController : MonoBehaviour
     void Fire(Vector2 dir)
     {
         if (ProjectilePool.Instance == null) return;
+        if (shrine == null || gameState == null) return;
 
-        var p = ProjectilePool.Instance.Get();
-        if (p == null) return;
+        var projectile = ProjectilePool.Instance.Get();
+        if (projectile == null) return;
 
-        var mods = ProjectileModifierFactory
-            .RandomForTier(shrine.currentTier);
+        int tension = gameState.RunState.runTension;
 
-        p.transform.position = transform.position;
-        p.Fire(
+        ProjectileModifiers mods =
+            ProjectileModifierFactory.ForShrineTier(
+                shrine.currentTier,
+                tension
+            );
+
+        projectile.transform.position = transform.position;
+
+        projectile.Fire(
             dir,
             projectileSpeed,
             projectileLifetime,
@@ -124,6 +158,10 @@ public class ShrineAttackController : MonoBehaviour
             mods
         );
     }
+
+
+
+
 
 
     /* ===================== SKULL STORM ===================== */

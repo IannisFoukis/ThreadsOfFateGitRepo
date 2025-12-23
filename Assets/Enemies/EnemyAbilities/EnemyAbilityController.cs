@@ -129,7 +129,7 @@ public class EnemyAbilityController : MonoBehaviour
         
 
         projectile.transform.position = transform.position;
-        projectile.Fire(dir, projectileSpeed, projectileLifetime, projectileDamage, ProjectileModifiers.None);
+        projectile.Fire(dir, projectileSpeed, projectileLifetime, projectileDamage, ProjectileModifiers.Default);
 
         Debug.Log("[ABILITY] Fired projectile");
     }

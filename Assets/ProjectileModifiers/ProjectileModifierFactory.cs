@@ -3,38 +3,37 @@ using static Shrine;
 
 public static class ProjectileModifierFactory
 {
-    public static ProjectileModifiers RandomForTier(ShrineTier tier)
+    public static ProjectileModifiers ForShrineTier(
+        ShrineTier tier,
+        int tension
+    )
     {
-        ProjectileModifiers m = ProjectileModifiers.None;
+        var mods = ProjectileModifiers.Default;
 
-        switch (tier)
+        // Base speed scaling
+        mods.speedMultiplier =
+            1f + tension * 0.05f;
+
+        // Wobble chance
+        if (tier >= ShrineTier.Tier2 &&
+            UnityEngine.Random.value < 0.4f)
         {
-            case ShrineTier.Tier1:
-                m.speedMultiplier =
-                    UnityEngine.Random.Range(0.9f, 1.1f);
-                break;
-
-            case ShrineTier.Tier2:
-                m.speedMultiplier =
-                    UnityEngine.Random.Range(0.9f, 1.3f);
-                m.wobbleStrength =
-                    UnityEngine.Random.Range(2f, 6f);
-                m.wobbleFrequency =
-                    UnityEngine.Random.Range(4f, 8f);
-                break;
-
-            case ShrineTier.Tier3:
-                m.speedMultiplier =
-                    UnityEngine.Random.Range(1.1f, 1.5f);
-                m.wobbleStrength =
-                    UnityEngine.Random.Range(6f, 12f);
-                m.wobbleFrequency =
-                    UnityEngine.Random.Range(6f, 12f);
-                m.explodeDelay =
-                    UnityEngine.Random.Range(0.8f, 1.5f);
-                break;
+            mods.wobble = true;
+            mods.wobbleStrength =
+                UnityEngine.Random.Range(0.2f, 0.6f);
+            mods.wobbleFrequency =
+                UnityEngine.Random.Range(3f, 7f);
         }
 
-        return m;
+        // Delayed explosion (Tier 3 only)
+        if (tier == ShrineTier.Tier3 &&
+            UnityEngine.Random.value < 0.2f)
+        {
+            mods.delayedExplode = true;
+            mods.explodeDelay =
+                UnityEngine.Random.Range(0.5f, 1.2f);
+        }
+
+        return mods;
     }
 }

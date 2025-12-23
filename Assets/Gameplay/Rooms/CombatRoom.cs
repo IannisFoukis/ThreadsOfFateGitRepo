@@ -139,7 +139,7 @@ public class CombatRoom : RoomController
             10f,
             2f,
             1,
-            ProjectileModifiers.None
+            ProjectileModifiers.Default
         );
     }
 

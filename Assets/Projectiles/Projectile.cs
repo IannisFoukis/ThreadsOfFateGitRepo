@@ -3,6 +3,9 @@ using UnityEngine;
 public class Projectile : MonoBehaviour
 {
     Rigidbody2D rb;
+
+    Vector2 direction;
+    float speed;
     int damage;
     ProjectileModifiers mods;
 
@@ -11,21 +14,45 @@ public class Projectile : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
     }
 
+    void Update()
+    {
+        if (mods.wobble)
+        {
+            float wobble =
+                Mathf.Sin(Time.time * mods.wobbleFrequency) *
+                mods.wobbleStrength;
+
+            Vector2 perp = Vector2.Perpendicular(direction);
+            rb.linearVelocity =
+                (direction + perp * wobble).normalized *
+                speed *
+                mods.speedMultiplier;
+        }
+    }
+
     public void Fire(
         Vector2 dir,
-        float speed,
+        float baseSpeed,
         float lifetime,
         int damage,
         ProjectileModifiers mods
-
-
     )
     {
+        this.direction = dir.normalized;
         this.damage = damage;
         this.mods = mods;
 
-        rb.linearVelocity = dir.normalized * speed;
+        float variance =
+            UnityEngine.Random.Range(
+                1f - mods.speedVariance,
+                1f + mods.speedVariance
+            );
 
+        speed = baseSpeed * mods.speedMultiplier * variance;
+
+        rb.linearVelocity = direction * speed;
+
+        CancelInvoke();
         Invoke(nameof(Disable), lifetime);
     }
 

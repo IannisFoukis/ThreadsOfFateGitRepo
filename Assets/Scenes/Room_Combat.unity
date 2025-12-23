@@ -530,7 +530,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   type: 0
   corruptionThreshold: 2
-  currentTier: 2
+  currentTier: 0
   attackController: {fileID: 1654226485}
 --- !u!212 &1654226484
 SpriteRenderer:
@@ -600,16 +600,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   combatBounds: {fileID: 31570021}
-  projectileSpeed: 5
+  projectileSpeed: 3
   projectileLifetime: 3
   projectileDamage: 1
   skullPrefab: {fileID: 6081973856678788887, guid: c39b859546052b24792bfa841943ca22, type: 3}
   skullTier1: 40
   skullTier2: 100
   skullTier3: 200
-  armDelay: 1.5
+  armDelay: 4
   armInterval: 0.5
-  armedPerWave: 20
+  armedPerWave: 50
   skullDamage: 1
   shrine: {fileID: 1654226483}
 --- !u!1660057539 &9223372036854775807

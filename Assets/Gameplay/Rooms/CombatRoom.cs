@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+
 using static Shrine;
 
 public class CombatRoom : RoomController
@@ -26,8 +27,9 @@ public class CombatRoom : RoomController
     bool escalationTriggered;
 
     bool lockdownActive;
+   // [SerializeField] int projectileDamage = 1;
 
-    
+
     protected override void Start()
     {
         base.Start();
@@ -123,18 +125,24 @@ public class CombatRoom : RoomController
 
     void TestProjectile()
     {
-        var pool = FindAnyObjectByType<ProjectilePool>();
-        if (pool == null)
+        if (ProjectilePool.Instance == null)
         {
             Debug.LogError("NO PROJECTILE POOL FOUND");
             return;
         }
 
-        var proj = pool.Get();
-        proj.transform.position = Vector3.zero;
-        proj.Fire(Vector2.right, 10f, 1);
-        
+        var proj = ProjectilePool.Instance.Get();
+        proj.transform.position = transform.position;
+
+        proj.Fire(
+            Vector2.right,
+            10f,
+            2f,
+            1,
+            ProjectileModifiers.None
+        );
     }
+
     // ============================
     // ENCOUNTERS
     // ============================

@@ -1,27 +1,42 @@
 using UnityEngine;
 
-public class Projectile : PooledProjectile
+public class Projectile : MonoBehaviour
 {
-    [SerializeField] int damage = 1;
+    Rigidbody2D rb;
+    int damage;
+    ProjectileModifiers mods;
 
-    public void Fire(Vector2 dir, float speed, float lifetime, int dmg)
+    void Awake()
     {
-        damage = dmg;
-        base.Fire(dir.normalized, speed, lifetime);
-
-       // Debug.Log($"[PROJECTILE] Fired dir={dir} speed={speed}");
+        rb = GetComponent<Rigidbody2D>();
     }
 
-    private void OnTriggerEnter2D(Collider2D other)
+    public void Fire(
+        Vector2 dir,
+        float speed,
+        float lifetime,
+        int damage,
+        ProjectileModifiers mods
+
+
+    )
     {
-        if (other.isTrigger) return;
+        this.damage = damage;
+        this.mods = mods;
 
-        var health = other.GetComponent<Health>();
-        if (health != null)
-        {
-            health.TakeDamage(damage, rb.linearVelocity.normalized);
-        }
+        rb.linearVelocity = dir.normalized * speed;
 
-        ReturnToPool();
+        Invoke(nameof(Disable), lifetime);
+    }
+
+    void Disable()
+    {
+        rb.linearVelocity = Vector2.zero;
+
+        var pooled = GetComponent<PooledProjectile>();
+        if (pooled != null)
+            pooled.ReturnToPool();
+        else
+            gameObject.SetActive(false);
     }
 }

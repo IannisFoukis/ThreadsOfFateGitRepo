@@ -5,46 +5,45 @@ public class ProjectilePool : MonoBehaviour
 {
     public static ProjectilePool Instance;
 
-    [SerializeField] private Projectile projectilePrefab;
-    [SerializeField] private int initialSize = 20;
+    [SerializeField] Projectile projectilePrefab;
+    [SerializeField] int initialSize = 20;
 
-    private readonly Queue<Projectile> pool = new();
+    Queue<PooledProjectile> pool = new();
 
     void Awake()
     {
-        if (Instance != null)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
         Instance = this;
-        DontDestroyOnLoad(gameObject);
 
         for (int i = 0; i < initialSize; i++)
-        {
-            Create();
-        }
+            CreateOne();
     }
 
-    private void Create()
+    void CreateOne()
     {
         var proj = Instantiate(projectilePrefab, transform);
-        proj.AssignPool(this);
+        var pooled = proj.GetComponent<PooledProjectile>();
+
+        if (pooled == null)
+            pooled = proj.gameObject.AddComponent<PooledProjectile>();
+
+        pooled.SetPool(this);
         proj.gameObject.SetActive(false);
-        pool.Enqueue(proj);
+        pool.Enqueue(pooled);
     }
 
     public Projectile Get()
     {
         if (pool.Count == 0)
-            Create();
+            CreateOne();
 
-        return pool.Dequeue();
+        var pooled = pool.Dequeue();
+        pooled.gameObject.SetActive(true);
+        return pooled.GetComponent<Projectile>();
     }
 
-    public void Return(Projectile projectile)
+    public void Return(PooledProjectile proj)
     {
-        pool.Enqueue(projectile);
+        proj.gameObject.SetActive(false);
+        pool.Enqueue(proj);
     }
 }

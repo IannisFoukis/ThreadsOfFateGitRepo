@@ -119,6 +119,84 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &31570020
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 31570022}
+  - component: {fileID: 31570021}
+  m_Layer: 0
+  m_Name: Bounds
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!61 &31570021
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 31570020}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 2.5265865, y: 4.4117527}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 40.43259, y: 32.245243}
+  m_EdgeRadius: 0
+--- !u!4 &31570022
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 31570020}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -4.6508102, y: -3.954181, z: -0.19932756}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &330640047
 GameObject:
   m_ObjectHideFlags: 0
@@ -283,7 +361,7 @@ MonoBehaviour:
   enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
   encounterType: 4
   shrine: {fileID: 1654226483}
-  escalationDelay: 8
+  escalationDelay: 4
 --- !u!4 &985146257
 Transform:
   m_ObjectHideFlags: 0
@@ -358,6 +436,52 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1020291929
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1020291931}
+  - component: {fileID: 1020291930}
+  m_Layer: 0
+  m_Name: ProjectilePooll
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1020291930
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1020291929}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3409a33352b8221408b550bce16e02ee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  projectilePrefab: {fileID: -7159479602090134345, guid: a16b2bb256930fb418670b93f3c9aecf, type: 3}
+  initialSize: 20
+--- !u!4 &1020291931
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1020291929}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1.0663406, y: 0.572934, z: -0.13453728}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1654226481
 GameObject:
   m_ObjectHideFlags: 0
@@ -369,6 +493,7 @@ GameObject:
   - component: {fileID: 1654226482}
   - component: {fileID: 1654226483}
   - component: {fileID: 1654226484}
+  - component: {fileID: 1654226485}
   m_Layer: 0
   m_Name: Shrine
   m_TagString: Untagged
@@ -405,7 +530,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   type: 0
   corruptionThreshold: 2
-  currentTier: 0
+  currentTier: 2
+  attackController: {fileID: 1654226485}
 --- !u!212 &1654226484
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -461,6 +587,31 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &1654226485
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1654226481}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0124c08089004c84780ba893bb29af19, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  combatBounds: {fileID: 31570021}
+  projectileSpeed: 5
+  projectileLifetime: 3
+  projectileDamage: 1
+  skullPrefab: {fileID: 6081973856678788887, guid: c39b859546052b24792bfa841943ca22, type: 3}
+  skullTier1: 40
+  skullTier2: 100
+  skullTier3: 200
+  armDelay: 1.5
+  armInterval: 0.5
+  armedPerWave: 20
+  skullDamage: 1
+  shrine: {fileID: 1654226483}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -470,3 +621,5 @@ SceneRoots:
   - {fileID: 985146257}
   - {fileID: 330640049}
   - {fileID: 1654226482}
+  - {fileID: 31570022}
+  - {fileID: 1020291931}

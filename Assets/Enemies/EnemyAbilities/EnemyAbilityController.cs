@@ -18,6 +18,7 @@ public class EnemyAbilityController : MonoBehaviour
     [SerializeField] private int projectileDamage = 1;
     [SerializeField] float projectileSpeed = 8f;
     [SerializeField] float projectileLifetime = 3f;
+    
     void Awake()
     {
         enemy = GetComponent<Enemy>();
@@ -128,17 +129,30 @@ public class EnemyAbilityController : MonoBehaviour
         
 
         projectile.transform.position = transform.position;
-        projectile.Fire(dir, projectileSpeed, projectileLifetime, projectileDamage);
+        projectile.Fire(dir, projectileSpeed, projectileLifetime, projectileDamage, ProjectileModifiers.None);
 
         Debug.Log("[ABILITY] Fired projectile");
     }
     Vector2 GetFireDirection()
     {
-        var player = GameObject.FindWithTag("Player");
-        if (!player) return Vector2.right;
+        Transform player = PlayerLocator.Instance?.Player;
+        if (player == null)
+            return Vector2.right;
 
-        return (player.transform.position - transform.position).normalized;
+        Vector2 baseDir = (player.position - transform.position).normalized;
+
+        float spread = currentTier switch
+        {
+            EnemyAbilityTier.Base => 0f,
+            EnemyAbilityTier.Aggressive => 6f,
+            EnemyAbilityTier.Elite => 12f,
+            _ => 0f
+        };
+
+        float angle = Random.Range(-spread, spread);
+        return Quaternion.Euler(0, 0, angle) * baseDir;
     }
+
 
 
 

@@ -6,6 +6,8 @@ public class Shrine : MonoBehaviour
     public int corruptionThreshold = 2;
     public ShrineTier currentTier;
 
+    [SerializeField] ShrineAttackController attackController;
+
     public enum ShrineTier
     {
         Tier1,
@@ -40,6 +42,14 @@ public class Shrine : MonoBehaviour
         int corruption = RunCorruptionState.Instance.CorruptionLevel;
 
         Debug.Log($"Shrine {type} activated at corruption {corruption}");
+
+        // bullet hell start
+        var attack = GetComponent<ShrineAttackController>();
+        if (attack != null)
+        {
+            attackController.StartAttacksForTier(currentTier);
+        }
+        // bullet hell end
 
         DetermineTier();
 

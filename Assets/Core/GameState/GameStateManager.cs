@@ -9,7 +9,7 @@ public class GameStateManager : MonoBehaviour
     void Awake()
     {
         DontDestroyOnLoad(gameObject);
-
+        
         RunData = new RunData();
         RunState = new RunState();
     }

@@ -131,7 +131,7 @@ GameObject:
   - component: {fileID: 31570021}
   m_Layer: 0
   m_Name: Bounds
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -170,7 +170,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 2.5265865, y: 4.4117527}
+  m_Offset: {x: 4.4479256, y: 3.7713075}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -180,7 +180,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 40.43259, y: 32.245243}
+  m_Size: {x: 31.146118, y: 15.593633}
   m_EdgeRadius: 0
 --- !u!4 &31570022
 Transform:
@@ -192,6 +192,51 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -4.6508102, y: -3.954181, z: -0.19932756}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &101259763
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 101259765}
+  - component: {fileID: 101259764}
+  m_Layer: 0
+  m_Name: GameStateManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &101259764
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 101259763}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f5d08512b169a341ac13903b0056fc2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gsm: {fileID: 101259764}
+--- !u!4 &101259765
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 101259763}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.1242237, y: 0.45757103, z: -0.19932756}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -420,7 +465,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bounds:
     m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 30, y: 18, z: 1}
+    m_Extent: {x: 15.5, y: 7.9, z: 1}
 --- !u!4 &1013622542
 Transform:
   m_ObjectHideFlags: 0
@@ -528,9 +573,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9eec99bdc750ef442a10b03e2fdd2999, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  type: 0
-  corruptionThreshold: 2
-  currentTier: 0
+  type: 2
+  corruptionThreshold: 50
+  currentTier: 2
   attackController: {fileID: 1654226485}
 --- !u!212 &1654226484
 SpriteRenderer:
@@ -604,14 +649,15 @@ MonoBehaviour:
   projectileLifetime: 3
   projectileDamage: 1
   skullPrefab: {fileID: 6081973856678788887, guid: c39b859546052b24792bfa841943ca22, type: 3}
-  skullTier1: 40
-  skullTier2: 100
-  skullTier3: 200
+  skullTier1: 10
+  skullTier2: 20
+  skullTier3: 30
   armDelay: 4
   armInterval: 0.5
-  armedPerWave: 50
+  armedPerWave: 40
   skullDamage: 1
   shrine: {fileID: 1654226483}
+  gsm: {fileID: 101259764}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -623,3 +669,4 @@ SceneRoots:
   - {fileID: 1654226482}
   - {fileID: 31570022}
   - {fileID: 1020291931}
+  - {fileID: 101259765}

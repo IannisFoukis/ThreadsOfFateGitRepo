@@ -54,7 +54,10 @@ public class CombatRoom : RoomController
 
         // 🔴 TEMP PROJECTILE TEST
         TestProjectile();
-        
+
+        if (shrine != null)
+            shrine.GetComponent<ShrineAttackController>()
+                  ?.StartAttacksForTier(shrine.currentTier);
     }
     void ApplyCorruptedRoomRules()
     {
@@ -408,6 +411,10 @@ public class CombatRoom : RoomController
             Debug.Log("[TENSION] Spike 10 → FULL PANIC");
             Enemy.ForceImmediateAggro(6f);
         }
+
+        if (shrine != null)
+            shrine.GetComponent<ShrineAttackController>()
+                  ?.StartAttacksForTier(shrine.currentTier);
     }
 
     // ============================

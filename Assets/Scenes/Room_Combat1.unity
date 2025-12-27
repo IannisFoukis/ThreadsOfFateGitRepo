@@ -404,7 +404,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
-  encounterType: 1
+  encounterType: 4
   shrine: {fileID: 1654226483}
   escalationDelay: 4
 --- !u!4 &985146257
@@ -573,9 +573,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9eec99bdc750ef442a10b03e2fdd2999, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  type: 0
-  corruptionThreshold: 20
-  currentTier: 0
+  type: 2
+  corruptionThreshold: 50
+  currentTier: 1
   attackController: {fileID: 1654226485}
 --- !u!212 &1654226484
 SpriteRenderer:
@@ -622,7 +622,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Color: {r: 0.9622642, g: 0, b: 0, a: 1}
+  m_Color: {r: 0.93819284, g: 1, b: 0, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -645,8 +645,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   combatBounds: {fileID: 31570021}
-  projectileSpeed: 4
-  projectileLifetime: 5
+  projectileSpeed: 3
+  projectileLifetime: 3
   projectileDamage: 1
   skullPrefab: {fileID: 6081973856678788887, guid: c39b859546052b24792bfa841943ca22, type: 3}
   skullTier1: 10

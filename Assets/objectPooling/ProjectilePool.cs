@@ -6,7 +6,7 @@ public class ProjectilePool : MonoBehaviour
     public static ProjectilePool Instance;
 
     [SerializeField] Projectile projectilePrefab;
-    [SerializeField] int initialSize = 20;
+    [SerializeField] int initialSize = 5;
 
     Queue<PooledProjectile> pool = new();
 

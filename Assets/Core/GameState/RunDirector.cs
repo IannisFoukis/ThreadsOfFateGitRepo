@@ -13,8 +13,9 @@ public enum RoomRole
     Entry,
     Combat,
     Breather,
-    Combat2,
+    Combat1,
     PressureSpike,
+    Combat2,
     Boss
 }
 
@@ -40,8 +41,9 @@ public class RunDirector : MonoBehaviour
             RoomRole.Entry,
             RoomRole.Combat,
             RoomRole.Breather,
-            RoomRole.Combat2,
+            RoomRole.Combat1,
             RoomRole.PressureSpike,
+            RoomRole.Combat2,
             RoomRole.Boss
         };
 
@@ -86,6 +88,8 @@ public class RunDirector : MonoBehaviour
         {
             RoomRole.Entry => "Room_Entry",
             RoomRole.Combat => "Room_Combat",
+            RoomRole.Combat1 => "Room_Combat1",
+            RoomRole.Combat2 => "Room_Combat2",
             RoomRole.Breather => "Room_Breather",
             RoomRole.PressureSpike => "Room_PressureSpike",
             RoomRole.Boss => "Room_Boss",
@@ -104,7 +108,7 @@ public class RunDirector : MonoBehaviour
 
         RunState run = gsm.RunState;
 
-        if (role == RoomRole.Combat || role == RoomRole.Combat2)
+        if (role == RoomRole.Combat || role == RoomRole.Combat1)
             run.runTension += 2;
 
         if (role == RoomRole.PressureSpike)

@@ -5,7 +5,7 @@ public class ChoiceManager : MonoBehaviour
     public static ChoiceManager Instance;
     public bool ChoicePending { get; private set; }
 
-    // When UI presents a choice we try to capture its callback so keyboard input
+    // When UI presents a choice we capture its callback so keyboard input
     // can directly invoke the same delegate even if the UI instance's field is cleared
     System.Action<int> capturedCallback;
 
@@ -22,13 +22,10 @@ public class ChoiceManager : MonoBehaviour
 
     public void PresentChoice(System.Action<int> callback = null)
     {
-        Debug.Log("PresentChoice() CALLED");
         GameLock.IsLocked = true;
         ChoicePending = true;
-        Debug.Log("CHOICE: [C] Accept Corruption | [F] Fight Consequence");
         // Capture the provided callback (preferred) so keyboard flow can invoke it directly
         capturedCallback = callback;
-        Debug.Log($"ChoiceManager: captured UI callback={(capturedCallback == null ? "NULL" : capturedCallback.Method.Name)}");
     }
 
 
@@ -46,10 +43,8 @@ public class ChoiceManager : MonoBehaviour
             {
                 if (Input.GetKeyDown(KeyCode.Alpha1 + i))
                 {
-                    Debug.Log($"ChoiceManager: forwarding numeric key {i+1} to NonCombatUIController (Instance={ui.GetInstanceID()})");
                     if (capturedCallback != null)
                     {
-                        Debug.Log($"ChoiceManager: invoking capturedCallback for option {i}");
                         capturedCallback.Invoke(i);
                         FinishChoice();
                     }
@@ -63,7 +58,6 @@ public class ChoiceManager : MonoBehaviour
 
             if (Input.GetKeyDown(KeyCode.C))
             {
-                Debug.Log($"ChoiceManager: forwarding C to NonCombatUIController (Instance={ui.GetInstanceID()}) -> option 0");
                 if (capturedCallback != null)
                 {
                     capturedCallback.Invoke(0);
@@ -78,7 +72,6 @@ public class ChoiceManager : MonoBehaviour
 
             if (Input.GetKeyDown(KeyCode.L))
             {
-                Debug.Log($"ChoiceManager: forwarding L to NonCombatUIController (Instance={ui.GetInstanceID()}) -> option 1");
                 if (capturedCallback != null)
                 {
                     capturedCallback.Invoke(1);
@@ -118,8 +111,6 @@ public class ChoiceManager : MonoBehaviour
 
     void Reject()
     {
-        Debug.Log("Reject pressed");
-
         ChoicePending = false;
         GameLock.IsLocked = false;
 
@@ -129,7 +120,6 @@ public class ChoiceManager : MonoBehaviour
         if (EliteSpawner.Instance != null)
         {
             EliteSpawner.Instance.SpawnElite();
-            Debug.Log("CONSEQUENCE: Elite Spawned");
         }
         else
         {
@@ -154,4 +144,6 @@ public class ChoiceManager : MonoBehaviour
         Debug.Log("CONSEQUENCE: Extra enemy / harder next room");
         // Step 20: spawn elite / apply modifier
     }
+
+    // Reflection fallback removed — UI callback or direct UI invocation should be used.
 }

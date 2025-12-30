@@ -39,7 +39,7 @@ public class NonCombatUIController : MonoBehaviour
         // Find or create a Canvas in the scene
         if (cardParent == null)
         {
-            Canvas canvas = FindObjectOfType<Canvas>();
+            var canvas = UnityEngine.Object.FindAnyObjectByType<Canvas>();
             if (canvas == null)
             {
                 Debug.LogWarning("NonCombatUIController: No Canvas found in scene. Please add a Canvas and assign cardParent in the inspector.");
@@ -66,7 +66,7 @@ public class NonCombatUIController : MonoBehaviour
         }
 
         // Ensure EventSystem exists for button input
-        if (FindObjectOfType<EventSystem>() == null)
+        if (UnityEngine.Object.FindAnyObjectByType<EventSystem>() == null)
         {
             Debug.LogWarning("NonCombatUIController: No EventSystem found in scene. Please add one to enable UI interactions.");
         }
@@ -76,7 +76,6 @@ public class NonCombatUIController : MonoBehaviour
     {
         ClearCards();
         this.onChoose = onChoose;
-        Debug.Log($"NonCombatUIController.Show called on instance {GetInstanceID()} with onChoose={(onChoose == null ? "NULL" : onChoose.Method.Name)} target={(onChoose?.Target == null ? "null" : onChoose.Target.GetType().Name)}");
         // set header and portrait if provided
         if (headerText != null)
             headerText.text = title ?? string.Empty;
@@ -97,27 +96,23 @@ public class NonCombatUIController : MonoBehaviour
         gameObject.SetActive(true);
         GameLock.IsLocked = true;
         ChoiceManager.Instance?.PresentChoice(onChoose);
-        Debug.Log("NonCombatUIController: Presented choice via ChoiceManager");
     }
 
     void OnCardSelected(int index)
     {
         GameLock.IsLocked = false;
-        Debug.Log($"NonCombatUIController: OnCardSelected({index}) invoked");
         if (onChoose == null)
         {
-            Debug.LogWarning("NonCombatUIController: onChoose delegate is NULL when selecting option");
+            Debug.LogWarning("NonCombatUIController: onChoose delegate is null when selecting option");
         }
         else
         {
-            Debug.Log($"NonCombatUIController: invoking onChoose target={onChoose.Target?.GetType().Name} method={onChoose.Method.Name}");
             onChoose.Invoke(index);
         }
         ClearCards();
         gameObject.SetActive(false);
         // Inform ChoiceManager that UI handled closing the choice so rooms can progress
         ChoiceManager.Instance?.FinishChoice();
-        Debug.Log("NonCombatUIController: Finished choice and closed UI");
     }
 
     // Allow external callers (eg. ChoiceManager keyboard flow) to programmatically choose an option

@@ -152,10 +152,15 @@ public class Enemy : MonoBehaviour
     }
 
     // Timed aggro escalation
+    Coroutine aggroCoroutine;
+
     public void ForceAggro(float duration)
     {
-        StopAllCoroutines();
-        StartCoroutine(ForceAggroRoutine(duration));
+        // Stop only the aggro coroutine for this enemy (avoid killing other coroutines)
+        if (aggroCoroutine != null)
+            StopCoroutine(aggroCoroutine);
+
+        aggroCoroutine = StartCoroutine(ForceAggroRoutine(duration));
     }
 
     private IEnumerator ForceAggroRoutine(float duration)
@@ -173,7 +178,11 @@ public class Enemy : MonoBehaviour
             yield return null;
         }
 
+        // Revert temporary aggro flags
         isAggressive = false;
         ignoreAssistLogic = false;
+        isAggro = false;
+
+        aggroCoroutine = null;
     }
 }

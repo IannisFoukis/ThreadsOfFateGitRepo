@@ -5,8 +5,8 @@ using System.Collections;
 public class EnemyChase : MonoBehaviour
 {
     public float speed = 2f;
-    EnemyStateController state;
 
+    EnemyStateController state;
     Transform player;
     Rigidbody2D rb;
     bool stunned = false;
@@ -14,26 +14,27 @@ public class EnemyChase : MonoBehaviour
     void Awake()
     {
         state = GetComponent<EnemyStateController>();
-
         rb = GetComponent<Rigidbody2D>();
     }
 
     void Start()
     {
-        player = GameObject.FindGameObjectWithTag("Player").transform;
+        player = GameObject.FindGameObjectWithTag("Player")?.transform;
     }
 
     void FixedUpdate()
     {
-        if (!player || stunned) return;
+        if (player == null || stunned)
+        {
+            rb.linearVelocity = Vector2.zero;
+            return;
+        }
 
-        if (state != null)
-            state.SetState(EnemyState.Chasing);
+        state?.SetState(EnemyState.Chasing);
 
         Vector2 dir = (player.position - transform.position).normalized;
         rb.linearVelocity = dir * speed;
     }
-
 
     public void Stun(float duration)
     {
@@ -47,7 +48,5 @@ public class EnemyChase : MonoBehaviour
         rb.linearVelocity = Vector2.zero;
         yield return new WaitForSeconds(duration);
         stunned = false;
-        //state?.SetState(EnemyState.Hit);
-
     }
 }

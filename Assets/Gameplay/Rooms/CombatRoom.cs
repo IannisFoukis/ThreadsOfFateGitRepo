@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-
 using static Shrine;
 
 public class CombatRoom : RoomController
@@ -27,8 +26,6 @@ public class CombatRoom : RoomController
     bool escalationTriggered;
 
     bool lockdownActive;
-   // [SerializeField] int projectileDamage = 1;
-
 
     protected override void Start()
     {
@@ -36,29 +33,23 @@ public class CombatRoom : RoomController
 
         gsm = FindAnyObjectByType<GameStateManager>();
 
-        
-
         if (gsm == null)
         {
             Debug.LogError("CombatRoom: GameStateManager not found");
             return;
         }
 
-
-        if (shrine != null)
-            shrine.Activate();
-
         ApplyCorruptedRoomRules();
+        // Prepare shrine tier/visuals for room entry but DO NOT start hazards here.
+        // The activator (ActivatorTest) should call shrine.ActivateByActivator() when triggered.
+        if (shrine != null)
+        {
+            shrine.PrepareForRoom();
+        }
 
         SpawnEncounter();
-
-        // 🔴 TEMP PROJECTILE TEST
-        TestProjectile();
-
-        if (shrine != null)
-            shrine.GetComponent<ShrineAttackController>()
-                  ?.StartAttacksForTier(shrine.currentTier);
     }
+
     void ApplyCorruptedRoomRules()
     {
         int corruption = RunCorruptionState.Instance.Level;
@@ -84,7 +75,7 @@ public class CombatRoom : RoomController
 
     void Update()
     {
-        // 1️⃣ Room completion logic (unchanged)
+        // Room completion logic
         if (Enemy.AliveCount <= 0 && !roomCompleted)
         {
             if (lockdownActive && EliteSpawner.Instance != null && EliteSpawner.Instance.EliteAlive)
@@ -102,18 +93,19 @@ public class CombatRoom : RoomController
             Debug.Log($"[RUN] roomsCleared AFTER = {gsm.RunState.roomsCleared}");
 
             roomCompleted = true;
+            // Notify listeners the room has completed
+            GameEvents.RaiseRoomCompleted();
             CompleteRoom();
             return;
         }
 
-        // 2️⃣ Active combat logic
+        // Active combat logic
         if (!roomCompleted)
         {
-
-            // 🔥 THIS goes here — every frame during combat
+            // Check tension spikes during combat
             CheckTensionSpikes();
 
-            // ⏱️ Timed / corruption-based escalation (one-shot)
+            // Timed / corruption-based escalation (one-shot)
             escalationTimer += Time.deltaTime;
 
             if (!escalationTriggered &&
@@ -124,26 +116,6 @@ public class CombatRoom : RoomController
                 escalationTriggered = true;
             }
         }
-    }
-
-    void TestProjectile()
-    {
-        if (ProjectilePool.Instance == null)
-        {
-            Debug.LogError("NO PROJECTILE POOL FOUND");
-            return;
-        }
-
-        var proj = ProjectilePool.Instance.Get();
-        proj.transform.position = transform.position;
-
-        proj.Fire(
-            Vector2.right,
-            10f,
-            2f,
-            1,
-            ProjectileModifiers.Default
-        );
     }
 
     // ============================
@@ -159,7 +131,7 @@ public class CombatRoom : RoomController
                 break;
 
             case EncounterType.Crossfire:
-                Spawn(EnemyRole.Ranged, 2);
+                Spawn(EnemyRole.Defender, 2);
                 Spawn(EnemyRole.Melee, 1);
                 break;
 
@@ -170,13 +142,13 @@ public class CombatRoom : RoomController
 
             case EncounterType.Mixed:
                 Spawn(EnemyRole.Melee, 1);
-                Spawn(EnemyRole.Ranged, 1);
+                Spawn(EnemyRole.Defender, 1);
                 Spawn(EnemyRole.Charger, 1);
                 break;
 
             case EncounterType.Lockdown:
                 Spawn(EnemyRole.Melee, 2);
-                Spawn(EnemyRole.Ranged, 2);
+                Spawn(EnemyRole.Defender, 2);
                 Spawn(EnemyRole.Charger, 1);
                 break;
         }
@@ -199,6 +171,8 @@ public class CombatRoom : RoomController
             );
 
             ConfigureEnemy(enemy, finalRole);
+            // Notify listeners that an enemy was spawned
+            GameEvents.RaiseEnemySpawned(enemy);
             ApplyEnemyScaling(enemy);
             ApplyShrineScaling(enemy);
             ApplyBehaviorEscalation(enemy);
@@ -207,7 +181,6 @@ public class CombatRoom : RoomController
 
             spawnedEnemies.Add(enemy);
             activeEnemies.Add(enemy);
-
         }
     }
 
@@ -217,12 +190,63 @@ public class CombatRoom : RoomController
 
     void ConfigureEnemy(GameObject enemy, EnemyRole role)
     {
-        enemy.GetComponent<EnemyRoleController>().role = role;
+        // ✅ ASSIGN ROLE (THIS WAS MISSING)
+        var roleController = enemy.GetComponent<EnemyRoleController>();
+        if (roleController != null)
+            roleController.role = role;
 
-        enemy.GetComponent<EnemyMelee>().enabled = role == EnemyRole.Melee;
-        enemy.GetComponent<EnemyRanged>().enabled = role == EnemyRole.Ranged;
-        enemy.GetComponent<EnemyCharger>().enabled = role == EnemyRole.Charger;
+        var melee = enemy.GetComponent<EnemyMelee>();
+        var ranged = enemy.GetComponent<EnemyRanged>();
+        var charger = enemy.GetComponent<EnemyCharger>();
+        var chase = enemy.GetComponent<EnemyChase>();
+
+        // Disable all movement scripts first
+        if (melee) melee.enabled = false;
+        if (ranged) ranged.enabled = false;
+        if (charger) charger.enabled = false;
+        if (chase) chase.enabled = false;
+
+        // Ensure Enemy.ApplyRole is applied immediately so other components don't rely on Start ordering
+        var enemyComp = enemy.GetComponent<Enemy>();
+        if (enemyComp != null)
+        {
+            enemyComp.ApplyRole(role);
+        }
+
+        switch (role)
+        {
+            case EnemyRole.Offender:
+            case EnemyRole.Melee:
+                if (melee) melee.enabled = true;
+                break;
+
+            case EnemyRole.Ranged:
+            case EnemyRole.Defender:
+                if (ranged) ranged.enabled = true;
+                break;
+
+            case EnemyRole.Charger:
+            case EnemyRole.Elite:
+                if (charger) charger.enabled = true;
+                break;
+
+            case EnemyRole.Support:
+            case EnemyRole.Flanker:
+                if (chase) chase.enabled = true;
+                break;
+
+            case EnemyRole.Activator:
+                // ✅ Activator MUST MOVE
+                if (chase) chase.enabled = true;
+                // If there's an ActivatorRunner, assign the room's shrine so it moves to the correct target
+                var activatorRunner = enemy.GetComponent<ActivatorRunner>();
+                if (activatorRunner != null && shrine != null)
+                    activatorRunner.SetShrine(shrine);
+                break;
+        }
     }
+
+
 
     EnemyRole GetCorruptedRole(EnemyRole baseRole)
     {
@@ -274,17 +298,17 @@ public class CombatRoom : RoomController
 
     void ApplyShrineScaling(GameObject enemy)
     {
-        Shrine activeShrine = shrine != null ? shrine : FindAnyObjectByType<Shrine>();
-        if (activeShrine == null) return;
+        // BUG FIX: don't search arbitrary shrine in scene; use room's shrine only
+        if (shrine == null) return;
 
         var health = enemy.GetComponent<Health>();
         var damage = enemy.GetComponent<DamageOnContact>();
 
         if (health != null)
-            health.ScaleMaxHealth(activeShrine.GetEnemyHpMultiplier());
+            health.ScaleMaxHealth(shrine.GetEnemyHpMultiplier());
 
         if (damage != null)
-            damage.damageMultiplier *= activeShrine.GetEnemyDamageMultiplier();
+            damage.damageMultiplier *= shrine.GetEnemyDamageMultiplier();
 
         Debug.Log("[SHRINE] Enemy scaled");
     }
@@ -302,7 +326,7 @@ public class CombatRoom : RoomController
             return;
         }
 
-        Shrine activeShrine = shrine != null ? shrine : FindAnyObjectByType<Shrine>();
+        Shrine activeShrine = shrine;
         RunState run = gsm.RunState;
 
         EnemyBehaviorTier tier = EnemyBehaviorTier.Base;
@@ -326,7 +350,10 @@ public class CombatRoom : RoomController
     {
         Debug.Log("[ESCALATION] Mid-fight escalation");
 
-        Shrine activeShrine = shrine != null ? shrine : FindAnyObjectByType<Shrine>();
+        // Notify listeners about mid-fight escalation
+        GameEvents.RaiseMidFightEscalation();
+
+        Shrine activeShrine = shrine;
         ShrineTier shrineTier = activeShrine != null ? activeShrine.currentTier : ShrineTier.Tier1;
         RunState run = gsm.RunState;
 
@@ -336,7 +363,6 @@ public class CombatRoom : RoomController
 
             var behavior = enemy.GetComponent<EnemyBehaviorController>();
             var abilities = enemy.GetComponent<EnemyAbilityController>();
-            var role = enemy.GetComponent<EnemyRoleController>()?.role ?? EnemyRole.Melee;
 
             if (behavior != null)
             {
@@ -349,11 +375,9 @@ public class CombatRoom : RoomController
             if (abilities != null)
             {
                 ApplyEnemyEscalation(enemy, true);
-
             }
         }
     }
-
 
     // ============================
     // JOKER / ELITE
@@ -382,14 +406,13 @@ public class CombatRoom : RoomController
             Debug.Log("[ELITE] Pressure applied");
         }
     }
+
     void CheckTensionSpikes()
     {
         if (gsm == null || gsm.RunState == null)
             return;
 
         RunState run = gsm.RunState;
-
-        //if (run == null) return;
 
         if (run.runTension >= 4 && !tensionSpike4Triggered)
         {
@@ -412,14 +435,13 @@ public class CombatRoom : RoomController
             Enemy.ForceImmediateAggro(6f);
         }
 
-        if (shrine != null)
-            shrine.GetComponent<ShrineAttackController>()
-                  ?.StartAttacksForTier(shrine.currentTier);
+        // BUG FIX: removed per-frame restarting of shrine attacks here
     }
 
     // ============================
     // ABILITIES
     // ============================
+
     void ApplyAbilityEscalation(GameObject enemy)
     {
         var abilities = enemy.GetComponent<EnemyAbilityController>();
@@ -428,7 +450,7 @@ public class CombatRoom : RoomController
         var roleController = enemy.GetComponent<EnemyRoleController>();
         if (roleController == null) return;
 
-        Shrine activeShrine = shrine != null ? shrine : FindAnyObjectByType<Shrine>();
+        Shrine activeShrine = shrine;
         ShrineTier shrineTier = activeShrine != null ? activeShrine.currentTier : ShrineTier.Tier1;
 
         RunState run = gsm.RunState;
@@ -453,7 +475,7 @@ public class CombatRoom : RoomController
             return;
         }
 
-        Shrine activeShrine = shrine != null ? shrine : FindAnyObjectByType<Shrine>();
+        Shrine activeShrine = shrine;
         RunState run = gsm.RunState;
 
         ability.ApplyEscalation(
@@ -463,8 +485,4 @@ public class CombatRoom : RoomController
             midFight
         );
     }
-
-
-
-
 }

@@ -1,12 +1,27 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class Shrine : MonoBehaviour
 {
     public ShrineType type;
     public int corruptionThreshold = 2;
     public ShrineTier currentTier;
-
     [SerializeField] ShrineAttackController attackController;
+    public bool IsActive { get; private set; }
+
+    void Start()
+    {
+        IsActive = false;
+    }
+
+    // Prepare shrine for room entry without starting hazards/attacks.
+    // This updates the shrine tier and visuals so other systems (eg. room scaling)
+    // can query the correct tier before the shrine is actually activated by an activator.
+    public void PrepareForRoom()
+    {
+        // Do not change IsActive; only determine tier and visuals
+        DetermineTier();
+        ApplyTierVisuals();
+    }
 
     public enum ShrineTier
     {
@@ -14,6 +29,7 @@ public class Shrine : MonoBehaviour
         Tier2,
         Tier3
     }
+
     public float GetEnemyHpMultiplier()
     {
         return currentTier switch
@@ -36,28 +52,67 @@ public class Shrine : MonoBehaviour
         };
     }
 
+    // Activator-based activation path – no pure/corrupted effect, just hazards
+    public void ActivateByActivator()
+    {
+        if (IsActive) return;
+
+        IsActive = true;
+
+        // Make sure tier is up to date
+        DetermineTier();
+        ApplyTierVisuals();
+
+        if (attackController == null)
+            attackController = GetComponent<ShrineAttackController>();
+
+        if (attackController != null)
+        {
+            attackController.StartAttacksForTier(currentTier);
+        }
+    }
+
     public void Activate()
     {
+        if (IsActive) return;
+
+        // BUG FIX: this must be true
+        IsActive = true;
 
         int corruption = RunCorruptionState.Instance.CorruptionLevel;
 
         Debug.Log($"Shrine {type} activated at corruption {corruption}");
 
-        // bullet hell start
-        var attack = GetComponent<ShrineAttackController>();
-        if (attack != null)
+        // First determine correct tier and visuals
+        DetermineTier();
+        ApplyTierVisuals();
+
+        // Start bullet hell / hazards
+        if (attackController == null)
+            attackController = GetComponent<ShrineAttackController>();
+
+        if (attackController != null)
         {
             attackController.StartAttacksForTier(currentTier);
         }
-        // bullet hell end
 
-        DetermineTier();
-
+        // Then apply pure / corrupted effect
         if (corruption >= corruptionThreshold)
             ApplyCorruptedEffect();
         else
             ApplyPureEffect();
     }
+
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        var role = other.GetComponent<EnemyRoleController>();
+        if (role != null && role.role == EnemyRole.Activator)
+        {
+            // BUG FIX: use the dedicated activator path
+            ActivateByActivator();
+        }
+    }
+
     void DetermineTier()
     {
         int corruption = FindAnyObjectByType<GameStateManager>().RunData.corruption;
@@ -71,6 +126,7 @@ public class Shrine : MonoBehaviour
 
         Debug.Log($"[SHRINE] {name} activated at {currentTier}");
     }
+
     void ApplyTierVisuals()
     {
         SpriteRenderer sr = GetComponent<SpriteRenderer>();
@@ -144,12 +200,17 @@ public class Shrine : MonoBehaviour
 
         Debug.Log($"[SHRINE] Blood shrine applied {currentTier}");
     }
+
     public void ForceHazards()
     {
-        //ActivateHazards();
+        // Only apply Blood-specific effect if shrine is actually Blood
+        if (type == ShrineType.Blood)
+        {
+            ApplyBloodEffect();
+        }
+
+        ApplyTierVisuals();
+        //ApplyHazards();
         Debug.Log("[SHRINE] Hazards forced by corruption");
     }
-
-
-
 }

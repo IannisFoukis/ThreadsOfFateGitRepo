@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 using static Shrine;
 
 public class EnemyAbilityController : MonoBehaviour
@@ -13,7 +14,7 @@ public class EnemyAbilityController : MonoBehaviour
     [SerializeField] int projectileDamage = 1;
 
     [Header("Defender")]
-    [SerializeField] float shieldDuration = 0.5f;
+    [SerializeField] float shieldDuration = 0.6f;
 
     [Header("Offender")]
     [SerializeField] float dashForce = 6f;
@@ -27,39 +28,52 @@ public class EnemyAbilityController : MonoBehaviour
         roleController ??= GetComponent<EnemyRoleController>();
         health ??= GetComponent<Health>();
         player = FindAnyObjectByType<PlayerController>()?.transform;
+
+        // Subscribe to spawn events so we can initialize when this GameObject is spawned
+        GameEvents.OnEnemySpawned += OnEnemySpawned;
+        // Subscribe to mid-fight escalation so abilities update during fights
+        GameEvents.OnMidFightEscalation += OnMidFightEscalation;
     }
 
-    void Update()
+    void OnDestroy()
     {
-        ExecuteAbility();
+        GameEvents.OnEnemySpawned -= OnEnemySpawned;
+        GameEvents.OnMidFightEscalation -= OnMidFightEscalation;
     }
 
-    // =====================================================
-    // ESCALATION ENTRY POINT (THIS WAS MISSING)
-    // =====================================================
-    public void ApplyEscalation(
-        EnemyRole role,
-        ShrineTier shrineTier,
-        int tension,
-        bool midFight
-    )
+    void OnEnemySpawned(UnityEngine.GameObject enemy)
     {
-        EnemyAbilityTier targetTier = EnemyAbilityTier.Base;
+        if (enemy != gameObject) return;
 
-        if (shrineTier == ShrineTier.Tier3 || tension >= 7)
-            targetTier = EnemyAbilityTier.Elite;
-        else if (shrineTier == ShrineTier.Tier2 || tension >= 4)
-            targetTier = EnemyAbilityTier.Aggressive;
+        // Ensure roleController reference is up to date
+        roleController ??= GetComponent<EnemyRoleController>();
+        health ??= GetComponent<Health>();
+    }
 
-        currentTier = targetTier;
+    void OnMidFightEscalation()
+    {
+        // When the room triggers a mid-fight escalation, update ability tier accordingly
+        if (roleController == null)
+            roleController = GetComponent<EnemyRoleController>();
 
-        Debug.Log($"[ABILITY] {role} → Tier {currentTier} (midFight={midFight})");
+        if (roleController == null) return;
+
+        // Determine current shrine tier (best-effort) and tension
+        Shrine.ShrineTier shrineTier = Shrine.ShrineTier.Tier1;
+        var shrine = FindAnyObjectByType<Shrine>();
+        if (shrine != null) shrineTier = shrine.currentTier;
+
+        int tension = 0;
+        var gsm = FindAnyObjectByType<GameStateManager>();
+        if (gsm != null && gsm.RunState != null) tension = gsm.RunState.runTension;
+
+        ApplyEscalation(roleController.role, shrineTier, tension, midFight: true);
     }
 
     // =====================================================
-    // MAIN DISPATCH
+    // CALLED BY COMBAT ROOM / FSM / TIMERS
     // =====================================================
-    void ExecuteAbility()
+    public void TriggerAbility()
     {
         if (!player || roleController == null) return;
 
@@ -72,81 +86,96 @@ public class EnemyAbilityController : MonoBehaviour
             case EnemyRole.Defender:
                 ExecuteDefender();
                 break;
+
+            case EnemyRole.Support:
+                ExecuteSupport();
+                break;
         }
     }
 
-    // ================= OFFENDER =================
+    // =====================================================
+    // ESCALATION
+    // =====================================================
+    public void ApplyEscalation(
+        EnemyRole role,
+        ShrineTier shrineTier,
+        int tension,
+        bool midFight
+    )
+    {
+        if (shrineTier == ShrineTier.Tier3 || tension >= 7)
+            currentTier = EnemyAbilityTier.Elite;
+        else if (shrineTier == ShrineTier.Tier2 || tension >= 4)
+            currentTier = EnemyAbilityTier.Aggressive;
+        else
+            currentTier = EnemyAbilityTier.Base;
+
+        Debug.Log($"[ABILITY] {role} → {currentTier}");
+    }
+
+    // =====================================================
+    // OFFENDER
+    // =====================================================
     void ExecuteOffender()
     {
         Vector2 dir = GetFireDirection();
 
-        // Tier 1
         Fire(dir);
 
-        // Tier 2
         if (currentTier >= EnemyAbilityTier.Aggressive)
         {
             Fire(Rotate(dir, 10f));
             Fire(Rotate(dir, -10f));
         }
 
-        // Tier 3
         if (currentTier >= EnemyAbilityTier.Elite)
         {
-            DashThroughPlayer();
+            DashBurst();
         }
     }
 
-    void DashThroughPlayer()
+    void DashBurst()
     {
         Vector2 dir = (player.position - transform.position).normalized;
-        transform.position += (Vector3)(dir * dashForce * Time.deltaTime);
+        transform.position += (Vector3)(dir * dashForce);
     }
 
-    // ================= DEFENDER =================
+    // =====================================================
+    // DEFENDER
+    // =====================================================
     void ExecuteDefender()
     {
-        switch (currentTier)
-        {
-            case EnemyAbilityTier.Base:
-                Fire(GetFireDirection());
-                break;
+        Fire(GetFireDirection());
 
-            case EnemyAbilityTier.Aggressive:
-                Fire(GetFireDirection());
-                ShieldAlly();
-                break;
+        if (currentTier >= EnemyAbilityTier.Aggressive)
+            ShieldAlly();
 
-            case EnemyAbilityTier.Elite:
-                ShieldAlly();
-                RadialBurst();
-                break;
-        }
+        if (currentTier >= EnemyAbilityTier.Elite)
+            RadialBurst();
     }
 
-    void ShieldAlly()
+    // =====================================================
+    // SUPPORT
+    // =====================================================
+    void ExecuteSupport()
     {
         var ally = FindClosestAlly();
         if (!ally) return;
 
-        var allyHealth = ally.GetComponent<Health>();
-        if (allyHealth)
-            StartCoroutine(TemporaryInvulnerability(allyHealth, shieldDuration));
+        BuffEnemy(ally, currentTier == EnemyAbilityTier.Elite);
     }
 
-    void RadialBurst()
-    {
-        for (int i = 0; i < 8; i++)
-        {
-            Vector2 dir = Quaternion.Euler(0, 0, i * 45f) * Vector2.right;
-            Fire(dir);
-        }
-    }
-
-    // ================= HELPERS =================
+    // =====================================================
+    // HELPERS
+    // =====================================================
     void Fire(Vector2 dir)
     {
-        if (!ProjectilePool.Instance) return;
+        // Runtime assert to help catch missing ProjectilePool in scenes
+        if (ProjectilePool.Instance == null)
+        {
+            Debug.LogError("[ABILITY] ProjectilePool.Instance is null — ensure a ProjectilePool exists in the scene");
+            return;
+        }
 
         var p = ProjectilePool.Instance.Get();
         if (!p) return;
@@ -188,7 +217,31 @@ public class EnemyAbilityController : MonoBehaviour
         return result;
     }
 
-    System.Collections.IEnumerator TemporaryInvulnerability(Health h, float time)
+    void BuffEnemy(GameObject target, bool elite)
+    {
+        var ability = target.GetComponent<EnemyAbilityController>();
+        if (!ability) return;
+
+        ability.projectileSpeed *= elite ? 1.5f : 1.2f;
+    }
+
+    void ShieldAlly()
+    {
+        var ally = FindClosestAlly();
+        if (!ally) return;
+
+        var h = ally.GetComponent<Health>();
+        if (h)
+            StartCoroutine(TemporaryInvulnerability(h, shieldDuration));
+    }
+
+    void RadialBurst()
+    {
+        for (int i = 0; i < 8; i++)
+            Fire(Quaternion.Euler(0, 0, i * 45f) * Vector2.right);
+    }
+
+    IEnumerator TemporaryInvulnerability(Health h, float time)
     {
         h.SetInvulnerable(true);
         yield return new WaitForSeconds(time);

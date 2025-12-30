@@ -17,15 +17,22 @@ public class EnemyMelee : MonoBehaviour
 
     void Start()
     {
-        player = GameObject.FindGameObjectWithTag("Player").transform;
+        player = GameObject.FindGameObjectWithTag("Player")?.transform;
     }
 
     void FixedUpdate()
     {
-        if (GameLock.IsLocked) return;
-
-        if (!player || state.CurrentState == EnemyState.Hit || state.CurrentState == EnemyState.Dead)
+        if (GameLock.IsLocked || player == null)
+        {
+            rb.linearVelocity = Vector2.zero;
             return;
+        }
+
+        if (state.CurrentState == EnemyState.Hit || state.CurrentState == EnemyState.Dead)
+        {
+            rb.linearVelocity = Vector2.zero;
+            return;
+        }
 
         state.SetState(EnemyState.Chasing);
 

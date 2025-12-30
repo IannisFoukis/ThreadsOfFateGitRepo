@@ -12,9 +12,13 @@ public class EnemyRanged : MonoBehaviour
 
     [Header("Ranged Stats")]
     [SerializeField] float fireCooldown = 1.5f;
-   // [SerializeField] float projectileSpeed = 6f;
 
     float fireTimer;
+
+    [Header("Projectile")]
+    [SerializeField] float projectileSpeed = 5f;
+    [SerializeField] float projectileLifetime = 2f;
+    [SerializeField] int projectileDamage = 1;
 
     void Awake()
     {
@@ -24,20 +28,29 @@ public class EnemyRanged : MonoBehaviour
 
     void Start()
     {
-        player = GameObject.FindGameObjectWithTag("Player").transform;
+        player = GameObject.FindGameObjectWithTag("Player")?.transform;
     }
 
     void FixedUpdate()
     {
-        if (GameLock.IsLocked) return;
+        if (GameLock.IsLocked)
+        {
+            rb.linearVelocity = Vector2.zero;
+            return;
+        }
+
         fireTimer -= Time.deltaTime;
         if (fireTimer <= 0f)
         {
             Shoot();
             fireTimer = fireCooldown;
         }
-        if (!player || state.CurrentState == EnemyState.Hit || state.CurrentState == EnemyState.Dead)
+
+        if (player == null || state.CurrentState == EnemyState.Hit || state.CurrentState == EnemyState.Dead)
+        {
+            rb.linearVelocity = Vector2.zero;
             return;
+        }
 
         float dist = Vector2.Distance(transform.position, player.position);
 
@@ -54,11 +67,25 @@ public class EnemyRanged : MonoBehaviour
 
     public void MultiplyFireRate(float multiplier)
     {
-        fireCooldown /= multiplier; // higher multiplier = faster firing
+        fireCooldown /= multiplier;
     }
 
     void Shoot()
     {
-        // existing shooting logic
+        if (ProjectilePool.Instance == null)
+        {
+            Debug.LogError("[RANGED] ProjectilePool.Instance is null — ensure a ProjectilePool exists in the scene");
+            return;
+        }
+
+        if (player == null) return;
+
+        var p = ProjectilePool.Instance.Get();
+        if (p == null) return;
+
+        Vector2 dir = (player.position - transform.position).normalized;
+
+        p.transform.position = transform.position;
+        p.Fire(dir, projectileSpeed, projectileLifetime, projectileDamage, ProjectileModifiers.Default);
     }
 }

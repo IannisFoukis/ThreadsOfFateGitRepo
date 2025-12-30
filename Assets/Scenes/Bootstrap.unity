@@ -163,6 +163,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 559918c7cd2032b429403ae78ee3d511, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  biomeConfig: {fileID: 11400000, guid: 930e68551f217624d850fdbee0472a50, type: 2}
 --- !u!1 &122534266
 GameObject:
   m_ObjectHideFlags: 0
@@ -296,7 +297,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
+  m_Type: 3
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -717,7 +718,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 60, y: -2}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &606282074
@@ -740,7 +741,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'dsash
+  m_text: 'Dash
 
 '
   m_isRightToLeft: 0
@@ -1439,7 +1440,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f5d08512b169a341ac13903b0056fc2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gsm: {fileID: 0}
+  gsm: {fileID: 1478279903}
 --- !u!114 &1478279904
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1764,7 +1765,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -0.0681, y: 0.8174, z: 0}
-  m_LocalScale: {x: 114.746956, y: 64.49959, z: 180.3}
+  m_LocalScale: {x: 15.351995, y: 8.6294, z: 24.122337}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}

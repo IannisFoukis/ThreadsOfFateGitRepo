@@ -22,8 +22,13 @@ public enum RoomRole
 public class RunDirector : MonoBehaviour
 {
     private GameStateManager gsm;
-
     private List<RoomRole> demoRun;
+
+    [Header("Data")]
+    [SerializeField] BiomeConfig biomeConfig;
+
+    // internal convenience list built from biomeConfig or fallback demoRun
+    private List<BiomeConfig.RoomEntry> biomeEntries;
     private void Awake()
     {
 
@@ -53,7 +58,9 @@ public class RunDirector : MonoBehaviour
     {
         if (gsm == null) return;
         gsm.StartNewRun();
-        
+        // Notify listeners a run started
+        GameEvents.RaiseRunStart();
+
         EnterNextRoom();
     }
 
@@ -67,19 +74,42 @@ public class RunDirector : MonoBehaviour
 
         RunState run = gsm.RunState;
 
+        // Determine next role (from biome entries if present, otherwise demoRun)
+        RoomRole chosenRole;
+
+        if (biomeEntries != null)
+        {
+            if (run.currentRoomIndex >= biomeEntries.Count)
+            {
+                gsm.EndRun();
+                return;
+            }
+
+            var entry = biomeEntries[run.currentRoomIndex];
+            chosenRole = entry.role;
+            Debug.Log($"Loading biome room {run.currentRoomIndex}: {chosenRole}");
+            ApplyTension(chosenRole);
+            run.currentRoomIndex++;
+            // Notify listeners a room is starting
+            GameEvents.RaiseRoomStart();
+            SceneManager.LoadScene(GetSceneName(chosenRole));
+            return;
+        }
+
         if (run.currentRoomIndex >= demoRun.Count)
         {
             gsm.EndRun();
             return;
         }
 
-        RoomRole role = demoRun[run.currentRoomIndex];
-        Debug.Log($"Loading room {run.currentRoomIndex}: {role}");
+        chosenRole = demoRun[run.currentRoomIndex];
+        Debug.Log($"Loading room {run.currentRoomIndex}: {chosenRole}");
 
-        ApplyTension(role);
+        ApplyTension(chosenRole);
         run.currentRoomIndex++;
-
-        SceneManager.LoadScene(GetSceneName(role));
+        // Notify listeners a room is starting
+        GameEvents.RaiseRoomStart();
+        SceneManager.LoadScene(GetSceneName(chosenRole));
     }
 
     string GetSceneName(RoomRole role) //Helper

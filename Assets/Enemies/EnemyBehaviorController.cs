@@ -7,16 +7,40 @@ public class EnemyBehaviorController : MonoBehaviour
     EnemyChase chase;
     EnemyRanged ranged;
     EnemyCharger charger;
+    EnemyMelee melee;
 
     public float corruptionMoveSpeedBonus = 1f;
     public float corruptionAttackSpeedBonus = 1f;
-
 
     void Awake()
     {
         chase = GetComponent<EnemyChase>();
         ranged = GetComponent<EnemyRanged>();
         charger = GetComponent<EnemyCharger>();
+        melee = GetComponent<EnemyMelee>();
+        
+        // Subscribe to game events to handle spawn and corruption
+        GameEvents.OnEnemySpawned += OnEnemySpawned;
+        GameEvents.OnCorruptionChanged += OnCorruptionChanged;
+    }
+
+    void OnDestroy()
+    {
+        GameEvents.OnEnemySpawned -= OnEnemySpawned;
+        GameEvents.OnCorruptionChanged -= OnCorruptionChanged;
+    }
+
+    void OnEnemySpawned(UnityEngine.GameObject enemy)
+    {
+        if (enemy != gameObject) return;
+
+        // Initialize behavior tier according to current tier (idempotent)
+        ApplyTier(currentTier);
+    }
+
+    void OnCorruptionChanged(int level)
+    {
+        ApplyCorruption(level);
     }
 
     public void ApplyTier(EnemyBehaviorTier tier)
@@ -26,41 +50,59 @@ public class EnemyBehaviorController : MonoBehaviour
         switch (tier)
         {
             case EnemyBehaviorTier.Base:
-                EnableBase();
+                ApplyBaseStats();
                 break;
 
             case EnemyBehaviorTier.Aggressive:
-                EnableAggressive();
+                ApplyAggressiveStats();
                 break;
 
             case EnemyBehaviorTier.Elite:
-                EnableElite();
+                ApplyEliteStats();
                 break;
-
         }
-        
-
     }
 
-    void EnableBase()
+    // -----------------------------
+    //  BASE TIER
+    // -----------------------------
+    void ApplyBaseStats()
     {
-        if (charger) charger.enabled = false;
+        if (chase) chase.speed = 2f;
+        if (melee) melee.speed = 2f;
+        if (ranged) ranged.speed = 1.5f;
+        if (charger) charger.chargeForce = 8f;
     }
 
-    void EnableAggressive()
+    // -----------------------------
+    //  AGGRESSIVE TIER
+    // -----------------------------
+    void ApplyAggressiveStats()
     {
-        if (charger) charger.enabled = true;
+        if (chase) chase.speed = 3f;
+        if (melee) melee.speed = 3f;
+        if (ranged) ranged.speed = 2f;
+        if (charger) charger.chargeForce = 10f;
     }
 
-    void EnableElite()
+    // -----------------------------
+    //  ELITE TIER
+    // -----------------------------
+    void ApplyEliteStats()
     {
-        if (charger) charger.enabled = true;
+        if (chase) chase.speed = 4f;
+        if (melee) melee.speed = 4f;
+        if (ranged) ranged.speed = 2.5f;
+        if (charger) charger.chargeForce = 12f;
 
+        // Elite ranged enemies fire faster
         if (ranged != null)
-        {
             ranged.MultiplyFireRate(1.25f);
-        }
     }
+
+    // -----------------------------
+    //  CORRUPTION EFFECTS
+    // -----------------------------
     public void ApplyCorruption(int corruptionLevel)
     {
         if (corruptionLevel <= 0) return;
@@ -79,5 +121,4 @@ public class EnemyBehaviorController : MonoBehaviour
 
         Debug.Log($"[CORRUPTION] Applied lvl={corruptionLevel}");
     }
-
 }

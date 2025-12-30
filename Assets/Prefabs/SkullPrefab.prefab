@@ -9,10 +9,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5050089178338342325}
-  - component: {fileID: 6081973856678788887}
   - component: {fileID: 6257851265431115489}
   - component: {fileID: -3912235040778403588}
   - component: {fileID: 1674467573065016577}
+  - component: {fileID: 6081973856678788887}
   m_Layer: 0
   m_Name: SkullPrefab
   m_TagString: Untagged
@@ -35,18 +35,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6081973856678788887
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3311245298577714497}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 16a8c1bcd4598a94c8273813d4693643, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!212 &6257851265431115489
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -165,3 +153,15 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
   m_Radius: 0.099999994
+--- !u!114 &6081973856678788887
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3311245298577714497}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16a8c1bcd4598a94c8273813d4693643, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

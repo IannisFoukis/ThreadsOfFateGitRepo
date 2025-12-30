@@ -1,103 +1,150 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using static Shrine;
 
 public class ShrineAttackController : MonoBehaviour
 {
-    [Header("Combat Bounds")]
-    [SerializeField] Collider2D combatBounds;
-
-    [Header("Projectile Stats")]
-    [SerializeField] float projectileSpeed = 6f;
-    [SerializeField] float projectileLifetime = 3f;
-    [SerializeField] int projectileDamage = 1;
-
-    [Header("Skull Storm")]
-    [SerializeField] SkullProjectile skullPrefab;
-    [SerializeField] int skullTier1 = 40;
-    [SerializeField] int skullTier2 = 70;
-    [SerializeField] int skullTier3 = 120;
-    [SerializeField] float armDelay = 1.5f;
-    [SerializeField] float armInterval = 0.5f;
-    [SerializeField] int armedPerWave = 20;
-    [SerializeField] int skullDamage = 1;
-
+    [Header("Refs")]
     [SerializeField] Shrine shrine;
 
-    private RunDirector runDirector;
+    [Header("Projectile")]
+    [SerializeField] float projectileSpeed = 6f;
+    [SerializeField] float projectileLifetime = 1.5f;
+    [SerializeField] int projectileDamage = 1;
+    [Header("Config")]
+    [SerializeField] ShrineProjectileConfig projectileConfig;
+    // currently active tier config (set when attacks start)
+    ShrineProjectileConfig.TierConfig currentTierConfig;
 
-    [SerializeField] GameStateManager gsm;
-   
-    Coroutine attackRoutine;
-    Coroutine skullRoutine;
-    float spiralAngle;
+    [Header("Attack pacing")]
+    [SerializeField] float tier1AttackInterval = 0.35f;
+    [SerializeField] float tier2AttackInterval = 0.15f;
+    [SerializeField] float tier3AttackInterval = 0.10f;
+    [SerializeField] float tier3SkullStormInterval = 0.06f;
 
-    public enum ShrinePattern
-    {
-        Ring,
-        Spiral,
-        RandomBurst,
-        Wall
-    }
-    public enum ShrineProjectilePattern
-    {
-        Ring,
-        Spiral,
-        Wall,
-        RandomRain
-    }
+    [Header("Activator pulses")]
+    [SerializeField] int pulseCount = 6;
+    [SerializeField] float pulseSpeedMultiplier = 1.2f;
+
+    [Header("State")]
+    public ShrineTier currentTier;
+
+
+    Coroutine activeRoutine;
+    bool pendingEscalation;
+
+    GameStateManager gsm;
 
     void Awake()
     {
+        if (shrine == null) shrine = GetComponent<Shrine>();
         gsm = FindAnyObjectByType<GameStateManager>();
-        runDirector = FindAnyObjectByType<RunDirector>();
+        if (projectileConfig == null)
+        {
+            projectileConfig = Resources.Load<ShrineProjectileConfig>("ShrineProjectileConfig");
+            if (projectileConfig == null)
+                Debug.Log("ShrineAttackController: No ShrineProjectileConfig found in Resources (optional).");
+        }
     }
-
-    /* ===================== ENTRY ===================== */
 
     public void StartAttacksForTier(ShrineTier tier)
     {
-        StopAllAttacks();
+        // Keep local state in sync
+        currentTier = tier;
 
-        attackRoutine = tier switch
+        // Cache tier config for runtime use
+        currentTierConfig = projectileConfig != null && shrine != null
+            ? projectileConfig.Get(shrine.type, tier)
+            : null;
+
+        if (activeRoutine != null)
+            StopCoroutine(activeRoutine);
+
+        switch (tier)
         {
-            ShrineTier.Tier1 => StartCoroutine(RingRoutine()),
-            ShrineTier.Tier2 => StartCoroutine(SpiralRoutine()),
-            ShrineTier.Tier3 => StartCoroutine(ChaosRoutine()),
-            _ => null
-        };
+            case ShrineTier.Tier1:
+                activeRoutine = StartCoroutine(RingRoutine());
+                break;
 
-        if (tier == ShrineTier.Tier3)
-            skullRoutine = StartCoroutine(SkullStormRoutine(GetSkullCount(tier)));
+            case ShrineTier.Tier2:
+                activeRoutine = StartCoroutine(SpiralRoutine());
+                break;
+
+            case ShrineTier.Tier3:
+                activeRoutine = StartCoroutine(ChaosRoutine());
+                break;
+        }
     }
 
-    public void StopAllAttacks()
+    // ==========================
+    // ACTIVATOR HOOKS (public API)
+    // ==========================
+
+    public void TriggerPulse()
     {
-        if (attackRoutine != null) StopCoroutine(attackRoutine);
-        if (skullRoutine != null) StopCoroutine(skullRoutine);
-        attackRoutine = null;
-        skullRoutine = null;
+        // Called by Activator enemy on contact with shrine.
+        FireRing(pulseCount, pulseSpeedMultiplier);
     }
 
-    /* ===================== PATTERNS ===================== */
+    public void RequestEscalation()
+    {
+        // Next tick the running attack loop will restart for the current tier.
+        pendingEscalation = true;
+    }
+
+    public void StartPatternPhase()
+    {
+        // Convenience: force a restart using the current tier.
+        RequestEscalation();
+    }
+
+    // ==========================
+    // PATTERNS
+    // ==========================
 
     IEnumerator RingRoutine()
     {
         while (true)
         {
-            FireRing(12 + gsm.RunState.runTension);
-            yield return new WaitForSeconds(GetFireDelay());
+            if (pendingEscalation)
+            {
+                pendingEscalation = false;
+                StartAttacksForTier(shrine.currentTier);
+                yield break;
+            }
+
+            int count = 10;
+            float speedMult = 1f;
+            float interval = currentTierConfig != null ? currentTierConfig.attackInterval : tier1AttackInterval;
+
+            FireRing(count, speedMult);
+            yield return new WaitForSeconds(interval);
         }
     }
 
     IEnumerator SpiralRoutine()
     {
+        float angle = 0f;
+
         while (true)
         {
-            spiralAngle += 14f;
-            Fire(DirFromAngle(spiralAngle));
-            yield return new WaitForSeconds(0.05f);
+            if (pendingEscalation)
+            {
+                pendingEscalation = false;
+                StartAttacksForTier(shrine.currentTier);
+                yield break;
+            }
+
+            // spiral “wall”
+            for (int i = 0; i < 3; i++)
+            {
+                Vector2 dir = DirFromAngle(angle);
+                FireProjectile(dir, 1f);
+                angle += 25f;
+            }
+
+            float interval = currentTierConfig != null ? currentTierConfig.attackInterval : tier2AttackInterval;
+            yield return new WaitForSeconds(interval);
         }
     }
 
@@ -105,219 +152,88 @@ public class ShrineAttackController : MonoBehaviour
     {
         while (true)
         {
-            FireRing(24);
-            yield return new WaitForSeconds(0.4f);
-            FireRandomBurst();
-            yield return new WaitForSeconds(0.3f);
+            if (pendingEscalation)
+            {
+                pendingEscalation = false;
+                StartAttacksForTier(shrine.currentTier);
+                yield break;
+            }
+
+            // phase A: rings
+            for (int i = 0; i < 3; i++)
+            {
+                FireRing(12, 1f);
+                float interval = currentTierConfig != null ? currentTierConfig.attackInterval : tier3AttackInterval;
+                yield return new WaitForSeconds(interval);
+            }
+
+            yield return new WaitForSeconds(0.5f);
+
+            // phase B: skull storm burst cadence
+            for (int i = 0; i < 25; i++)
+            {
+                FireRing(6, 1.1f);
+                float skullInterval = (currentTierConfig != null) ? Mathf.Max(0.02f, currentTierConfig.attackInterval * 0.6f) : tier3SkullStormInterval;
+                yield return new WaitForSeconds(skullInterval);
+            }
+
+            yield return new WaitForSeconds(0.5f);
         }
     }
 
-    /* ===================== FIRING ===================== */
-    void FireProjectile(Vector2 dir, Vector3? overridePos = null)
+    // ==========================
+    // FIRING HELPERS
+    // ==========================
+
+    void FireRing(int count, float speedMult = 1f)
     {
+        float step = 360f / count;
+        for (int i = 0; i < count; i++)
+        {
+            Vector2 dir = DirFromAngle(i * step);
+            FireProjectile(dir, speedMult);
+        }
+    }
+
+    void FireProjectile(Vector2 dir, float speedMult = 1f, Vector3? overridePos = null)
+    {
+        // Choose tier config if present
+        var cfg = currentTierConfig;
+
+        float useSpeed = cfg != null ? cfg.baseSpeed * speedMult : projectileSpeed * speedMult;
+        float useLifetime = cfg != null ? cfg.lifetime : projectileLifetime;
+        int useDamage = cfg != null ? cfg.damage : projectileDamage;
+
+        var mods = ProjectileModifierFactory.ForShrineTier(
+            shrine != null ? shrine.currentTier : currentTier,
+            (gsm != null && gsm.RunState != null) ? gsm.RunState.runTension : 0
+        );
+
+        // If tier config provides a prefab, try to get a pooled instance for that prefab
+        if (cfg != null && cfg.projectilePrefab != null && ProjectilePool.Instance != null)
+        {
+            var pooledProj = ProjectilePool.Instance.Get(cfg.projectilePrefab);
+            if (pooledProj != null)
+            {
+                pooledProj.transform.position = overridePos ?? transform.position;
+                pooledProj.Fire(dir, useSpeed, useLifetime, useDamage, mods);
+                return;
+            }
+        }
+
+        // fallback to default pool
         if (ProjectilePool.Instance == null) return;
 
         var p = ProjectilePool.Instance.Get();
         if (p == null) return;
 
-        p.transform.position =
-            overridePos ?? transform.position;
-
-        var mods = ProjectileModifierFactory.ForShrineTier(
-    shrine.currentTier,
-    gsm.RunState.runTension
-);
-
-
-
-        p.Fire(
-            dir.normalized,
-            projectileSpeed,
-            projectileLifetime,
-            projectileDamage,
-            mods
-        );
+        p.transform.position = overridePos ?? transform.position;
+        p.Fire(dir, useSpeed, useLifetime, useDamage, mods);
     }
 
-    void FireRing(int count)
+    Vector2 DirFromAngle(float degrees)
     {
-        float step = 360f / count;
-
-        for (int i = 0; i < count; i++)
-        {
-            float angle = step * i;
-            Vector2 dir = new Vector2(
-                Mathf.Cos(angle * Mathf.Deg2Rad),
-                Mathf.Sin(angle * Mathf.Deg2Rad)
-            );
-
-            FireProjectile(dir);
-        }
-    }
-
-    void FireSpiral(int count)
-    {
-        for (int i = 0; i < count; i++)
-        {
-            spiralAngle += 15f;
-
-            Vector2 dir = new Vector2(
-                Mathf.Cos(spiralAngle * Mathf.Deg2Rad),
-                Mathf.Sin(spiralAngle * Mathf.Deg2Rad)
-            );
-
-            FireProjectile(dir);
-        }
-    }
-    void FireWall(int count)
-    {
-        float width = 6f;
-        float step = width / (count - 1);
-
-        for (int i = 0; i < count; i++)
-        {
-            Vector3 spawnPos =
-                transform.position +
-                Vector3.right * (-width / 2 + step * i);
-
-            FireProjectile(Vector2.down, spawnPos);
-        }
-    }
-
-    void FireRandomBurst()
-    {
-        for (int i = 0; i < 6; i++)
-            Fire(Random.insideUnitCircle.normalized);
-    }
-
-    void Fire(Vector2 dir)
-    {
-        if (ProjectilePool.Instance == null || shrine == null || gsm == null)
-            return;
-
-        var projectile = ProjectilePool.Instance.Get();
-        if (!projectile) return;
-
-        projectile.transform.position = transform.position;
-
-        var mods = ProjectileModifierFactory.ForShrineTier(
-            shrine.currentTier,
-            gsm.RunState.runTension
-        );
-
-        projectile.Fire(
-            dir,
-            projectileSpeed,
-            projectileLifetime,
-            projectileDamage,
-            mods
-        );
-    }
-    public void FirePattern()
-    {
-        switch (GetPattern())
-        {
-            case ShrineProjectilePattern.Ring:
-                FireRing(12);
-                break;
-
-            case ShrineProjectilePattern.Spiral:
-                FireSpiral(10);
-                break;
-
-            case ShrineProjectilePattern.Wall:
-                FireWall(8);
-                break;
-        }
-    }
-
-    /* ===================== SKULL STORM ===================== */
-
-    IEnumerator SkullStormRoutine(int total)
-    {
-        var skulls = new List<SkullProjectile>();
-
-        for (int i = 0; i < total; i++)
-        {
-            Vector2 pos = GetRandomPosition();
-            var skull = Instantiate(skullPrefab, pos, Quaternion.identity);
-            skull.Drop(pos, armDelay, skullDamage);
-            skulls.Add(skull);
-        }
-
-        yield return new WaitForSeconds(1f);
-
-        while (true)
-        {
-            ArmRandomSkulls(skulls);
-            yield return new WaitForSeconds(armInterval);
-        }
-    }
-
-    void ArmRandomSkulls(List<SkullProjectile> skulls)
-    {
-        skulls.RemoveAll(s => s == null);
-
-        for (int i = 0; i < armedPerWave && skulls.Count > 0; i++)
-        {
-            int idx = Random.Range(0, skulls.Count);
-            skulls[idx].Arm();
-            skulls.RemoveAt(idx);
-        }
-    }
-
-    /* ===================== HELPERS ===================== */
-
-    float GetFireDelay()
-    {
-        float baseDelay = shrine.currentTier switch
-        {
-            ShrineTier.Tier1 => 1.2f,
-            ShrineTier.Tier2 => 0.8f,
-            ShrineTier.Tier3 => 0.5f,
-            _ => 1f
-        };
-
-        return Mathf.Max(0.2f, baseDelay - gsm.RunState.runTension * 0.05f);
-    }
-
-    int GetSkullCount(ShrineTier tier) => tier switch
-    {
-        ShrineTier.Tier1 => skullTier1,
-        ShrineTier.Tier2 => skullTier2,
-        ShrineTier.Tier3 => skullTier3,
-        _ => skullTier1
-    };
-
-    Vector2 DirFromAngle(float angle)
-    {
-        float rad = angle * Mathf.Deg2Rad;
+        float rad = degrees * Mathf.Deg2Rad;
         return new Vector2(Mathf.Cos(rad), Mathf.Sin(rad)).normalized;
     }
-
-    Vector2 GetRandomPosition()
-    {
-        if (!combatBounds)
-            return (Vector2)transform.position + Random.insideUnitCircle * 4f;
-
-        Bounds b = combatBounds.bounds;
-        float pad = 0.5f;
-
-        return new Vector2(
-            Random.Range(b.min.x + pad, b.max.x - pad),
-            Random.Range(b.min.y + pad, b.max.y - pad)
-        );
-    }
-
-    ShrineProjectilePattern GetPattern()
-    {
-        return shrine.currentTier switch
-        {
-            ShrineTier.Tier1 => ShrineProjectilePattern.Ring,
-            ShrineTier.Tier2 => ShrineProjectilePattern.Spiral,
-            ShrineTier.Tier3 => ShrineProjectilePattern.Wall,
-            _ => ShrineProjectilePattern.Ring
-        };
-    }
-
 }

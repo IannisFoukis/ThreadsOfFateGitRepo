@@ -12,6 +12,7 @@ public static class GameEvents
 
     // Enemy lifecycle
     public static event Action<UnityEngine.GameObject> OnEnemySpawned;
+    public static event Action<UnityEngine.GameObject> OnEnemyRemoved;
 
     // Mid-fight escalation
     public static event Action OnMidFightEscalation;
@@ -28,6 +29,7 @@ public static class GameEvents
     public static void RaiseRunStart() => OnRunStart?.Invoke();
     public static void RaiseEnemySpawned(UnityEngine.GameObject enemy) => OnEnemySpawned?.Invoke(enemy);
     public static void RaiseMidFightEscalation() => OnMidFightEscalation?.Invoke();
+    public static void RaiseEnemyRemoved(UnityEngine.GameObject enemy) => OnEnemyRemoved?.Invoke(enemy);
     public static void RaiseShrineActivated(UnityEngine.GameObject shrine) => OnShrineActivated?.Invoke(shrine);
     public static void RaiseCorruptionChanged(int level) => OnCorruptionChanged?.Invoke(level);
 }

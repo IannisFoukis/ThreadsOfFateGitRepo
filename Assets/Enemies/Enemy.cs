@@ -133,6 +133,7 @@ public class Enemy : MonoBehaviour
     private void OnDisable()
     {
         AliveCount--;
+        GameEvents.RaiseEnemyRemoved(gameObject);
     }
 
     // GLOBAL forced aggro (used by tension spikes / elites)

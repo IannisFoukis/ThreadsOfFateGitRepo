@@ -15,12 +15,12 @@ MonoBehaviour:
   entries:
   - role: 3
     enableMelee: 0
-    enableRanged: 1
+    enableRanged: 0
     enableCharger: 0
-    enableChase: 1
-    enableAbility: 1
+    enableChase: 0
+    enableAbility: 0
     enableActivator: 1
-    defaultBehaviorTier: 0
+    defaultBehaviorTier: 1
     damageMultiplier: 1
   - role: 1
     enableMelee: 0

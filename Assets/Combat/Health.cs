@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Health : MonoBehaviour
 {
@@ -66,6 +67,25 @@ public class Health : MonoBehaviour
 
     void Die()
     {
+        // If this is the player, end the run and restart at entry
+        if (gameObject.CompareTag("Player") || TryGetComponent<PlayerController>(out _))
+        {
+            var gsm = FindAnyObjectByType<GameStateManager>();
+            if (gsm != null)
+            {
+                gsm.EndRun(RunEndReason.PlayerDied);
+            }
+            else
+            {
+                Debug.LogWarning("Health: GameStateManager not found when player died — loading Entry scene directly.");
+                UnityEngine.SceneManagement.SceneManager.LoadScene("Room_Entry");
+            }
+
+            // Do not destroy or deactivate the persistent player here — just trigger run end
+            // GameStateManager will reset/position/reactivate the player when the Entry scene loads.
+            return;
+        }
+
         // Joker kill path
         if (TryGetComponent<Joker>(out _))
         {
@@ -73,8 +93,7 @@ public class Health : MonoBehaviour
                 JokerManager.Instance.OnJokerKilled();
         }
 
-        if (EliteSpawner.Instance != null &&
-    EliteSpawner.Instance.EliteAlive)
+        if (EliteSpawner.Instance != null && EliteSpawner.Instance.EliteAlive)
         {
             EliteSpawner.Instance.OnEliteKilled();
 
@@ -86,7 +105,6 @@ public class Health : MonoBehaviour
 
             Debug.Log("[ELITE] Elite killed → FORCED AGGRO");
         }
-
 
         gameObject.SetActive(false);
         Destroy(gameObject);

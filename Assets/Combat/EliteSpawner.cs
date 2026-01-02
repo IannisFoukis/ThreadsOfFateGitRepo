@@ -3,8 +3,10 @@ using UnityEngine;
 public class EliteSpawner : MonoBehaviour
 {
     public static EliteSpawner Instance;
+
     public GameObject eliteEnemyPrefab;
     public bool EliteAlive { get; private set; }
+
     void Awake()
     {
         Instance = this;
@@ -12,9 +14,17 @@ public class EliteSpawner : MonoBehaviour
 
     public void SpawnElite()
     {
+        if (EliteAlive) return;
+
         EliteAlive = true;
-        Vector3 pos = Vector3.zero;
-        GameObject elite = Instantiate(eliteEnemyPrefab, pos, Quaternion.identity);
+
+        GameObject elite = Instantiate(
+            eliteEnemyPrefab,
+            Vector3.zero,
+            Quaternion.identity
+        );
+
+        elite.tag = "Elite";
 
         if (elite.TryGetComponent<EnemyStatsComponent>(out var stats))
         {
@@ -22,11 +32,15 @@ public class EliteSpawner : MonoBehaviour
             stats.damage += 3;
         }
 
-        Debug.Log("ELITE SPAWNED");
-    }
-    public void OnEliteKilled()
-    {
-        EliteAlive = false;
+        GameEvents.RaiseEnemySpawned(elite);
+        Debug.Log("[ELITE] Spawned");
     }
 
+    public void OnEliteKilled()
+    {
+        if (!EliteAlive) return;
+
+        EliteAlive = false;
+        Debug.Log("[ELITE] Killed");
+    }
 }

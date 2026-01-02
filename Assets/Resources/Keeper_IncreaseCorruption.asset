@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Keeper_IncreaseCorruption
   m_EditorClassIdentifier: 
   displayName: Accept Corruption
-  portrait: {fileID: 21300000, guid: 6e082519d33f1d84d8e966b06eef621d, type: 3}
+  portrait: {fileID: 0}
   description: Accept increased corruption for rewards.
   isCursed: 1
   effect: 2

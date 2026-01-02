@@ -53,6 +53,12 @@ public class RunDirector : MonoBehaviour
         };
 
         Debug.Log("RunDirector ready.");
+        // If a biomeConfig is assigned, build the internal biome entries list
+        if (biomeConfig != null && biomeConfig.entries != null && biomeConfig.entries.Length > 0)
+        {
+            biomeEntries = new List<BiomeConfig.RoomEntry>(biomeConfig.entries);
+            Debug.Log($"RunDirector: Loaded biome config with {biomeEntries.Count} entries");
+        }
     }
     public void BeginRun()
     {
@@ -81,7 +87,7 @@ public class RunDirector : MonoBehaviour
         {
             if (run.currentRoomIndex >= biomeEntries.Count)
             {
-                gsm.EndRun();
+                gsm.EndRun(RunEndReason.BiomeCompleted);
                 return;
             }
 
@@ -98,7 +104,7 @@ public class RunDirector : MonoBehaviour
 
         if (run.currentRoomIndex >= demoRun.Count)
         {
-            gsm.EndRun();
+            gsm.EndRun(RunEndReason.BiomeCompleted);
             return;
         }
 

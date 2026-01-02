@@ -15,4 +15,12 @@ public class RunState
         currentRoomIndex = 0;
         runTension = 0;
     }
+
+    public void Reset()
+    {
+        currentRoomIndex = 0;
+        runTension = 0;
+        roomsCleared = 0;
+        corruption = 0;
+    }
 }

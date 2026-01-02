@@ -150,7 +150,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   type: 2
   corruptionThreshold: 50
-  currentTier: 1
+  currentTier: 0
   attackController: {fileID: 3741299884007588557}
 --- !u!114 &3741299884007588557
 MonoBehaviour:
@@ -176,4 +176,3 @@ MonoBehaviour:
   pulseCount: 6
   pulseSpeedMultiplier: 1.2
   currentTier: 0
-  attackInterval: 1.2

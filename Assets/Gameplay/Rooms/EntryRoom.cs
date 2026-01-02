@@ -69,6 +69,9 @@ public class EntryRoom : RoomController
         }
 
         // finish room after short delay
+        // Ensure any choice locks are cleared so player regains control
+        ChoiceManager.Instance?.FinishChoice();
+
         Invoke(nameof(Finish), 0.5f);
     }
 }

@@ -42,9 +42,19 @@ public class RunDirector : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.K))
         {
-            Debug.Log("[DEBUG] Keeper Resolve Triggered");
-            KeeperResolver.Resolve();
+            Debug.Log("[DEBUG] Keeper DEV choice: EnforceOrder");
+            KeeperResolver.ApplyChoice(KeeperChoice.EnforceOrder);
         }
+
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+            KeeperResolver.ApplyChoice(KeeperChoice.BindSouls);
+
+        if (Input.GetKeyDown(KeyCode.Alpha2))
+            KeeperResolver.ApplyChoice(KeeperChoice.EnforceOrder);
+
+        if (Input.GetKeyDown(KeyCode.Alpha3))
+            KeeperResolver.ApplyChoice(KeeperChoice.AccelerateChaos);
+
     }
 
     private void Start()

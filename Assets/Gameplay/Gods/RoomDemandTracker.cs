@@ -28,6 +28,11 @@ public class RoomDemandTracker : MonoBehaviour
 
     public void Resolve()
     {
+        Debug.Log($"[RoomDemandTracker] Resolve called");
+        Debug.Log($"  corruptionAcceptedThisRoom = {corruptionAcceptedThisRoom}");
+        Debug.Log($"  currentDemand = {GodDirector.Instance.currentDemand}");
+
+
         var demand = GodDirector.Instance.currentDemand;
         bool success = true;
 
@@ -46,8 +51,9 @@ public class RoomDemandTracker : MonoBehaviour
                 break;
 
             case GodDemand.RejectCorruption:
-                success = !corruptionAcceptedThisRoom;
+                success = false; // rejection always angers the god
                 break;
+
 
             case GodDemand.DoNothing:
                 success = true;

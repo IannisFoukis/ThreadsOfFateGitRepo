@@ -25,7 +25,11 @@ public class CombatRoom : RoomController
     float escalationTimer;
     bool escalationTriggered;
 
+    // Reserved for future lockdown mechanics; currently only tracks whether the room
+    // is in a high-corruption state.
+#pragma warning disable CS0414
     bool lockdownActive;
+#pragma warning restore CS0414
 
     float clearConfirmTimer = 0f;
     const float clearConfirmThreshold = 0.25f;

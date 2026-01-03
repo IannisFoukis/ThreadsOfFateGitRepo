@@ -25,6 +25,12 @@ public class GodDirector : MonoBehaviour
     {
         Debug.Log("GodDirector.EvaluateRun CALLED");
 
+        if (RunCorruptionState.Instance == null)
+        {
+            Debug.LogError("[GodDirector] RunCorruptionState not found.");
+            return;
+        }
+
         int corruption = RunCorruptionState.Instance.CorruptionLevel;
 
         if (corruption >= 3)
@@ -33,6 +39,7 @@ public class GodDirector : MonoBehaviour
             activeGod = GodType.Order;
         else
             activeGod = GodType.Blood;
+
         CameraShake.Instance?.Shake(0.2f, 0.15f);
 
         AssignDemand();
@@ -78,11 +85,48 @@ public class GodDirector : MonoBehaviour
             CombatModifiers.GlobalEnemyLifesteal += 1;
         }
 
-        foreach (var enemy in FindObjectsByType<EnemyPunishVisual>(FindObjectsSortMode.None))
+        foreach (var enemy in FindEnemyPunishVisuals())
         {
+            if (enemy == null) continue;
             enemy.ApplyPunish(CombatModifiers.GlobalEnemyLifesteal);
         }
 
     }
+    public void ModifyCorruption(int amount)
+    {
+        Debug.Log($"[GodDirector] Corruption modified by {amount}");
+
+        if (RunCorruptionState.Instance == null)
+        {
+            Debug.LogError("[GodDirector] RunCorruptionState not found.");
+            return;
+        }
+
+        // CorruptionLevel is read-only; use the state API to mutate.
+        if (amount > 0)
+            RunCorruptionState.Instance.Increase(amount);
+        else if (amount < 0)
+            RunCorruptionState.Instance.Reduce(-amount);
+
+        // Optional but VERY fitting:
+        EvaluateRun();
+    }
+
+    public void OnCorruptionAccepted(int amount)
+    {
+        ModifyCorruption(amount);
+    }
+
+    static EnemyPunishVisual[] FindEnemyPunishVisuals()
+    {
+        // Unity 2023+ prefers FindObjectsByType; older versions only have FindObjectsOfType.
+#if UNITY_2023_1_OR_NEWER
+        return Object.FindObjectsByType<EnemyPunishVisual>(FindObjectsSortMode.None);
+#else
+        // Avoid compile errors on older Unity versions.
+        return Object.FindObjectsOfType<EnemyPunishVisual>();
+#endif
+    }
+
 
 }

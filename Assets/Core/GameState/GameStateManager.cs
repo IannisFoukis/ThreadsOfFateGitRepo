@@ -45,13 +45,9 @@ public class GameStateManager : MonoBehaviour
             var player = GameObject.FindWithTag("Player");
             if (player == null)
             {
-                // Try to instantiate a player prefab from Resources as a fallback
-                var prefab = Resources.Load<GameObject>("Player");
-                if (prefab != null)
-                {
-                    player = Instantiate(prefab);
-                    player.tag = "Player";
-                }
+                Debug.LogError("Player not found in Entry scene. Ensure the Entry scene provides a Player GameObject tagged 'Player'.");
+                SceneManager.sceneLoaded -= OnSceneLoaded;
+                return;
             }
 
             if (player != null)
@@ -113,6 +109,12 @@ public class GameStateManager : MonoBehaviour
 
     public void EndRun(RunEndReason reason)
     {
+        if (endRunPending)
+        {
+            Debug.LogWarning($"EndRun already pending (reason={pendingReason}), ignoring duplicate call for {reason}");
+            return;
+        }
+
         Debug.Log($"[RUN END] Reason = {reason}");
 
         // 1️⃣ Escalate world (meta)

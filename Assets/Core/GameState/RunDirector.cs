@@ -38,6 +38,14 @@ public class RunDirector : MonoBehaviour
             Debug.LogError("RunDirector: GameStateManager not found!");
         Debug.Log("RunDirector persistent.");
     }
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.K))
+        {
+            Debug.Log("[DEBUG] Keeper Resolve Triggered");
+            KeeperResolver.Resolve();
+        }
+    }
 
     private void Start()
     {
@@ -157,5 +165,43 @@ public class RunDirector : MonoBehaviour
     {
         EnterNextRoom();
     }
+    public void ApplyRoomNPC(RoomNPC npc)
+    {
+        Debug.Log($"[RunDirector] ApplyRoomNPC called with {npc.displayName}");
+
+        switch (npc.effect)
+        {
+            case RoomNPC.EffectType.Corrupt:
+                Debug.Log("[RunDirector] Applying CORRUPTION");
+                ApplyCorruption(npc.effectValue);
+                break;
+
+            case RoomNPC.EffectType.None:
+                Debug.Log("[RunDirector] No effect applied");
+                break;
+        }
+    }
+
+    void ApplyCorruption(int amount)
+    {
+        var god = GodDirector.Instance;
+        if (god == null)
+        {
+            Debug.LogError("[RunDirector] GodDirector not found.");
+            return;
+        }
+
+        god.OnCorruptionAccepted(amount);
+    }
+
+
+
+    void HandleNeutralBreatherChoice(RoomNPC npc)
+    {
+        Debug.Log("[RunDirector] Neutral breather choice applied");
+
+        // Example: lock corruption, stabilize run, etc.
+    }
+   
 
 }

@@ -10,7 +10,15 @@ public class BreatherRoom : RoomController
         Rest,
         Refuse
     }
-   
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.B))
+        {
+            Debug.Log("[BreatherRoom] DEV: Simulating REST choice");
+            RecordBreatherChoice(BreatherChoice.Rest);
+        }
+    }
+
 
     public void RecordBreatherChoice(BreatherChoice choice)
     {

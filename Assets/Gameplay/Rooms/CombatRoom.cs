@@ -131,6 +131,12 @@ public class CombatRoom : RoomController
 
     void SpawnEncounter()
     {
+        bool coordinated =
+    RunContext.Instance != null &&
+    RunContext.Instance.rules.enemiesCoordinateMore;
+
+        Debug.Log($"[CombatRoom] Coordinated enemies: {coordinated}");
+
         switch (encounterType)
         {
             case EncounterType.Skirmish:
@@ -161,6 +167,10 @@ public class CombatRoom : RoomController
 
     void Spawn(EnemyRole baseRole, int count)
     {
+        bool coordinated =
+            RunContext.Instance != null &&
+            RunContext.Instance.rules.enemiesCoordinateMore;
+
         for (int i = 0; i < count; i++)
         {
             Vector2 offset = Random.insideUnitCircle * 3f;
@@ -170,7 +180,24 @@ public class CombatRoom : RoomController
                 Quaternion.identity
             );
 
-            ConfigureEnemy(enemy, baseRole);
+            EnemyRole finalRole = baseRole;
+
+            // 🔥 OPTION A: coordination bias
+            if (coordinated)
+            {
+                if (i == 0)
+                {
+                    finalRole = EnemyRole.Melee; // pressure
+                }
+                else if (baseRole == EnemyRole.Melee)
+                {
+                    finalRole = EnemyRole.Defender; // hangs back
+                }
+            }
+
+            ConfigureEnemy(enemy, finalRole);
+
+            Debug.Log($"[CombatRoom] Spawned enemy with role: {finalRole}");
 
             GameEvents.RaiseEnemySpawned(enemy);
 
@@ -178,6 +205,7 @@ public class CombatRoom : RoomController
             activeEnemies.Add(enemy);
         }
     }
+
 
     void ConfigureEnemy(GameObject enemy, EnemyRole role)
     {

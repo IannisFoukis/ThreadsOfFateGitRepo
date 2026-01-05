@@ -32,80 +32,69 @@ public class GameStateManager : MonoBehaviour
     {
         RunData.roomsCleared++;
     }
-    
+
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (!endRunPending) return;
-        if (scene.name == "Room_Entry")
+        if (!endRunPending)
+            return;
+
+        if (scene.name != "Room_Entry")
+            return;
+
+        endRunPending = false;
+
+        // 🚫 DO NOT auto-start run here
+        // FindAnyObjectByType<RunDirector>()?.BeginRun();
+
+        // Ensure player exists
+        var player = GameObject.FindWithTag("Player");
+        if (player == null)
         {
-            endRunPending = false;
-            // Restart run loop automatically
-            FindAnyObjectByType<RunDirector>()?.BeginRun();
-            // Ensure player is active, reset health and move to spawn point when returning to entry
-            var player = GameObject.FindWithTag("Player");
-            if (player == null)
-            {
-                Debug.LogError("Player not found in Entry scene. Ensure the Entry scene provides a Player GameObject tagged 'Player'.");
-                SceneManager.sceneLoaded -= OnSceneLoaded;
-                return;
-            }
-
-            if (player != null)
-            {
-                // Reactivate persistent player if it was deactivated on death
-                if (!player.activeInHierarchy)
-                    player.SetActive(true);
-
-                var h = player.GetComponent<Health>();
-                if (h != null)
-                {
-                    h.currentHealth = h.maxHealth;
-                }
-
-                var ps = player.GetComponent<PlayerStats>() ?? PlayerStats.Instance;
-                if (ps != null)
-                {
-                    ps.currentHealth = ps.maxHealth;
-                }
-
-                // Ensure player controller is enabled and game isn't locked/paused
-                var pc = player.GetComponent<PlayerController>();
-                if (pc != null)
-                    pc.enabled = true;
-
-                // Clear any global locks or time scale caused by previous run
-                GameLock.IsLocked = false;
-                Time.timeScale = 1f;
-
-                // Clear pending choice state if any
-                ChoiceManager.Instance?.FinishChoice();
-
-                // If scene contains a spawn point, place the player there
-                if (PlayerSpawnPoint.Active != null)
-                {
-                    player.transform.position = PlayerSpawnPoint.Active.transform.position;
-                }
-                else
-                {
-                    // Fallback: try to find a spawn point in scene
-                    var sp = GameObject.FindObjectOfType<PlayerSpawnPoint>();
-                    if (sp != null)
-                        player.transform.position = sp.transform.position;
-                }
-            }
-
+            Debug.LogError("Player not found in Entry scene. Ensure the Entry scene provides a Player GameObject tagged 'Player'.");
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            return;
         }
-    }
-    public void EndRun()
-    {
-        Debug.Log("=== RUN ENDED ===");
 
-        // Later:
-        // - Save run results
-        // - Return to hub
-        // - Apply meta progression
+        // Reactivate persistent player if it was deactivated on death
+        if (!player.activeInHierarchy)
+            player.SetActive(true);
+
+        // Reset health
+        var h = player.GetComponent<Health>();
+        if (h != null)
+            h.currentHealth = h.maxHealth;
+
+        var ps = player.GetComponent<PlayerStats>() ?? PlayerStats.Instance;
+        if (ps != null)
+            ps.currentHealth = ps.maxHealth;
+
+        // Ensure player controller is enabled
+        var pc = player.GetComponent<PlayerController>();
+        if (pc != null)
+            pc.enabled = true;
+
+        // Clear global locks / pause
+        GameLock.IsLocked = false;
+        Time.timeScale = 1f;
+
+        // Clear any pending choice state
+        ChoiceManager.Instance?.FinishChoice();
+
+        // Move player to spawn point
+        if (PlayerSpawnPoint.Active != null)
+        {
+            player.transform.position = PlayerSpawnPoint.Active.transform.position;
+        }
+        else
+        {
+            var sp = Object.FindAnyObjectByType<PlayerSpawnPoint>();
+            if (sp != null)
+                player.transform.position = sp.transform.position;
+        }
+
+        SceneManager.sceneLoaded -= OnSceneLoaded;
     }
+   
 
     public void EndRun(RunEndReason reason)
     {
@@ -138,6 +127,17 @@ public class GameStateManager : MonoBehaviour
         // 3️⃣ Restart loop after scene load
         endRunPending = true;
         pendingReason = reason;
+        var runDirector = FindAnyObjectByType<RunDirector>();
+        if (runDirector != null)
+        {
+            runDirector.ResetRun();
+        }
+        else
+        {
+            Debug.LogError("[GameStateManager] RunDirector not found when ending run");
+        }
+
+
         SceneManager.sceneLoaded += OnSceneLoaded;
         SceneManager.LoadScene("Room_Entry");
     }

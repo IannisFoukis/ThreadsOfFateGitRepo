@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -27,6 +27,10 @@ public class RunDirector : MonoBehaviour
     [Header("Data")]
     [SerializeField] BiomeConfig biomeConfig;
 
+    [SerializeField] KeeperPronouncement keeperPronouncement;
+    bool keeperTriggeredThisRun = false;
+    bool runStarted = false;
+
     // internal convenience list built from biomeConfig or fallback demoRun
     private List<BiomeConfig.RoomEntry> biomeEntries;
     private void Awake()
@@ -40,20 +44,37 @@ public class RunDirector : MonoBehaviour
     }
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.K))
+       
+
+
+#if UNITY_EDITOR
+        if (Input.GetKeyDown(KeyCode.Alpha1))
         {
-            Debug.Log("[DEBUG] Keeper DEV choice: EnforceOrder");
-            KeeperResolver.ApplyChoice(KeeperChoice.EnforceOrder);
+            if (Time.timeScale != 0f || !keeperTriggeredThisRun)
+                return;
+            Debug.Log("[KeeperInput] Choice 1: BindSouls");
+            KeeperResolver.ApplyChoice(KeeperChoice.BindSouls);
+            EndKeeperMoment();
         }
 
-        if (Input.GetKeyDown(KeyCode.Alpha1))
-            KeeperResolver.ApplyChoice(KeeperChoice.BindSouls);
-
         if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            if (Time.timeScale != 0f || !keeperTriggeredThisRun)
+                return;
+            Debug.Log("[KeeperInput] Choice 2: EnforceOrder");
             KeeperResolver.ApplyChoice(KeeperChoice.EnforceOrder);
+            EndKeeperMoment();
+        }
 
         if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            if (Time.timeScale != 0f || !keeperTriggeredThisRun)
+                return;
+            Debug.Log("[KeeperInput] Choice 3: AccelerateChaos");
             KeeperResolver.ApplyChoice(KeeperChoice.AccelerateChaos);
+            EndKeeperMoment();
+        }
+#endif
 
     }
 
@@ -80,13 +101,45 @@ public class RunDirector : MonoBehaviour
     }
     public void BeginRun()
     {
-        if (gsm == null) return;
+        if (runStarted)
+            return;
+
+        runStarted = true;
+
+        Debug.Log("=== NEW RUN STARTED ===");
+
+        // 🔕 Clear lingering Keeper UI from previous run (UIRoot is persistent)
+        var keeper = FindAnyObjectByType<KeeperPronouncement>(
+            FindObjectsInactive.Include
+        );
+        if (keeper != null)
+        {
+            keeper.Clear();
+        }
+
+        // Resolve GameStateManager safely
+        if (gsm == null)
+        {
+            gsm = FindAnyObjectByType<GameStateManager>();
+        }
+
+        if (gsm == null)
+        {
+            Debug.LogError("RunDirector: GameStateManager missing; cannot begin run.");
+            return;
+        }
+
+        // Start run state ONCE
         gsm.StartNewRun();
-        // Notify listeners a run started
+
+        // Notify systems that a run has started
         GameEvents.RaiseRunStart();
 
+        // Enter first room
         EnterNextRoom();
     }
+
+
 
     void EnterNextRoom()
     {
@@ -97,43 +150,82 @@ public class RunDirector : MonoBehaviour
         }
 
         RunState run = gsm.RunState;
-
-        // Determine next role (from biome entries if present, otherwise demoRun)
         RoomRole chosenRole;
 
+        // === BIOME FLOW ===
         if (biomeEntries != null)
         {
-            if (run.currentRoomIndex >= biomeEntries.Count)
+            while (run.currentRoomIndex < biomeEntries.Count)
             {
-                gsm.EndRun(RunEndReason.BiomeCompleted);
+                var entry = biomeEntries[run.currentRoomIndex];
+                chosenRole = entry.role;
+
+                // 🔒 SKIP ENTRY ROOM IF PRESENT
+                if (chosenRole == RoomRole.Entry)
+                {
+                    Debug.LogWarning("RunDirector: Skipping Entry room in biome flow");
+                    run.currentRoomIndex++;
+                    continue;
+                }
+
+                Debug.Log($"Loading biome room {run.currentRoomIndex}: {chosenRole}");
+                ApplyTension(chosenRole);
+                run.currentRoomIndex++;
+
+                GameEvents.RaiseRoomStart();
+                var mem = RunContext.Instance?.memory;
+                if (mem != null &&
+                    !mem.rushPenaltyConsumed &&
+                    mem.entryRushed &&
+                    (chosenRole == RoomRole.Combat || chosenRole == RoomRole.Combat1))
+                {
+                    Debug.Log("[RunPressure] Entry rush penalty armed for this room");
+                    mem.pendingRushPressure = true;
+                    mem.rushPenaltyConsumed = true;
+                }
+
+                SceneManager.LoadScene(GetSceneName(chosenRole));
                 return;
             }
 
-            var entry = biomeEntries[run.currentRoomIndex];
-            chosenRole = entry.role;
-            Debug.Log($"Loading biome room {run.currentRoomIndex}: {chosenRole}");
-            ApplyTension(chosenRole);
-            run.currentRoomIndex++;
-            // Notify listeners a room is starting
-            GameEvents.RaiseRoomStart();
-            SceneManager.LoadScene(GetSceneName(chosenRole));
-            return;
-        }
-
-        if (run.currentRoomIndex >= demoRun.Count)
-        {
             gsm.EndRun(RunEndReason.BiomeCompleted);
             return;
         }
 
-        chosenRole = demoRun[run.currentRoomIndex];
-        Debug.Log($"Loading room {run.currentRoomIndex}: {chosenRole}");
+        // === DEMO FLOW ===
+        while (run.currentRoomIndex < demoRun.Count)
+        {
+            chosenRole = demoRun[run.currentRoomIndex];
 
-        ApplyTension(chosenRole);
-        run.currentRoomIndex++;
-        // Notify listeners a room is starting
-        GameEvents.RaiseRoomStart();
-        SceneManager.LoadScene(GetSceneName(chosenRole));
+            // 🔒 SKIP ENTRY ROOM IF PRESENT
+            if (chosenRole == RoomRole.Entry)
+            {
+                Debug.LogWarning("RunDirector: Skipping Entry room in demo flow");
+                run.currentRoomIndex++;
+                continue;
+            }
+
+            Debug.Log($"Loading room {run.currentRoomIndex}: {chosenRole}");
+            ApplyTension(chosenRole);
+            run.currentRoomIndex++;
+
+            GameEvents.RaiseRoomStart();
+            var mem = RunContext.Instance?.memory;
+            if (mem != null &&
+                !mem.rushPenaltyConsumed &&
+                mem.entryRushed &&
+                (chosenRole == RoomRole.Combat || chosenRole == RoomRole.Combat1))
+            {
+                Debug.Log("[RunPressure] Entry rush penalty armed for this room");
+                mem.pendingRushPressure = true;
+                mem.rushPenaltyConsumed = true;
+            }
+
+            SceneManager.LoadScene(GetSceneName(chosenRole));
+            return;
+        }
+
+        gsm.EndRun(RunEndReason.BiomeCompleted);
     }
 
     string GetSceneName(RoomRole role) //Helper
@@ -173,8 +265,12 @@ public class RunDirector : MonoBehaviour
 
     public void OnRoomCompleted()
     {
-        EnterNextRoom();
+        CheckForKeeperTrigger();
+
+        if (!keeperTriggeredThisRun)
+            EnterNextRoom();
     }
+
     public void ApplyRoomNPC(RoomNPC npc)
     {
         Debug.Log($"[RunDirector] ApplyRoomNPC called with {npc.displayName}");
@@ -212,6 +308,86 @@ public class RunDirector : MonoBehaviour
 
         // Example: lock corruption, stabilize run, etc.
     }
-   
+
+    void EndKeeperMoment()
+    {
+        Time.timeScale = 1f;
+
+        if (keeperPronouncement != null)
+            keeperPronouncement.Hide();
+
+        // 🔑 RESET KEEPER INTERRUPTION
+        keeperTriggeredThisRun = false;
+
+        Debug.Log("[Keeper] Judgment sealed, run continues");
+
+        EnterNextRoom();
+    }
+
+    void CheckForKeeperTrigger()
+    {
+        if (keeperTriggeredThisRun)
+            return;
+
+        if (RunContext.Instance == null)
+        {
+            Debug.LogError("[Keeper] RunContext missing during CheckForKeeperTrigger");
+            return;
+        }
+
+        if (RunContext.Instance.memory == null)
+        {
+            Debug.LogError("[Keeper] RunMemory missing during CheckForKeeperTrigger");
+            return;
+        }
+
+        if (RunContext.Instance.memory.jokerKilled)
+        {
+            TriggerKeeperFromJoker();
+        }
+    }
+
+
+    void TriggerKeeperFromJoker()
+    {
+        keeperTriggeredThisRun = true;
+
+        // consume the cause
+        RunContext.Instance.memory.jokerKilled = false;
+
+        if (keeperPronouncement == null)
+        {
+            Debug.LogError("[Keeper] keeperPronouncement is not assigned on RunDirector. Cannot show keeper moment; continuing run.");
+            keeperTriggeredThisRun = false;
+            EnterNextRoom();
+            return;
+        }
+
+        Time.timeScale = 0f;
+
+        keeperPronouncement.Show(
+            "You silenced the question.\n\n" +
+            "1. Bind Souls\n" +
+            "2. Enforce Order\n" +
+            "3. Accelerate Chaos"
+        );
+
+        Debug.Log("[Keeper] Triggered by Joker death");
+    }
+
+    public void ResetRun()
+    {
+        Debug.Log("[RunDirector] ResetRun");
+
+        runStarted = false;
+
+        // Clear one-shot pressure flags
+        var mem = RunContext.Instance?.memory;
+        if (mem != null)
+        {
+            mem.pendingRushPressure = false;
+        }
+    }
+
 
 }

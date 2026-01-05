@@ -31,15 +31,21 @@ public class JokerManager : MonoBehaviour
     public void OnJokerKilled()
     {
         Debug.Log("JokerManager.OnJokerKilled()");
+
         jokerActive = false;
-        TriggerChoice();
+
+        if (RunContext.Instance != null)
+        {
+            RunContext.Instance.memory.jokerKilled = true;
+            Debug.Log("[Joker] Joker killed — memory recorded");
+        }
+        else
+        {
+            Debug.LogError("[Joker] RunContext missing when Joker killed");
+        }
     }
 
-    void TriggerChoice()
-    {
-        Debug.Log("TriggerChoice()");
-        Debug.Log("JOKER KILLED — PLAYER MUST CHOOSE");
-        ChoiceManager.Instance.PresentChoice();
-    }
+
+   
 
 }

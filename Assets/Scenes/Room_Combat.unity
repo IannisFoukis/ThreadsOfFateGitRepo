@@ -596,7 +596,7 @@ PrefabInstance:
     - target: {fileID: 3741299884007588557, guid: 3f7eca91bd920a94d889e1fcbe257c5e, type: 3}
       propertyPath: projectileConfig
       value: 
-      objectReference: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+      objectReference: {fileID: 11400000, guid: 09cd1f166cda4b444bff96edb5bec9a3, type: 2}
     - target: {fileID: 4289699002947295707, guid: 3f7eca91bd920a94d889e1fcbe257c5e, type: 3}
       propertyPath: m_Name
       value: Shrine

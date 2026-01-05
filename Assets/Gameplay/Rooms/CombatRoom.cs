@@ -54,6 +54,13 @@ public class CombatRoom : RoomController
             shrine.PrepareForRoom();
 
         SpawnEncounter();
+
+        var mem = RunContext.Instance?.memory;
+        if (mem != null && mem.pendingRushPressure)
+        {
+            ApplyRushPressure();
+            mem.pendingRushPressure = false;
+        }
     }
 
     void OnDestroy()
@@ -294,4 +301,27 @@ public class CombatRoom : RoomController
             Enemy.ForceImmediateAggro(6f);
         }
     }
+    void ApplyRushPressure()
+    {
+        Debug.Log("[RunPressure] Applying rush pressure");
+
+        // Immediate aggro removes the opening grace window
+        Enemy.ForceImmediateAggro(1.5f);
+
+        // Optional: push enemies one tier up if still Base
+        foreach (var enemy in activeEnemies)
+        {
+            if (enemy == null) continue;
+
+            var behavior = enemy.GetComponent<EnemyBehaviorController>();
+            if (behavior == null) continue;
+
+            if (behavior.currentTier == EnemyBehaviorTier.Base)
+            {
+                behavior.ApplyTier(EnemyBehaviorTier.Aggressive);
+            }
+        }
+    }
+
+
 }

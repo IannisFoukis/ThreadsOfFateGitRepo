@@ -1,17 +1,15 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class RunContext : MonoBehaviour
 {
-    public static RunContext Instance;
+    public static RunContext Instance { get; private set; }
 
-    public RunState progress;
     public RunMemory memory;
     public RunRules rules;
+    public RunEndReason lastRunEndReason;
 
-    private void Awake()
+    void Awake()
     {
-        Debug.Log("[RunContext] Initialized");
-
         if (Instance != null)
         {
             Destroy(gameObject);
@@ -21,8 +19,13 @@ public class RunContext : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        progress = new RunState();
-        memory = new RunMemory();
-        rules = new RunRules();
+        // 🔑 GUARANTEE NON-NULL
+        if (memory == null)
+            memory = new RunMemory();
+
+        if (rules == null)
+            rules = new RunRules();
+
+        Debug.Log("[RunContext] Initialized");
     }
 }

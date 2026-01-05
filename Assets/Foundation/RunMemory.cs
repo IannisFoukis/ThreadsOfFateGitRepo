@@ -10,4 +10,16 @@ public class RunMemory
 
     public int shrineEnduredCount;
     public int shrineDestroyedCount;
+
+    public bool entryRushed;
+    public bool rushPenaltyConsumed;
+    public bool pendingRushPressure;
+    public bool entryHesitated;
+
+    public RunEndReason lastRunEndReason;
+
+    public int hesitationCount;
+    public int rushCount;
+
+
 }

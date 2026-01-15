@@ -1,64 +1,91 @@
 ﻿using UnityEngine;
+using System.Collections;
 
-[RequireComponent(typeof(Rigidbody2D))]
 public class EnemyChase : MonoBehaviour
 {
-    [SerializeField] float baseSpeed = 3f;
-
-    Rigidbody2D rb;
-    Transform player;
-    EnemySlotLock slotLock;
+    [SerializeField] float baseSpeed = 2.5f;
 
     float speedMultiplier = 1f;
-    public float Speed => baseSpeed * speedMultiplier;
+    Rigidbody2D rb;
+    Transform player;
 
-    // 🔥 This is now FACING direction (used by anim / aim)
-    public Vector2 CurrentDir { get; private set; }
+    Vector2 currentDir;
+    bool stunned;
+    Coroutine stunRoutine;
+    Coroutine aggroRoutine;
+
+    public Vector2 CurrentDir => currentDir;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        slotLock = GetComponent<EnemySlotLock>();
-
-        var p = GameObject.FindGameObjectWithTag("Player");
-        if (p) player = p.transform;
+        player = GameObject.FindGameObjectWithTag("Player")?.transform;
     }
 
     void FixedUpdate()
     {
-        if (!player) return;
-
-        // ---------- MOVEMENT TARGET ----------
-        Vector2 moveTarget;
-
-        if (slotLock != null && slotLock.HasSlot)
-            moveTarget = slotLock.GetSlotPosition();
-        else
-            moveTarget = player.position;
-
-        Vector2 moveDir = ((Vector2)moveTarget - rb.position);
-
-        if (moveDir.sqrMagnitude > 0.01f)
-            rb.linearVelocity = moveDir.normalized * Speed;
-        else
+        if (!player || stunned)
+        {
             rb.linearVelocity = Vector2.zero;
+            return;
+        }
 
-        // ---------- FACING TARGET (ALWAYS PLAYER) ----------
-        Vector2 faceDir = (player.position - transform.position);
-
-        if (faceDir.sqrMagnitude > 0.001f)
-            CurrentDir = faceDir.normalized;
+        currentDir = ((Vector2)player.position - rb.position).normalized;
+        rb.linearVelocity = currentDir * baseSpeed * speedMultiplier;
     }
 
-    // ---- API hooks (unchanged) ----
-    public void SetSpeedMultiplier(float mult) => speedMultiplier = mult;
-    public void ResetSpeed() => speedMultiplier = 1f;
+    // =====================
+    // API USED BY OTHER SYSTEMS
+    // =====================
 
-    public void ForceAggro() { }
-    public void ForceAggro(float duration) { ForceAggro(); }
+    public void SetSpeedMultiplier(float value)
+    {
+        speedMultiplier = value;
+    }
 
+    public void ResetSpeed()
+    {
+        speedMultiplier = 1f;
+    }
+
+    /// <summary>
+    /// Temporarily disables movement (used by Knockback / CC)
+    /// </summary>
     public void Stun(float duration)
     {
+        if (stunRoutine != null)
+            StopCoroutine(stunRoutine);
+
+        stunRoutine = StartCoroutine(StunRoutine(duration));
+    }
+
+    IEnumerator StunRoutine(float duration)
+    {
+        stunned = true;
         rb.linearVelocity = Vector2.zero;
+        yield return new WaitForSeconds(duration);
+        stunned = false;
+    }
+
+    /// <summary>
+    /// Forces enemy to aggressively chase the player
+    /// (used by Elite death, shrine effects, taunts)
+    /// </summary>
+    public void ForceAggro(float duration)
+    {
+        if (aggroRoutine != null)
+            StopCoroutine(aggroRoutine);
+
+        aggroRoutine = StartCoroutine(ForceAggroRoutine(duration));
+    }
+
+    IEnumerator ForceAggroRoutine(float duration)
+    {
+        float originalMultiplier = speedMultiplier;
+        speedMultiplier = Mathf.Max(speedMultiplier, 1.5f);
+
+        yield return new WaitForSeconds(duration);
+
+        speedMultiplier = originalMultiplier;
     }
 }

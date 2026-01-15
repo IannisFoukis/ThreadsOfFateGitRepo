@@ -1,11 +1,18 @@
 using UnityEngine;
 
-
-
 public static class KeeperResolver
 {
     static bool choiceAppliedThisEncounter = false;
 
+    // ===== ENTRY ROOM: PURE MOOD (Phase C) =====
+    static readonly string[] EntryDeathLines =
+    {
+        "You return again.\nThe gate does not judge.",
+        "The door opens.\nIt always does.",
+        "Still breathing.\nThat is enough.",
+        "You hesitate.\nThe world does not.",
+        "Death has weight.\nYou carry it back."
+    };
 
     // Called AFTER the player makes a Keeper choice
     public static void ApplyChoice(KeeperChoice choice)
@@ -54,32 +61,32 @@ public static class KeeperResolver
         Debug.Log("[KeeperResolver] Choice applied successfully");
     }
 
+    /// <summary>
+    /// Phase C: Entry room reaction.
+    /// Pure mood. No judgment. No progression.
+    /// </summary>
     public static string GetEntryReaction()
     {
-        var mem = RunContext.Instance.memory;
-        if (mem == null)
-            return null;
 
-        int tier = 1;
+        // Phase D: Keeper may remain silent
+        const float silenceChance = 0.25f; // 25%
 
-        if (mem.entryHesitated)
-        {
-            if (mem.hesitationCount >= 5) tier = 3;
-            else if (mem.hesitationCount >= 2) tier = 2;
+        if (Random.value < silenceChance)
+            return null; // Silence is intentional
 
-            return GetHesitationLine(tier);
-        }
-
-        if (mem.entryRushed)
-        {
-            if (mem.rushCount >= 5) tier = 3;
-            else if (mem.rushCount >= 2) tier = 2;
-
-            return GetRushLine(tier);
-        }
-
-        return null;
+        int index = Random.Range(0, EntryDeathLines.Length);
+        return EntryDeathLines[index];
     }
+
+    public static void ResetForNewRun()
+    {
+        choiceAppliedThisEncounter = false;
+    }
+
+    // =========================================================
+    // FUTURE (LOCKED): Entry behavior–based Keeper reactions
+    // Re-enable intentionally when Entry becomes meaningful.
+    // =========================================================
 
     static string GetHesitationLine(int tier)
     {
@@ -102,5 +109,4 @@ public static class KeeperResolver
         }
         return null;
     }
-
 }

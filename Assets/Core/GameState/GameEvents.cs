@@ -23,6 +23,9 @@ public static class GameEvents
     // Corruption
     public static event Action<int> OnCorruptionChanged;
 
+    //Tracker
+
+    public static Action<TacticType> OnTacticStarted;
     // Helper invokers (optional)
     public static void RaiseRoomStart() => OnRoomStart?.Invoke();
     public static void RaiseRoomCompleted() => OnRoomCompleted?.Invoke();
@@ -32,4 +35,8 @@ public static class GameEvents
     public static void RaiseEnemyRemoved(UnityEngine.GameObject enemy) => OnEnemyRemoved?.Invoke(enemy);
     public static void RaiseShrineActivated(UnityEngine.GameObject shrine) => OnShrineActivated?.Invoke(shrine);
     public static void RaiseCorruptionChanged(int level) => OnCorruptionChanged?.Invoke(level);
+    public static void RaiseTacticStarted(TacticType tactic)
+    {
+        OnTacticStarted?.Invoke(tactic);
+    }
 }

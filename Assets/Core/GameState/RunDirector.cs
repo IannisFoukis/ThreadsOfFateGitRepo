@@ -27,55 +27,25 @@ public class RunDirector : MonoBehaviour
     [Header("Data")]
     [SerializeField] BiomeConfig biomeConfig;
 
+    [Header("UI")]
     [SerializeField] KeeperPronouncement keeperPronouncement;
-    bool keeperTriggeredThisRun = false;
-    bool runStarted = false;
+
+    private bool keeperTriggeredThisRun = false;
+    private bool runStarted = false;
 
     // internal convenience list built from biomeConfig or fallback demoRun
     private List<BiomeConfig.RoomEntry> biomeEntries;
+    public bool IsRunActive { get; private set; }
+
     private void Awake()
     {
-
         DontDestroyOnLoad(gameObject);
+
         gsm = FindAnyObjectByType<GameStateManager>();
         if (gsm == null)
             Debug.LogError("RunDirector: GameStateManager not found!");
+
         Debug.Log("RunDirector persistent.");
-    }
-    void Update()
-    {
-       
-
-
-#if UNITY_EDITOR
-        if (Input.GetKeyDown(KeyCode.Alpha1))
-        {
-            if (Time.timeScale != 0f || !keeperTriggeredThisRun)
-                return;
-            Debug.Log("[KeeperInput] Choice 1: BindSouls");
-            KeeperResolver.ApplyChoice(KeeperChoice.BindSouls);
-            EndKeeperMoment();
-        }
-
-        if (Input.GetKeyDown(KeyCode.Alpha2))
-        {
-            if (Time.timeScale != 0f || !keeperTriggeredThisRun)
-                return;
-            Debug.Log("[KeeperInput] Choice 2: EnforceOrder");
-            KeeperResolver.ApplyChoice(KeeperChoice.EnforceOrder);
-            EndKeeperMoment();
-        }
-
-        if (Input.GetKeyDown(KeyCode.Alpha3))
-        {
-            if (Time.timeScale != 0f || !keeperTriggeredThisRun)
-                return;
-            Debug.Log("[KeeperInput] Choice 3: AccelerateChaos");
-            KeeperResolver.ApplyChoice(KeeperChoice.AccelerateChaos);
-            EndKeeperMoment();
-        }
-#endif
-
     }
 
     private void Start()
@@ -92,6 +62,7 @@ public class RunDirector : MonoBehaviour
         };
 
         Debug.Log("RunDirector ready.");
+
         // If a biomeConfig is assigned, build the internal biome entries list
         if (biomeConfig != null && biomeConfig.entries != null && biomeConfig.entries.Length > 0)
         {
@@ -99,8 +70,40 @@ public class RunDirector : MonoBehaviour
             Debug.Log($"RunDirector: Loaded biome config with {biomeEntries.Count} entries");
         }
     }
+
+    private void Update()
+    {
+#if UNITY_EDITOR
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            if (Time.timeScale != 0f || !keeperTriggeredThisRun) return;
+            Debug.Log("[KeeperInput] Choice 1: BindSouls");
+            KeeperResolver.ApplyChoice(KeeperChoice.BindSouls);
+            EndKeeperMoment();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            if (Time.timeScale != 0f || !keeperTriggeredThisRun) return;
+            Debug.Log("[KeeperInput] Choice 2: EnforceOrder");
+            KeeperResolver.ApplyChoice(KeeperChoice.EnforceOrder);
+            EndKeeperMoment();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            if (Time.timeScale != 0f || !keeperTriggeredThisRun) return;
+            Debug.Log("[KeeperInput] Choice 3: AccelerateChaos");
+            KeeperResolver.ApplyChoice(KeeperChoice.AccelerateChaos);
+            EndKeeperMoment();
+        }
+#endif
+    }
+
     public void BeginRun()
     {
+        IsRunActive = true;
+
         if (runStarted)
             return;
 
@@ -108,20 +111,13 @@ public class RunDirector : MonoBehaviour
 
         Debug.Log("=== NEW RUN STARTED ===");
 
-        // 🔕 Clear lingering Keeper UI from previous run (UIRoot is persistent)
-        var keeper = FindAnyObjectByType<KeeperPronouncement>(
-            FindObjectsInactive.Include
-        );
-        if (keeper != null)
-        {
-            keeper.Clear();
-        }
+        // Clear lingering Keeper text (UIRoot is persistent)
+        if (keeperPronouncement != null)
+            keeperPronouncement.Clear();
 
         // Resolve GameStateManager safely
         if (gsm == null)
-        {
             gsm = FindAnyObjectByType<GameStateManager>();
-        }
 
         if (gsm == null)
         {
@@ -129,19 +125,14 @@ public class RunDirector : MonoBehaviour
             return;
         }
 
-        // Start run state ONCE
         gsm.StartNewRun();
 
-        // Notify systems that a run has started
         GameEvents.RaiseRunStart();
 
-        // Enter first room
         EnterNextRoom();
     }
 
-
-
-    void EnterNextRoom()
+    public void EnterNextRoom()
     {
         if (gsm == null)
         {
@@ -160,7 +151,7 @@ public class RunDirector : MonoBehaviour
                 var entry = biomeEntries[run.currentRoomIndex];
                 chosenRole = entry.role;
 
-                // 🔒 SKIP ENTRY ROOM IF PRESENT
+                // Skip Entry in biome flow (Entry is handled by Bootstrap + gate)
                 if (chosenRole == RoomRole.Entry)
                 {
                     Debug.LogWarning("RunDirector: Skipping Entry room in biome flow");
@@ -173,6 +164,8 @@ public class RunDirector : MonoBehaviour
                 run.currentRoomIndex++;
 
                 GameEvents.RaiseRoomStart();
+
+                // Rush pressure one-shot
                 var mem = RunContext.Instance?.memory;
                 if (mem != null &&
                     !mem.rushPenaltyConsumed &&
@@ -197,7 +190,6 @@ public class RunDirector : MonoBehaviour
         {
             chosenRole = demoRun[run.currentRoomIndex];
 
-            // 🔒 SKIP ENTRY ROOM IF PRESENT
             if (chosenRole == RoomRole.Entry)
             {
                 Debug.LogWarning("RunDirector: Skipping Entry room in demo flow");
@@ -210,6 +202,7 @@ public class RunDirector : MonoBehaviour
             run.currentRoomIndex++;
 
             GameEvents.RaiseRoomStart();
+
             var mem = RunContext.Instance?.memory;
             if (mem != null &&
                 !mem.rushPenaltyConsumed &&
@@ -228,7 +221,7 @@ public class RunDirector : MonoBehaviour
         gsm.EndRun(RunEndReason.BiomeCompleted);
     }
 
-    string GetSceneName(RoomRole role) //Helper
+    private string GetSceneName(RoomRole role)
     {
         return role switch
         {
@@ -243,8 +236,7 @@ public class RunDirector : MonoBehaviour
         };
     }
 
-
-    void ApplyTension(RoomRole role)
+    private void ApplyTension(RoomRole role)
     {
         if (gsm == null)
         {
@@ -282,15 +274,27 @@ public class RunDirector : MonoBehaviour
                 ApplyCorruption(npc.effectValue);
                 break;
 
+            case RoomNPC.EffectType.EnvironmentalInstability:
+                if (RunContext.Instance?.rules == null)
+                {
+                    Debug.LogError("[RunDirector] RunRules missing; cannot apply Environmental Instability");
+                    return;
+                }
+                RunContext.Instance.rules.environmentalInstability = true;
+                Debug.Log("[RunRules] Environmental Instability ENABLED");
+                break;
+
             case RoomNPC.EffectType.None:
+            default:
                 Debug.Log("[RunDirector] No effect applied");
                 break;
         }
     }
 
-    void ApplyCorruption(int amount)
+    private void ApplyCorruption(int amount)
     {
-        var god = GodDirector.Instance;
+        // Prefer singleton if you have it, but never hard-crash if it’s not set.
+        var god = GodDirector.Instance != null ? GodDirector.Instance : FindAnyObjectByType<GodDirector>();
         if (god == null)
         {
             Debug.LogError("[RunDirector] GodDirector not found.");
@@ -300,23 +304,13 @@ public class RunDirector : MonoBehaviour
         god.OnCorruptionAccepted(amount);
     }
 
-
-
-    void HandleNeutralBreatherChoice(RoomNPC npc)
-    {
-        Debug.Log("[RunDirector] Neutral breather choice applied");
-
-        // Example: lock corruption, stabilize run, etc.
-    }
-
-    void EndKeeperMoment()
+    private void EndKeeperMoment()
     {
         Time.timeScale = 1f;
 
         if (keeperPronouncement != null)
-            keeperPronouncement.Hide();
+            keeperPronouncement.Clear();
 
-        // 🔑 RESET KEEPER INTERRUPTION
         keeperTriggeredThisRun = false;
 
         Debug.Log("[Keeper] Judgment sealed, run continues");
@@ -324,7 +318,7 @@ public class RunDirector : MonoBehaviour
         EnterNextRoom();
     }
 
-    void CheckForKeeperTrigger()
+    private void CheckForKeeperTrigger()
     {
         if (keeperTriggeredThisRun)
             return;
@@ -342,13 +336,10 @@ public class RunDirector : MonoBehaviour
         }
 
         if (RunContext.Instance.memory.jokerKilled)
-        {
             TriggerKeeperFromJoker();
-        }
     }
 
-
-    void TriggerKeeperFromJoker()
+    private void TriggerKeeperFromJoker()
     {
         keeperTriggeredThisRun = true;
 
@@ -377,17 +368,55 @@ public class RunDirector : MonoBehaviour
 
     public void ResetRun()
     {
+        IsRunActive = false;
+
         Debug.Log("[RunDirector] ResetRun");
 
-        runStarted = false;
+        // Always unpause in case we died during/after a Keeper moment
+        Time.timeScale = 1f;
 
-        // Clear one-shot pressure flags
+        // Reset run flags
+        runStarted = false;
+        keeperTriggeredThisRun = false;
+
+        // Clear lingering Keeper UI (UIRoot is persistent)
+        if (keeperPronouncement == null)
+        {
+            keeperPronouncement = FindAnyObjectByType<KeeperPronouncement>(FindObjectsInactive.Include);
+        }
+        keeperPronouncement?.Clear();
+
+        // Reset Keeper one-shot logic
+        KeeperResolver.ResetForNewRun();
+
+        // Clear one-shot / per-run memory flags (keep long-term counters if you want)
         var mem = RunContext.Instance?.memory;
         if (mem != null)
         {
             mem.pendingRushPressure = false;
+            mem.rushPenaltyConsumed = false;
+
+            mem.entryRushed = false;
+            mem.entryHesitated = false;
+
+            mem.jokerKilled = false;
         }
+
+        // IMPORTANT: load the correct Entry scene name
+        SceneManager.LoadScene(GetSceneName(RoomRole.Entry)); // -> "Room_Entry"
+    }
+    public void OnCombatRoomCleared()
+    {
+        Debug.Log("[RunDirector] Combat room cleared");
+
+        // Delay here is SAFE — RunDirector is persistent
+        StartCoroutine(AdvanceAfterCombat());
     }
 
+    private System.Collections.IEnumerator AdvanceAfterCombat()
+    {
+        yield return new WaitForSeconds(0.5f);
+        EnterNextRoom();
+    }
 
 }

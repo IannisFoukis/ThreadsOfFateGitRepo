@@ -58,3 +58,21 @@ MonoBehaviour:
     enableActivator: 1
     defaultBehaviorTier: 0
     damageMultiplier: 4
+  - role: 5
+    enableMelee: 0
+    enableRanged: 0
+    enableCharger: 0
+    enableChase: 0
+    enableAbility: 1
+    enableActivator: 1
+    defaultBehaviorTier: 0
+    damageMultiplier: 4
+  - role: 1
+    enableMelee: 0
+    enableRanged: 0
+    enableCharger: 0
+    enableChase: 0
+    enableAbility: 1
+    enableActivator: 1
+    defaultBehaviorTier: 0
+    damageMultiplier: 4

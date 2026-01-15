@@ -1,2 +1,13 @@
 fileFormatVersion: 2
 guid: 559918c7cd2032b429403ae78ee3d511
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - biomeConfig: {fileID: 11400000, guid: 930e68551f217624d850fdbee0472a50, type: 2}
+  - keeperPronouncement: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

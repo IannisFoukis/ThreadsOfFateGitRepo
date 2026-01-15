@@ -10,40 +10,40 @@ public class Skill_Dash : ActiveSkillSO
 
     readonly List<IDashModifier> modifiers = new();
 
-    public void AddModifier(IDashModifier mod)
-    {
-        if (!modifiers.Contains(mod))
-            modifiers.Add(mod);
-    }
-
     public override void Activate(PlayerController player)
     {
+        if (player == null) return;
         player.StartCoroutine(DashRoutine(player));
     }
 
     IEnumerator DashRoutine(PlayerController player)
     {
+        var motor = player.GetComponent<PlayerMotor>();
+        if (motor == null) yield break;
+
+        // Dash based on current input (top-down). If no input, fallback to right.
+        Vector2 dashDir = player.MoveInput;
+        if (dashDir.sqrMagnitude < 0.01f)
+            dashDir = Vector2.right;
+        dashDir.Normalize();
+
         foreach (var m in modifiers)
             m.OnDashStart(player);
 
-        Vector2 dir = player.LastMoveDir;
-
-        // 🛡 HARD GUARD — NEVER ZERO
-        if (dir.sqrMagnitude < 0.01f)
-        {
-            Debug.LogWarning("Dash dir was zero, using fallback");
-            dir = Vector2.right;
-        }
-
-        player.Motor.ForceMove(
-            dir,
-            dashForce,
-            dashDuration
-        );
+        motor.ApplyDashVelocity(dashDir * dashForce);
 
         yield return new WaitForSeconds(dashDuration);
 
+        motor.ClearDashVelocity();
+
         foreach (var m in modifiers)
             m.OnDashEnd(player);
+    }
+
+    public void AddModifier(IDashModifier modifier)
+    {
+        if (modifier == null) return;
+        if (!modifiers.Contains(modifier))
+            modifiers.Add(modifier);
     }
 }

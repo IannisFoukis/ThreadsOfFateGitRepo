@@ -1,327 +1,152 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
-using static Shrine;
+﻿using UnityEngine;
+using System;
 
-public class CombatRoom : RoomController
+public class CombatRoom : MonoBehaviour
 {
-    bool tensionSpike4Triggered;
-    bool tensionSpike7Triggered;
-    bool tensionSpike10Triggered;
+    [Header("Doctrine (Debug)")]
+    [SerializeField] private RoomDoctrine selectedDoctrine;
+    [SerializeField] private bool randomizeDoctrine = true;
 
-    bool roomCompleted;
-
-    GameStateManager gsm;
-
-    readonly List<GameObject> spawnedEnemies = new();
-    readonly List<GameObject> activeEnemies = new();
-
-    [Header("Encounter")]
+    [Header("Prefab + Spawn Points")]
     public GameObject enemyPrefab;
-    public EncounterType encounterType;
-    public Shrine shrine;
+    public Transform[] enemySpawnPoints;
 
-    [Header("Mid-Fight Escalation")]
-    [SerializeField] float escalationDelay = 8f;
-    float escalationTimer;
-    bool escalationTriggered;
+    private TacticDirector tacticDirector;
+    private int aliveEnemies;
 
-    // Reserved for future lockdown mechanics; currently only tracks whether the room
-    // is in a high-corruption state.
-#pragma warning disable CS0414
-    bool lockdownActive;
-#pragma warning restore CS0414
-
-    float clearConfirmTimer = 0f;
-    const float clearConfirmThreshold = 0.25f;
-    bool clearConfirming = false;
-
-    protected override void Start()
+    private void Awake()
     {
-        base.Start();
+        tacticDirector = GetComponent<TacticDirector>();
+        if (tacticDirector == null)
+            Debug.LogError("[CombatRoom] TacticDirector missing on CombatRoom!");
+    }
 
-        gsm = FindAnyObjectByType<GameStateManager>();
-        if (gsm == null)
-        {
-            Debug.LogError("CombatRoom: GameStateManager not found");
-            return;
-        }
-
-        GameEvents.OnEnemyRemoved += OnEnemyRemoved;
-
-        ApplyCorruptedRoomRules();
-
-        if (shrine != null)
-            shrine.PrepareForRoom();
-
+    private void Start()
+    {
+        ApplyDoctrine();
         SpawnEncounter();
+    }
 
-        var mem = RunContext.Instance?.memory;
-        if (mem != null && mem.pendingRushPressure)
+    // ─────────────────────────────────────────────────────
+    // DOCTRINE
+    // ─────────────────────────────────────────────────────
+
+    private void ApplyDoctrine()
+    {
+        if (randomizeDoctrine)
+            selectedDoctrine = RollDoctrine();
+
+        Debug.Log($"[CombatRoom] Selected Doctrine: {selectedDoctrine}");
+        tacticDirector.ConfigureDoctrine(selectedDoctrine);
+    }
+
+    private RoomDoctrine RollDoctrine()
+    {
+        var values = Enum.GetValues(typeof(RoomDoctrine));
+        return (RoomDoctrine)values.GetValue(
+            UnityEngine.Random.Range(0, values.Length)
+        );
+    }
+
+    // ─────────────────────────────────────────────────────
+    // SPAWNING
+    // ─────────────────────────────────────────────────────
+
+    private void SpawnEncounter()
+    {
+        if (enemyPrefab == null)
         {
-            ApplyRushPressure();
-            mem.pendingRushPressure = false;
-        }
-    }
-
-    void OnDestroy()
-    {
-        GameEvents.OnEnemyRemoved -= OnEnemyRemoved;
-    }
-
-    void OnEnemyRemoved(GameObject enemy)
-    {
-        if (enemy == null) return;
-        activeEnemies.Remove(enemy);
-    }
-
-    void Update()
-    {
-        if (roomCompleted)
+            Debug.LogError("[CombatRoom] Missing enemyPrefab.");
             return;
-
-        int living = 0;
-
-        foreach (var enemy in activeEnemies)
-        {
-            if (enemy == null) continue;
-            if (!enemy.activeInHierarchy) continue;
-
-            var h = enemy.GetComponent<Health>();
-            if (h == null || h.currentHealth > 0)
-                living++;
         }
 
-        if (living <= 0)
+        if (enemySpawnPoints == null || enemySpawnPoints.Length < 3)
         {
-            if (ChoiceManager.Instance != null &&
-                ChoiceManager.Instance.ChoicePending)
-                return;
+            Debug.LogError("[CombatRoom] Need at least 3 enemySpawnPoints.");
+            return;
+        }
 
-            if (!clearConfirming)
-            {
-                clearConfirming = true;
-                clearConfirmTimer = 0f;
-                return;
-            }
+        aliveEnemies = 0;
 
-            clearConfirmTimer += Time.deltaTime;
-            if (clearConfirmTimer < clearConfirmThreshold)
-                return;
+        SpawnEnemy(EnemyRole.Melee, enemySpawnPoints[0]);
+        SpawnEnemy(EnemyRole.Ranged, enemySpawnPoints[1]);
+        SpawnEnemy(EnemyRole.Melee, enemySpawnPoints[2]);
 
-            roomCompleted = true;
-            gsm.OnRoomCleared();
-            GameEvents.RaiseRoomCompleted();
+        if (enemySpawnPoints.Length > 3 && UnityEngine.Random.value < 0.35f)
+            SpawnEnemy(EnemyRole.Elite, enemySpawnPoints[3]);
+
+        if (enemySpawnPoints.Length > 4 && UnityEngine.Random.value < 0.2f)
+            SpawnEnemy(EnemyRole.Joker, enemySpawnPoints[4]);
+
+        Debug.Log("[CombatRoom] Mixed encounter spawned");
+    }
+
+    private void SpawnEnemy(EnemyRole role, Transform sp)
+    {
+        var go = Instantiate(enemyPrefab, sp.position, Quaternion.identity);
+
+        var roleCtrl = go.GetComponent<EnemyRoleController>();
+        if (roleCtrl != null)
+            roleCtrl.ApplyRole(role);
+
+        var enemy = go.GetComponent<Enemy>();
+        if (enemy != null)
+        {
+            aliveEnemies++;
+            tacticDirector.Register(enemy);
+
+            var relay = go.AddComponent<EnemyDeathRelay>();
+            relay.OnEnemyDestroyed = OnEnemyDestroyed;
+        }
+
+        Debug.Log($"[CombatRoom] Spawned {role} at {go.transform.position}");
+    }
+
+    // ─────────────────────────────────────────────────────
+    // COMBAT LIFECYCLE
+    // ─────────────────────────────────────────────────────
+
+    private void OnEnemyDestroyed()
+    {
+        aliveEnemies--;
+
+        Debug.Log($"[CombatRoom] Enemy died. Remaining: {aliveEnemies}");
+
+        if (aliveEnemies <= 0)
+        {
+            Debug.Log("[CombatRoom] Combat cleared");
             CompleteRoom();
+        }
+    }
+
+    private void CompleteRoom()
+    {
+        var runDirector = FindAnyObjectByType<RunDirector>();
+
+        if (runDirector == null || !runDirector.IsRunActive)
+        {
+            Debug.Log("[CombatRoom] Combat cleared, but run is no longer active. Ignoring.");
             return;
         }
-        else
-        {
-            clearConfirming = false;
-            clearConfirmTimer = 0f;
-        }
 
-        CheckTensionSpikes();
-
-        escalationTimer += Time.deltaTime;
-        if (!escalationTriggered &&
-            (escalationTimer >= escalationDelay ||
-             RunCorruptionState.Instance.Level >= 2))
-        {
-            TriggerMidFightEscalation();
-            escalationTriggered = true;
-        }
+        Debug.Log("[CombatRoom] Combat cleared → notifying RunDirector");
+        runDirector.OnCombatRoomCleared();
     }
 
-    // ============================
-    // ENCOUNTERS
-    // ============================
+    // ─────────────────────────────────────────────────────
+    // DEATH RELAY
+    // ─────────────────────────────────────────────────────
 
-    void SpawnEncounter()
+    private class EnemyDeathRelay : MonoBehaviour
     {
-        bool coordinated =
-    RunContext.Instance != null &&
-    RunContext.Instance.rules.enemiesCoordinateMore;
+        public Action OnEnemyDestroyed;
 
-        Debug.Log($"[CombatRoom] Coordinated enemies: {coordinated}");
-
-        switch (encounterType)
+        private void OnDestroy()
         {
-            case EncounterType.Skirmish:
-                Spawn(EnemyRole.Melee, 2);
-                break;
-            case EncounterType.Crossfire:
-                Spawn(EnemyRole.Defender, 2);
-                Spawn(EnemyRole.Melee, 1);
-                break;
-            case EncounterType.BurstThreat:
-                Spawn(EnemyRole.Charger, 1);
-                Spawn(EnemyRole.Melee, 1);
-                break;
-            case EncounterType.Mixed:
-                Spawn(EnemyRole.Melee, 1);
-                Spawn(EnemyRole.Defender, 1);
-                Spawn(EnemyRole.Charger, 1);
-                break;
-            case EncounterType.Lockdown:
-                Spawn(EnemyRole.Melee, 2);
-                Spawn(EnemyRole.Defender, 2);
-                Spawn(EnemyRole.Charger, 1);
-                break;
-        }
+            if (!Application.isPlaying)
+                return;
 
-        TryAssignJoker();
-    }
-
-    void Spawn(EnemyRole baseRole, int count)
-    {
-        bool coordinated =
-            RunContext.Instance != null &&
-            RunContext.Instance.rules.enemiesCoordinateMore;
-
-        for (int i = 0; i < count; i++)
-        {
-            Vector2 offset = Random.insideUnitCircle * 3f;
-            GameObject enemy = Instantiate(
-                enemyPrefab,
-                transform.position + (Vector3)offset,
-                Quaternion.identity
-            );
-
-            EnemyRole finalRole = baseRole;
-
-            // 🔥 OPTION A: coordination bias
-            if (coordinated)
-            {
-                if (i == 0)
-                {
-                    finalRole = EnemyRole.Melee; // pressure
-                }
-                else if (baseRole == EnemyRole.Melee)
-                {
-                    finalRole = EnemyRole.Defender; // hangs back
-                }
-            }
-
-            ConfigureEnemy(enemy, finalRole);
-
-            Debug.Log($"[CombatRoom] Spawned enemy with role: {finalRole}");
-
-            GameEvents.RaiseEnemySpawned(enemy);
-
-            spawnedEnemies.Add(enemy);
-            activeEnemies.Add(enemy);
+            OnEnemyDestroyed?.Invoke();
         }
     }
-
-
-    void ConfigureEnemy(GameObject enemy, EnemyRole role)
-    {
-        var roleController = enemy.GetComponent<EnemyRoleController>();
-        if (roleController != null)
-            roleController.role = role;
-
-        var enemyComp = enemy.GetComponent<Enemy>();
-        if (enemyComp != null)
-            enemyComp.ApplyRole(role);
-    }
-
-    // ============================
-    // JOKER
-    // ============================
-
-    void TryAssignJoker()
-    {
-        if (spawnedEnemies.Count == 0) return;
-        if (JokerManager.Instance == null) return;
-        if (Random.value > 0.5f) return;
-
-        GameObject enemy = spawnedEnemies[Random.Range(0, spawnedEnemies.Count)];
-        JokerManager.Instance.AssignJoker(enemy);
-    }
-
-    // ============================
-    // ESCALATION
-    // ============================
-
-    void ApplyCorruptedRoomRules()
-    {
-        int corruption = RunCorruptionState.Instance.Level;
-
-        if (corruption >= 1)
-            Enemy.ForceImmediateAggro();
-
-        if (corruption >= 2)
-        {
-            escalationDelay *= 0.5f;
-            lockdownActive = true;
-        }
-
-        if (corruption >= 3 && shrine != null)
-            shrine.ForceHazards();
-    }
-
-    void TriggerMidFightEscalation()
-    {
-        GameEvents.RaiseMidFightEscalation();
-
-        foreach (var enemy in activeEnemies)
-        {
-            if (enemy == null) continue;
-
-            var behavior = enemy.GetComponent<EnemyBehaviorController>();
-            if (behavior == null) continue;
-
-            behavior.ApplyTier(
-                behavior.currentTier == EnemyBehaviorTier.Base
-                    ? EnemyBehaviorTier.Aggressive
-                    : EnemyBehaviorTier.Elite
-            );
-        }
-    }
-
-    void CheckTensionSpikes()
-    {
-        RunState run = gsm.RunState;
-
-        if (run.runTension >= 4 && !tensionSpike4Triggered)
-        {
-            tensionSpike4Triggered = true;
-            Enemy.ForceImmediateAggro(2.5f);
-        }
-
-        if (run.runTension >= 7 && !tensionSpike7Triggered)
-        {
-            tensionSpike7Triggered = true;
-            Enemy.ForceImmediateAggro(4f);
-        }
-
-        if (run.runTension >= 10 && !tensionSpike10Triggered)
-        {
-            tensionSpike10Triggered = true;
-            Enemy.ForceImmediateAggro(6f);
-        }
-    }
-    void ApplyRushPressure()
-    {
-        Debug.Log("[RunPressure] Applying rush pressure");
-
-        // Immediate aggro removes the opening grace window
-        Enemy.ForceImmediateAggro(1.5f);
-
-        // Optional: push enemies one tier up if still Base
-        foreach (var enemy in activeEnemies)
-        {
-            if (enemy == null) continue;
-
-            var behavior = enemy.GetComponent<EnemyBehaviorController>();
-            if (behavior == null) continue;
-
-            if (behavior.currentTier == EnemyBehaviorTier.Base)
-            {
-                behavior.ApplyTier(EnemyBehaviorTier.Aggressive);
-            }
-        }
-    }
-
-
 }

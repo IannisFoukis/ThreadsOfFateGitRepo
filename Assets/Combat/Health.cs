@@ -56,8 +56,20 @@ public class Health : MonoBehaviour
 
 
 
+        currentHealth -= amount;
+
+        // knockback / invincibility / FX already here
+
+        // 🔹 BREAK TACTICAL SLOT ON HIT
+        var slotLock = GetComponent<EnemySlotLock>();
+        if (slotLock != null && slotLock.HasSlot)
+        {
+            slotLock.ReleaseSlot();
+        }
+
         if (currentHealth <= 0)
             Die();
+
     }
     public void ScaleMaxHealth(float multiplier)
     {
@@ -98,16 +110,28 @@ public class Health : MonoBehaviour
             EliteSpawner.Instance.OnEliteKilled();
 
             Enemy[] enemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
-            foreach (var enemy in enemies)
+            foreach (var e in enemies)
             {
-                enemy.ForceAggro(4f);
+                var chase = e.GetComponent<EnemyChase>();
+                if (chase != null)
+                    chase.ForceAggro(1.5f);
+
             }
 
             Debug.Log("[ELITE] Elite killed → FORCED AGGRO");
         }
 
+        // Unregister from TacticDirector if enemy
+        if (TryGetComponent<Enemy>(out var enemy))
+        {
+            var tacticDirector = FindAnyObjectByType<TacticDirector>();
+            if (tacticDirector != null)
+                tacticDirector.Unregister(enemy);
+        }
+
         gameObject.SetActive(false);
         Destroy(gameObject);
+
     }
     public void SetInvulnerable(bool value)
     {

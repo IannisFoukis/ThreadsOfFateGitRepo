@@ -3,32 +3,50 @@ using UnityEngine.SceneManagement;
 
 public class PlayerSpawner : MonoBehaviour
 {
-    private void OnEnable()
+    [SerializeField] private GameObject playerPrefab; // MUST be prefab asset
+
+    private GameObject playerInstance;
+
+    private void Awake()
     {
+        DontDestroyOnLoad(gameObject);
+
+        if (playerPrefab == null)
+        {
+            Debug.LogError("[PlayerSpawner] Player Prefab is NOT assigned.");
+        }
+
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
-    private void OnDisable()
+    private void OnDestroy()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
-    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (PlayerSpawnPoint.Active == null)
+        if (playerPrefab == null)
+            return;
+
+        // Create player if missing OR destroyed
+        if (playerInstance == null)
         {
-            Debug.LogWarning("No PlayerSpawnPoint in scene.");
+            playerInstance = Instantiate(playerPrefab);
+            DontDestroyOnLoad(playerInstance);
+            Debug.Log("[PlayerSpawner] Player instantiated");
+        }
+
+        var spawnPoint = PlayerSpawnPoint.Active;
+        if (spawnPoint == null)
+        {
+            Debug.LogWarning("[PlayerSpawner] No PlayerSpawnPoint found in scene.");
             return;
         }
 
-        GameObject player = GameObject.FindWithTag("Player");
+        playerInstance.transform.position = spawnPoint.transform.position;
+        playerInstance.transform.rotation = spawnPoint.transform.rotation;
 
-        if (player == null)
-        {
-            Debug.LogError("Player not found.");
-            return;
-        }
-
-        player.transform.position = PlayerSpawnPoint.Active.transform.position;
+        Debug.Log("[PlayerSpawner] Player positioned at spawn point");
     }
 }

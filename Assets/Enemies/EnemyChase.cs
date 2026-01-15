@@ -1,52 +1,64 @@
-using UnityEngine;
-using System.Collections;
+﻿using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class EnemyChase : MonoBehaviour
 {
-    public float speed = 2f;
+    [SerializeField] float baseSpeed = 3f;
 
-    EnemyStateController state;
-    Transform player;
     Rigidbody2D rb;
-    bool stunned = false;
+    Transform player;
+    EnemySlotLock slotLock;
+
+    float speedMultiplier = 1f;
+    public float Speed => baseSpeed * speedMultiplier;
+
+    // 🔥 This is now FACING direction (used by anim / aim)
+    public Vector2 CurrentDir { get; private set; }
 
     void Awake()
     {
-        state = GetComponent<EnemyStateController>();
         rb = GetComponent<Rigidbody2D>();
-    }
+        slotLock = GetComponent<EnemySlotLock>();
 
-    void Start()
-    {
-        player = GameObject.FindGameObjectWithTag("Player")?.transform;
+        var p = GameObject.FindGameObjectWithTag("Player");
+        if (p) player = p.transform;
     }
 
     void FixedUpdate()
     {
-        if (player == null || stunned)
-        {
+        if (!player) return;
+
+        // ---------- MOVEMENT TARGET ----------
+        Vector2 moveTarget;
+
+        if (slotLock != null && slotLock.HasSlot)
+            moveTarget = slotLock.GetSlotPosition();
+        else
+            moveTarget = player.position;
+
+        Vector2 moveDir = ((Vector2)moveTarget - rb.position);
+
+        if (moveDir.sqrMagnitude > 0.01f)
+            rb.linearVelocity = moveDir.normalized * Speed;
+        else
             rb.linearVelocity = Vector2.zero;
-            return;
-        }
 
-        state?.SetState(EnemyState.Chasing);
+        // ---------- FACING TARGET (ALWAYS PLAYER) ----------
+        Vector2 faceDir = (player.position - transform.position);
 
-        Vector2 dir = (player.position - transform.position).normalized;
-        rb.linearVelocity = dir * speed;
+        if (faceDir.sqrMagnitude > 0.001f)
+            CurrentDir = faceDir.normalized;
     }
+
+    // ---- API hooks (unchanged) ----
+    public void SetSpeedMultiplier(float mult) => speedMultiplier = mult;
+    public void ResetSpeed() => speedMultiplier = 1f;
+
+    public void ForceAggro() { }
+    public void ForceAggro(float duration) { ForceAggro(); }
 
     public void Stun(float duration)
     {
-        if (!stunned)
-            StartCoroutine(StunRoutine(duration));
-    }
-
-    IEnumerator StunRoutine(float duration)
-    {
-        stunned = true;
         rb.linearVelocity = Vector2.zero;
-        yield return new WaitForSeconds(duration);
-        stunned = false;
     }
 }

@@ -14,7 +14,8 @@ public class RoomNPC : ScriptableObject
         Heal,
         Corrupt,
         SpawnElite,
-        GrantItem
+        GrantItem,
+        EnvironmentalInstability
     }
 
     public EffectType effect;

@@ -1,42 +1,31 @@
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody2D))]
 public class EnemyMelee : MonoBehaviour
 {
-    public float speed = 2f;
+    [SerializeField] float attackCooldown = 1.2f;
+    float cooldown;
 
-    Rigidbody2D rb;
-    Transform player;
-    EnemyStateController state;
+    EnemyChase chase;
 
     void Awake()
     {
-        rb = GetComponent<Rigidbody2D>();
-        state = GetComponent<EnemyStateController>();
+        chase = GetComponent<EnemyChase>();
     }
 
-    void Start()
+    void Update()
     {
-        player = GameObject.FindGameObjectWithTag("Player")?.transform;
+        if (cooldown > 0)
+            cooldown -= Time.deltaTime;
     }
 
-    void FixedUpdate()
+    public void OnAttack()
     {
-        if (GameLock.IsLocked || player == null)
-        {
-            rb.linearVelocity = Vector2.zero;
-            return;
-        }
+        if (cooldown > 0) return;
+        cooldown = attackCooldown;
+    }
 
-        if (state.CurrentState == EnemyState.Hit || state.CurrentState == EnemyState.Dead)
-        {
-            rb.linearVelocity = Vector2.zero;
-            return;
-        }
-
-        state.SetState(EnemyState.Chasing);
-
-        Vector2 dir = (player.position - transform.position).normalized;
-        rb.linearVelocity = dir * speed;
+    public void SetSpeedMultiplier(float value)
+    {
+        chase?.SetSpeedMultiplier(value);
     }
 }

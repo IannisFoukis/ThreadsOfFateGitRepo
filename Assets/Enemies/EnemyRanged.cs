@@ -1,68 +1,28 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody2D))]
 public class EnemyRanged : MonoBehaviour
 {
-    public float keepDistance = 5f;
-    public float speed = 1.5f;
+    [SerializeField] float fireCooldown = 1.6f;
+    float cooldown;
 
-    Rigidbody2D rb;
-    Transform player;
-    EnemyStateController state;
-
-    [Header("Ranged Stats")]
-    [SerializeField] float fireCooldown = 1.5f;
-
-    float fireTimer;
-
-    [Header("Projectile")]
-    [SerializeField] float projectileSpeed = 5f;
-    [SerializeField] float projectileLifetime = 2f;
-    [SerializeField] int projectileDamage = 1;
+    EnemyChase chase;
 
     void Awake()
     {
-        rb = GetComponent<Rigidbody2D>();
-        state = GetComponent<EnemyStateController>();
+        chase = GetComponent<EnemyChase>();
     }
 
-    void Start()
+    void Update()
     {
-        player = GameObject.FindGameObjectWithTag("Player")?.transform;
+        if (cooldown > 0)
+            cooldown -= Time.deltaTime;
     }
 
-    void FixedUpdate()
+    public void Fire()
     {
-        if (GameLock.IsLocked)
-        {
-            rb.linearVelocity = Vector2.zero;
-            return;
-        }
-
-        fireTimer -= Time.deltaTime;
-        if (fireTimer <= 0f)
-        {
-            Shoot();
-            fireTimer = fireCooldown;
-        }
-
-        if (player == null || state.CurrentState == EnemyState.Hit || state.CurrentState == EnemyState.Dead)
-        {
-            rb.linearVelocity = Vector2.zero;
-            return;
-        }
-
-        float dist = Vector2.Distance(transform.position, player.position);
-
-        if (dist < keepDistance)
-        {
-            Vector2 dir = (transform.position - player.position).normalized;
-            rb.linearVelocity = dir * speed;
-        }
-        else
-        {
-            rb.linearVelocity = Vector2.zero;
-        }
+        if (cooldown > 0) return;
+        cooldown = fireCooldown;
+        // projectile handled elsewhere
     }
 
     public void MultiplyFireRate(float multiplier)
@@ -70,22 +30,8 @@ public class EnemyRanged : MonoBehaviour
         fireCooldown /= multiplier;
     }
 
-    void Shoot()
+    public void SetSpeedMultiplier(float value)
     {
-        if (ProjectilePool.Instance == null)
-        {
-            Debug.LogError("[RANGED] ProjectilePool.Instance is null — ensure a ProjectilePool exists in the scene");
-            return;
-        }
-
-        if (player == null) return;
-
-        var p = ProjectilePool.Instance.Get();
-        if (p == null) return;
-
-        Vector2 dir = (player.position - transform.position).normalized;
-
-        p.transform.position = transform.position;
-        p.Fire(dir, projectileSpeed, projectileLifetime, projectileDamage, ProjectileModifiers.Default);
+        chase?.SetSpeedMultiplier(value);
     }
 }

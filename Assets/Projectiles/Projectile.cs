@@ -80,7 +80,7 @@ public class Projectile : MonoBehaviour
     void Explode()
     {
         // Simple explode behaviour for testing: log and disable projectile early.
-        Debug.Log($"[PROJECTILE] Exploded at {transform.position}");
+        //Debug.Log($"[PROJECTILE] Exploded at {transform.position}");
 
         // Stop normal lifetime invoke to avoid double-disable
         CancelInvoke(nameof(Disable));

@@ -7,6 +7,12 @@ public class Shrine : MonoBehaviour
     public ShrineTier currentTier;
     [SerializeField] ShrineAttackController attackController;
     public bool IsActive { get; private set; }
+    [Header("Tactical Interference")]
+    [SerializeField] private float formationJamDuration = 4f;
+    [Header("Tactical Interference")]
+    [SerializeField] private float tier2ScrambleDuration = 6f;
+    [Header("Tier Control")]
+    [SerializeField] private bool overrideTier = false;
 
     void Start()
     {
@@ -59,7 +65,6 @@ public class Shrine : MonoBehaviour
 
         IsActive = true;
 
-        // Make sure tier is up to date
         DetermineTier();
         ApplyTierVisuals();
 
@@ -70,7 +75,14 @@ public class Shrine : MonoBehaviour
         {
             attackController.StartAttacksForTier(currentTier);
         }
+
+        // 🔥 ADD THIS LINE
+        TriggerFormationJam(); // Tier 1 effect (already added)
+        ApplyTierVisuals();
+        TriggerSlotScrambleIfTier2();   // Tier 2 escalation
+        TriggerTier3EscalationIfTier3(); // Tier 3 escalation
     }
+
 
     public void Activate()
     {
@@ -106,7 +118,7 @@ public class Shrine : MonoBehaviour
     void OnTriggerEnter2D(Collider2D other)
     {
         var role = other.GetComponent<EnemyRoleController>();
-        if (role != null && role.role == EnemyRole.Activator)
+        if (role != null && role.CurrentRole == EnemyRole.Activator)
         {
             // BUG FIX: use the dedicated activator path
             ActivateByActivator();
@@ -115,7 +127,14 @@ public class Shrine : MonoBehaviour
 
     void DetermineTier()
     {
-        int corruption = FindAnyObjectByType<GameStateManager>().RunData.corruption;
+        if (overrideTier)
+        {
+            Debug.Log($"[SHRINE] Tier override active — using {currentTier}");
+            return;
+        }
+        var gsm = FindAnyObjectByType<GameStateManager>();
+        int corruption = gsm != null ? gsm.RunData.corruption : 0;
+
 
         if (corruption >= 6)
             currentTier = ShrineTier.Tier3;
@@ -213,4 +232,56 @@ public class Shrine : MonoBehaviour
         //ApplyHazards();
         Debug.Log("[SHRINE] Hazards forced by corruption");
     }
+    void TriggerFormationJam()
+    {
+        Debug.Log("[SHRINE] Triggering formation jam");
+
+        var tacticDirector = FindAnyObjectByType<TacticDirector>();
+        if (tacticDirector != null)
+        {
+            tacticDirector.ApplyFormationJam(formationJamDuration);
+        }
+        else
+        {
+            Debug.LogError("[SHRINE] TacticDirector not found");
+        }
+    }
+    void TriggerSlotScrambleIfTier2()
+    {
+        if (currentTier != ShrineTier.Tier2)
+            return;
+
+        Debug.Log("[SHRINE] Tier 2 reached — triggering slot scramble");
+
+        var tacticDirector = FindAnyObjectByType<TacticDirector>();
+        if (tacticDirector != null)
+        {
+            tacticDirector.ApplySlotScramble(tier2ScrambleDuration, 1);
+        }
+        else
+        {
+            Debug.LogError("[SHRINE] TacticDirector not found for slot scramble");
+        }
+    }
+    void TriggerTier3EscalationIfTier3()
+    {
+        if (currentTier != ShrineTier.Tier3)
+            return;
+
+        Debug.Log("[SHRINE] Tier 3 reached — total tactical collapse");
+
+        var tacticDirector = FindAnyObjectByType<TacticDirector>();
+        if (tacticDirector != null)
+        {
+            tacticDirector.ApplyTier3Collapse(
+                formationJamDuration * 1.5f,
+                tier2ScrambleDuration * 1.5f
+            );
+        }
+        else
+        {
+            Debug.LogError("[SHRINE] TacticDirector not found for Tier-3 escalation");
+        }
+    }
+
 }

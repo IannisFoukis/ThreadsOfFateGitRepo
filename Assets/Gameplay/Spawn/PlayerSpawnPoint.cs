@@ -7,6 +7,7 @@ public class PlayerSpawnPoint : MonoBehaviour
     private void OnEnable()
     {
         Active = this;
+        Debug.Log("[PlayerSpawnPoint] Active spawn point set");
     }
 
     private void OnDisable()

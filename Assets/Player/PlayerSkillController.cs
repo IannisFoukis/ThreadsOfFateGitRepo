@@ -4,6 +4,7 @@ public class PlayerSkillController : MonoBehaviour
 {
     [SerializeField] ActiveSkillSO dashSkill;
     [SerializeField] SkillUI dashUI;
+
     PlayerController player;
 
     void Awake()
@@ -13,18 +14,11 @@ public class PlayerSkillController : MonoBehaviour
         if (dashSkill != null)
         {
             dashSkill.OnEquip();
-            dashUI.Bind(dashSkill);
+            dashUI?.Bind(dashSkill);
         }
 
     }
-    private void Start()
-    {
-        if (dashSkill is Skill_Dash dash)
-        {
-            dash.AddModifier(new DashInvulnerable());
-        }
 
-    }
     void Update()
     {
         if (dashSkill == null) return;
@@ -34,16 +28,10 @@ public class PlayerSkillController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space))
         {
             if (!dashSkill.CanActivate())
-            {
-               
                 return;
-            }
-
-           
 
             dashSkill.Activate(player);
             dashUI?.Pulse();
-
             dashSkill.ConsumeCharge();
         }
     }

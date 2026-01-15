@@ -42,51 +42,32 @@ public static class EnemyConfigCreator
 
             switch (r)
             {
-                case EnemyRole.Offender:
+                case EnemyRole.Melee:
                     e.enableMelee = true;
                     e.enableChase = true;
                     e.enableAbility = true;
                     break;
 
-                case EnemyRole.Defender:
+                case EnemyRole.Elite:
                     e.enableRanged = true;
                     e.enableAbility = true;
                     break;
 
-                case EnemyRole.Support:
+                case EnemyRole.Charger:
                     e.enableAbility = true;
                     e.enableChase = true;
                     break;
 
-                case EnemyRole.Activator:
+                case EnemyRole.Defender:
                     e.enableActivator = true;
                     e.enableChase = true;
                     break;
 
-                case EnemyRole.Flanker:
+                case EnemyRole.Activator:
                     e.enableMelee = true;
                     e.enableChase = true;
                     break;
 
-                case EnemyRole.Melee:
-                    e.enableMelee = true;
-                    e.enableChase = true;
-                    break;
-
-                case EnemyRole.Ranged:
-                    e.enableRanged = true;
-                    break;
-
-                case EnemyRole.Charger:
-                    e.enableCharger = true;
-                    break;
-
-                case EnemyRole.Elite:
-                    e.enableAbility = true;
-                    e.enableCharger = true;
-                    e.defaultBehaviorTier = EnemyBehaviorTier.Elite;
-                    e.damageMultiplier = 1.5f;
-                    break;
             }
 
             config.entries[i] = e;

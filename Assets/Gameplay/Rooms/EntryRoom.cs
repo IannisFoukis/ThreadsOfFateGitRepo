@@ -7,6 +7,7 @@ public class EntryRoom : RoomController
     static float entryStartTime;
 
     [SerializeField] private KeeperPronouncement keeperPronouncement;
+    [SerializeField] private AudioSource entryAudio;
 
     protected override void Start()
     {
@@ -18,19 +19,28 @@ public class EntryRoom : RoomController
 
         Debug.Log("[EntryRoom] Entry room started");
 
-        // 🔒 Delay Keeper reaction until persistent UI is ready
+        // Camera settle (pure polish)
+        StartCoroutine(SettleCamera());
+
+        // Subtle audio cue
+        if (entryAudio != null)
+            entryAudio.Play();
+
+        // One-line Keeper reaction AFTER death only
         StartCoroutine(DelayedKeeperReaction());
     }
 
     private IEnumerator DelayedKeeperReaction()
     {
-        yield return null; // wait 1 frame
+        // Wait one frame so persistent UI has time to exist
+        yield return null;
 
-        var mem = RunContext.Instance.memory;
-        if (mem == null)
+        var context = RunContext.Instance;
+        if (context == null || context.memory == null)
             yield break;
 
-        if (mem.lastRunEndReason != RunEndReason.PlayerDied)
+        // Only react if previous run ended in death
+        if (context.memory.lastRunEndReason != RunEndReason.PlayerDied)
             yield break;
 
         if (keeperPronouncement == null)
@@ -42,7 +52,7 @@ public class EntryRoom : RoomController
 
         if (keeperPronouncement == null)
         {
-            Debug.LogError("[EntryRoom] KeeperPronouncement not found (even inactive).");
+            Debug.LogError("[EntryRoom] KeeperPronouncement not found.");
             yield break;
         }
 
@@ -51,16 +61,10 @@ public class EntryRoom : RoomController
         {
             keeperPronouncement.Show(line);
         }
-
-        mem.entryHesitated = false;
-        mem.entryRushed = false;
     }
-
 
     public static void CommitEntry()
     {
-        Debug.Log("[EntryRoom] CommitEntry called");
-
         if (entryCommitted)
             return;
 
@@ -69,33 +73,46 @@ public class EntryRoom : RoomController
         float timeSpent = Time.time - entryStartTime;
         Debug.Log($"[EntryRoom] Time in entry room: {timeSpent:F2}s");
 
-        if (RunContext.Instance != null && RunContext.Instance.memory != null)
+        var mem = RunContext.Instance?.memory;
+        if (mem != null)
         {
             if (timeSpent < 5f)
             {
-                RunContext.Instance.memory.entryRushed = true;
-                RunContext.Instance.memory.rushCount++;
+                mem.entryRushed = true;
                 Debug.Log("[EntryRoom] Entry rushed");
             }
             else
             {
-                RunContext.Instance.memory.entryHesitated = true;
-                RunContext.Instance.memory.hesitationCount++;
+                mem.entryHesitated = true;
                 Debug.Log("[EntryRoom] Entry hesitated");
             }
         }
-        else
-        {
-            Debug.LogError("[EntryRoom] RunContext or memory missing");
-        }
 
-        var runDirector = Object.FindAnyObjectByType<RunDirector>();
+        var runDirector = FindAnyObjectByType<RunDirector>();
         if (runDirector == null)
         {
-            Debug.LogError("[EntryRoom] RunDirector not found. Cannot begin run.");
+            Debug.LogError("[EntryRoom] RunDirector not found.");
             return;
         }
 
         runDirector.BeginRun();
+    }
+
+    private IEnumerator SettleCamera()
+    {
+        var cam = Camera.main;
+        if (cam == null)
+            yield break;
+
+        Vector3 target = cam.transform.position;
+        Vector3 start = target + Vector3.up * 0.5f;
+
+        float t = 0f;
+        while (t < 1f)
+        {
+            t += Time.deltaTime * 0.8f;
+            cam.transform.position = Vector3.Lerp(start, target, t);
+            yield return null;
+        }
     }
 }

@@ -67,7 +67,7 @@ public class EnemyAbilityController : MonoBehaviour
         var gsm = FindAnyObjectByType<GameStateManager>();
         if (gsm != null && gsm.RunState != null) tension = gsm.RunState.runTension;
 
-        ApplyEscalation(roleController.role, shrineTier, tension, midFight: true);
+        ApplyEscalation(roleController.CurrentRole, shrineTier, tension, midFight: true);
     }
 
     // =====================================================
@@ -77,9 +77,9 @@ public class EnemyAbilityController : MonoBehaviour
     {
         if (!player || roleController == null) return;
 
-        switch (roleController.role)
+        switch (roleController.CurrentRole)
         {
-            case EnemyRole.Offender:
+            case EnemyRole.Melee:
                 ExecuteOffender();
                 break;
 
@@ -87,7 +87,13 @@ public class EnemyAbilityController : MonoBehaviour
                 ExecuteDefender();
                 break;
 
-            case EnemyRole.Support:
+            case EnemyRole.Charger:
+                ExecuteSupport();
+                break;
+            case EnemyRole.Activator:
+                ExecuteSupport();
+                break;
+            case EnemyRole.Elite:
                 ExecuteSupport();
                 break;
         }

@@ -1,56 +1,44 @@
-using UnityEngine;
+﻿using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(EnemyChase))]
 public class ActivatorRunner : MonoBehaviour
 {
-    [SerializeField] float moveSpeed = 3.5f;
-    [SerializeField] float stopDistance = 0.4f;
+    [SerializeField] private float activationRange = 0.8f;
 
-    Rigidbody2D rb;
-    EnemyRoleController roleController;
-    Shrine shrine;
+    private Transform shrineTransform;
 
-    void Awake()
+    // Used by runtime logic (preferred)
+    public void SetShrine(Transform shrine)
     {
-        rb = GetComponent<Rigidbody2D>();
-        roleController = GetComponent<EnemyRoleController>();
+        shrineTransform = shrine;
+        Debug.Log($"[ActivatorRunner] Shrine set to {shrine.name}");
     }
 
-    void Start()
+    // Used by tests / inspectors
+    public void SetShrine(Shrine shrine)
     {
-        // shrine can be assigned externally (preferred). Fall back to any shrine in scene.
-        if (shrine == null)
-            shrine = FindAnyObjectByType<Shrine>();
-    }
-
-    // Allow external assignment of the target shrine (e.g., by CombatRoom when spawning)
-    public void SetShrine(Shrine s)
-    {
-        shrine = s;
-    }
-
-    void FixedUpdate()
-    {
-        if (roleController == null || roleController.role != EnemyRole.Activator)
-        {
-            rb.linearVelocity = Vector2.zero;
-            return;
-        }
-
         if (shrine == null)
         {
-            rb.linearVelocity = Vector2.zero;
+            Debug.LogWarning("[ActivatorRunner] SetShrine called with null Shrine");
             return;
         }
 
-        Vector2 toShrine = (Vector2)shrine.transform.position - rb.position;
+        SetShrine(shrine.transform);
+    }
 
-        if (toShrine.magnitude <= stopDistance)
-        {
-            rb.linearVelocity = Vector2.zero;
+    private void Update()
+    {
+        if (shrineTransform == null)
             return;
-        }
 
-        rb.linearVelocity = toShrine.normalized * moveSpeed;
+        float dist = Vector2.Distance(transform.position, shrineTransform.position);
+        if (dist <= activationRange)
+            ActivateShrine();
+    }
+
+    private void ActivateShrine()
+    {
+        // Shrine handles activation via trigger / collider
+        Debug.Log("[ActivatorRunner] Shrine reached → activation triggered");
     }
 }

@@ -62,16 +62,15 @@ public class ActivatorTest : MonoBehaviour
 
         // Set role to Activator and apply role immediately
         var rc = spawnedEnemy.GetComponent<EnemyRoleController>();
-        if (rc != null) rc.role = EnemyRole.Activator;
+        if (rc != null) rc.ApplyRole(EnemyRole.Activator);
 
         var enemyComp = spawnedEnemy.GetComponent<Enemy>();
-        if (enemyComp != null)
-            enemyComp.ApplyRole(EnemyRole.Activator);
+        
 
         // Assign shrine to ActivatorRunner if present
         var activator = spawnedEnemy.GetComponent<ActivatorRunner>();
         if (activator != null)
-            activator.SetShrine(spawnedShrine.GetComponent<Shrine>());
+            activator.SetShrine(spawnedShrine.transform);
 
         // Ensure Rigidbody2D exists for movement
         var rb = spawnedEnemy.GetComponent<Rigidbody2D>();

@@ -25,6 +25,14 @@ public class GameStateManager : MonoBehaviour
         // Reset runtime state
         RunState.Reset();
 
+        // Reset per-run context data (rules + memory) safely
+        if (RunContext.Instance != null)
+        {
+            RunContext.Instance.rules = new RunRules();    // resets all bools to false
+            RunContext.Instance.memory = new RunMemory();  // resets per-run memory
+        }
+
+
         Debug.Log("=== NEW RUN STARTED ===");
     }
 
@@ -43,61 +51,18 @@ public class GameStateManager : MonoBehaviour
 
         endRunPending = false;
 
-        // 🚫 DO NOT auto-start run here
-        // FindAnyObjectByType<RunDirector>()?.BeginRun();
-
-        // Ensure player exists
-        var player = GameObject.FindWithTag("Player");
-        if (player == null)
-        {
-            Debug.LogError("Player not found in Entry scene. Ensure the Entry scene provides a Player GameObject tagged 'Player'.");
-            SceneManager.sceneLoaded -= OnSceneLoaded;
-            return;
-        }
-
-        // Reactivate persistent player if it was deactivated on death
-        if (!player.activeInHierarchy)
-            player.SetActive(true);
-
-        // Reset health
-        var h = player.GetComponent<Health>();
-        if (h != null)
-            h.currentHealth = h.maxHealth;
-
-        var ps = player.GetComponent<PlayerStats>() ?? PlayerStats.Instance;
-        if (ps != null)
-            ps.currentHealth = ps.maxHealth;
-
-        // Ensure player controller is enabled
-        var pc = player.GetComponent<PlayerController>();
-        if (pc != null)
-            pc.enabled = true;
-
-        // Clear global locks / pause
-        GameLock.IsLocked = false;
-        Time.timeScale = 1f;
-
-        // Clear any pending choice state
-        ChoiceManager.Instance?.FinishChoice();
-
-        // Move player to spawn point
-        if (PlayerSpawnPoint.Active != null)
-        {
-            player.transform.position = PlayerSpawnPoint.Active.transform.position;
-        }
-        else
-        {
-            var sp = Object.FindAnyObjectByType<PlayerSpawnPoint>();
-            if (sp != null)
-                player.transform.position = sp.transform.position;
-        }
-
+        // NOTHING player-related here anymore
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
-   
+
+
 
     public void EndRun(RunEndReason reason)
     {
+        
+
+        Debug.Log($"[RUN END] Reason = {reason}");
+
         if (endRunPending)
         {
             Debug.LogWarning($"EndRun already pending (reason={pendingReason}), ignoring duplicate call for {reason}");

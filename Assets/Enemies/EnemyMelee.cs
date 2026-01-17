@@ -2,16 +2,37 @@ using UnityEngine;
 
 public class EnemyMelee : MonoBehaviour
 {
-    [SerializeField] float baseSpeed = 2f;
-    float speedMultiplier = 1f;
+    public float attackRange = 1.5f;
+    public float attackCooldown = 1.2f;
 
-    public void SetSpeedMultiplier(float value)
+    private float lastAttackTime;
+    private EnemyAgent agent;
+
+    void Start()
     {
-        speedMultiplier = value;
+        agent = GetComponent<EnemyAgent>();
     }
 
-    public float GetSpeed()
+    void Update()
     {
-        return baseSpeed * speedMultiplier;
+        if (agent == null)
+            return;
+
+        // Only attack when in formation slot
+        if (agent.IsAtSlot())
+        {
+            TryAttackPlayer();
+        }
+    }
+
+    void TryAttackPlayer()
+    {
+        if (Time.time < lastAttackTime + attackCooldown)
+            return;
+
+        // Basic attack placeholder
+        Debug.Log($"{name} performs MELEE ATTACK");
+
+        lastAttackTime = Time.time;
     }
 }

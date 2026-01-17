@@ -3,10 +3,13 @@ using UnityEngine;
 public enum EnemyState
 {
     Idle,
-    Chasing,
+    MovingToSlot,
+    InFormation,
+    Attacking,
     Hit,
     Dead
 }
+
 
 public class EnemyStateController : MonoBehaviour
 {

@@ -4,7 +4,7 @@ using UnityEngine;
 public class Knockback : MonoBehaviour
 {
     public float force = 5f;
-    Rigidbody2D rb;
+    private Rigidbody2D rb;
 
     void Awake()
     {
@@ -13,10 +13,10 @@ public class Knockback : MonoBehaviour
 
     public void Apply(Vector2 direction)
     {
+        if (rb == null)
+            return;
+
         rb.linearVelocity = Vector2.zero;
         rb.AddForce(direction.normalized * force, ForceMode2D.Impulse);
-
-        var chase = GetComponent<EnemyChase>();
-        chase?.Stun(0.15f);
     }
 }

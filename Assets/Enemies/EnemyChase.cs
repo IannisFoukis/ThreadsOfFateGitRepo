@@ -1,46 +1,101 @@
 ﻿using UnityEngine;
-using System.Collections;
 
+[RequireComponent(typeof(Rigidbody2D))]
 public class EnemyChase : MonoBehaviour
 {
-    [SerializeField] float baseSpeed = 2.5f;
+    [Header("Movement")]
+    public float moveSpeed = 4f;
+    public float arriveDistance = 0.15f;
 
-    float speedMultiplier = 1f;
-    Rigidbody2D rb;
-    Transform player;
+    [Header("Separation")]
+    public float separationRadius = 1.2f;
+    public float separationPushRadius = 0.8f;
+    public float separationStrength = 1.5f;
 
-    Vector2 currentDir;
-    bool stunned;
-    Coroutine stunRoutine;
-    Coroutine aggroRoutine;
+    private EnemyAgent agent;
+    private Rigidbody2D rb;
 
+    private Transform cachedPlayer;
+    private float speedMultiplier = 1f;
+
+    private float stunUntilTime = -1f;
+    private float forceAggroUntilTime = -1f;
+
+    private Vector2 currentDir = Vector2.right;
     public Vector2 CurrentDir => currentDir;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        player = GameObject.FindGameObjectWithTag("Player")?.transform;
+        agent = GetComponent<EnemyAgent>();
+    }
+
+    void Start()
+    {
+        ResolvePlayerOnce();
     }
 
     void FixedUpdate()
     {
-        if (!player || stunned)
+        if (agent == null) return;
+
+        // If stunned, stop.
+        if (Time.time < stunUntilTime)
         {
             rb.linearVelocity = Vector2.zero;
             return;
         }
 
-        currentDir = ((Vector2)player.position - rb.position).normalized;
-        rb.linearVelocity = currentDir * baseSpeed * speedMultiplier;
+        // Prefer formation target ALWAYS (agent may still return a "best effort" target even before slot assignment)
+        Vector3 target = agent.GetSmoothedTarget();
+
+        // Safety fallback only if agent gives something unusable
+        if (!IsFinite(target))
+        {
+            ResolvePlayerOnce();
+            if (cachedPlayer == null) return;
+            target = cachedPlayer.position;
+        }
+
+        Vector2 toTarget = (Vector2)(target - transform.position);
+
+        // Arrive
+        if (toTarget.sqrMagnitude <= arriveDistance * arriveDistance)
+        {
+            rb.linearVelocity = Vector2.zero;
+            return;
+        }
+
+        Vector2 desiredDir = toTarget.normalized;
+
+        // Separation steering
+        Vector2 sep = GetSeparationForce();
+        Vector2 finalDir = (desiredDir + sep).normalized;
+
+        currentDir = finalDir;
+
+        float finalSpeed = moveSpeed * speedMultiplier;
+        rb.linearVelocity = finalDir * finalSpeed;
     }
 
-    // =====================
-    // API USED BY OTHER SYSTEMS
-    // =====================
+    // --- API expected by other scripts (Knockback/Health/EnemyFacing/etc.) ---
 
-    public void SetSpeedMultiplier(float value)
+    public void Stun(float duration)
     {
-        speedMultiplier = value;
+        stunUntilTime = Mathf.Max(stunUntilTime, Time.time + Mathf.Max(0f, duration));
+        rb.linearVelocity = Vector2.zero;
+    }
+
+    public void ForceAggro(float duration)
+    {
+        forceAggroUntilTime = Mathf.Max(forceAggroUntilTime, Time.time + Mathf.Max(0f, duration));
+        ResolvePlayerOnce();
+        // (Your combat logic can use forceAggroUntilTime if needed later)
+    }
+
+    public void SetSpeedMultiplier(float multiplier)
+    {
+        speedMultiplier = Mathf.Clamp(multiplier, 0.05f, 10f);
     }
 
     public void ResetSpeed()
@@ -48,44 +103,46 @@ public class EnemyChase : MonoBehaviour
         speedMultiplier = 1f;
     }
 
-    /// <summary>
-    /// Temporarily disables movement (used by Knockback / CC)
-    /// </summary>
-    public void Stun(float duration)
-    {
-        if (stunRoutine != null)
-            StopCoroutine(stunRoutine);
+    // --- Helpers ---
 
-        stunRoutine = StartCoroutine(StunRoutine(duration));
+    private void ResolvePlayerOnce()
+    {
+        if (cachedPlayer != null) return;
+        var go = GameObject.FindGameObjectWithTag("Player");
+        if (go != null) cachedPlayer = go.transform;
     }
 
-    IEnumerator StunRoutine(float duration)
+    private Vector2 GetSeparationForce()
     {
-        stunned = true;
-        rb.linearVelocity = Vector2.zero;
-        yield return new WaitForSeconds(duration);
-        stunned = false;
+        Collider2D[] nearby = Physics2D.OverlapCircleAll(transform.position, separationRadius);
+
+        Vector2 force = Vector2.zero;
+        int count = 0;
+
+        foreach (var col in nearby)
+        {
+            if (col == null || col.gameObject == gameObject) continue;
+
+            // Only separate from other enemies that have EnemyAgent (keeps it cheap + consistent)
+            var other = col.GetComponent<EnemyAgent>();
+            if (other == null) continue;
+
+            float dist = Vector2.Distance(transform.position, col.transform.position);
+            if (dist < separationPushRadius && dist > 0.0001f)
+            {
+                force += ((Vector2)transform.position - (Vector2)col.transform.position).normalized;
+                count++;
+            }
+        }
+
+        if (count > 0) force /= count;
+
+        // Convert to a steering influence (not a teleport)
+        return force * separationStrength;
     }
 
-    /// <summary>
-    /// Forces enemy to aggressively chase the player
-    /// (used by Elite death, shrine effects, taunts)
-    /// </summary>
-    public void ForceAggro(float duration)
+    private bool IsFinite(Vector3 v)
     {
-        if (aggroRoutine != null)
-            StopCoroutine(aggroRoutine);
-
-        aggroRoutine = StartCoroutine(ForceAggroRoutine(duration));
-    }
-
-    IEnumerator ForceAggroRoutine(float duration)
-    {
-        float originalMultiplier = speedMultiplier;
-        speedMultiplier = Mathf.Max(speedMultiplier, 1.5f);
-
-        yield return new WaitForSeconds(duration);
-
-        speedMultiplier = originalMultiplier;
+        return !(float.IsNaN(v.x) || float.IsNaN(v.y) || float.IsInfinity(v.x) || float.IsInfinity(v.y));
     }
 }

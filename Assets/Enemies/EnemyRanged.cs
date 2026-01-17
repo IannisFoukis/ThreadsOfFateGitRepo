@@ -2,29 +2,35 @@
 
 public class EnemyRanged : MonoBehaviour
 {
-    [SerializeField] float baseSpeed = 1.6f;
-    [SerializeField] float baseFireRate = 1.2f;
+    public float fireCooldown = 1.5f;
 
-    float speedMultiplier = 1f;
-    float fireRateMultiplier = 1f;
+    private float lastFireTime;
+    private EnemyAgent agent;
 
-    public void SetSpeedMultiplier(float value)
+    void Start()
     {
-        speedMultiplier = value;
+        agent = GetComponent<EnemyAgent>();
     }
 
-    public void MultiplyFireRate(float value)
+    void Update()
     {
-        fireRateMultiplier *= value;
+        if (agent == null)
+            return;
+
+        // Fire only when positioned correctly
+        if (agent.IsAtSlot())
+        {
+            TryFireAtPlayer();
+        }
     }
 
-    public float GetSpeed()
+    void TryFireAtPlayer()
     {
-        return baseSpeed * speedMultiplier;
-    }
+        if (Time.time < lastFireTime + fireCooldown)
+            return;
 
-    public float GetFireRate()
-    {
-        return baseFireRate * fireRateMultiplier;
+        Debug.Log($"{name} fires a projectile!");
+
+        lastFireTime = Time.time;
     }
 }

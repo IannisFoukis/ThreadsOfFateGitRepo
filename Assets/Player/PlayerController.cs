@@ -1,42 +1,44 @@
 ﻿using UnityEngine;
 
-[RequireComponent(typeof(PlayerMotor))]
 public class PlayerController : MonoBehaviour
 {
-    PlayerMotor motor;
-    Vector2 input;
-    bool movementLocked;
+    private PlayerMotor motor;
 
-    public Vector2 MoveInput => input;
+    Vector2 moveInput;
+    Vector2 aimInput;
+
+    // ✅ READ-ONLY ACCESSORS (this fixes your error)
+    public Vector2 MoveInput => moveInput;
+    public Vector2 AimInput => aimInput;
 
     void Awake()
     {
         motor = GetComponent<PlayerMotor>();
-        if (motor == null)
-            Debug.LogError("[PlayerController] PlayerMotor missing!");
     }
 
     void Update()
     {
-        input.x = Input.GetAxisRaw("Horizontal");
-        input.y = Input.GetAxisRaw("Vertical");
+        ReadInput();
+        motor.SetInput(moveInput, aimInput);
     }
 
-    void FixedUpdate()
+    void ReadInput()
     {
-        if (motor == null) return;
+        // Movement
+        moveInput = new Vector2(
+            Input.GetAxisRaw("Horizontal"),
+            Input.GetAxisRaw("Vertical")
+        ).normalized;
 
-        if (movementLocked)
-        {
-            motor.SetInput(Vector2.zero);
-            return;
-        }
+        // Mouse aim
+        Vector3 mouseWorld =
+            Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-        motor.SetInput(input);
-    }
+        Vector2 mouseDir =
+            (Vector2)(mouseWorld - transform.position);
 
-    public void SetMovementLock(bool locked)
-    {
-        movementLocked = locked;
+        aimInput = mouseDir.sqrMagnitude > 0.01f
+            ? mouseDir.normalized
+            : Vector2.zero;
     }
 }

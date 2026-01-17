@@ -25,12 +25,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1833826895790128327}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 4619573443503270045}
+  m_Father: {fileID: 7688332900140463162}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &3207678970501771476
 SpriteRenderer:
@@ -221,8 +221,7 @@ Transform:
   m_LocalScale: {x: 4, y: 4, z: 4}
   m_ConstrainProportionsScale: 1
   m_Children:
-  - {fileID: 7953424740898513073}
-  - {fileID: 1105121803672270247}
+  - {fileID: 7688332900140463162}
   - {fileID: 6776526030667103360}
   - {fileID: 787263100851823803}
   m_Father: {fileID: 0}
@@ -325,7 +324,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 6
-  visualRoot: {fileID: 0}
+  dashDrag: 5
+  defaultDashForce: 12
+  visualRoot: {fileID: 7688332900140463162}
 --- !u!114 &3155631983609150054
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -552,7 +553,7 @@ GameObject:
   - component: {fileID: 1105121803672270247}
   - component: {fileID: 5823218704560551531}
   m_Layer: 6
-  m_Name: Sprite (1)
+  m_Name: faceSprite
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -566,12 +567,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5195083727428599067}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.0051, y: 0.066, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.005100012, y: 0.065999985, z: 0}
   m_LocalScale: {x: 0.71912444, y: 0.4096338, z: 0.31057}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 4619573443503270045}
+  m_Father: {fileID: 7688332900140463162}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &5823218704560551531
 SpriteRenderer:
@@ -628,3 +629,36 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!1 &6165488558733640773
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7688332900140463162}
+  m_Layer: 6
+  m_Name: 'VisualRoot   '
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7688332900140463162
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6165488558733640773}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 7953424740898513073}
+  - {fileID: 1105121803672270247}
+  m_Father: {fileID: 4619573443503270045}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

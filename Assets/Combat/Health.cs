@@ -110,13 +110,7 @@ public class Health : MonoBehaviour
             EliteSpawner.Instance.OnEliteKilled();
 
             Enemy[] enemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
-            foreach (var e in enemies)
-            {
-                var chase = e.GetComponent<EnemyChase>();
-                if (chase != null)
-                    chase.ForceAggro(1.5f);
-
-            }
+            
 
             Debug.Log("[ELITE] Elite killed → FORCED AGGRO");
         }

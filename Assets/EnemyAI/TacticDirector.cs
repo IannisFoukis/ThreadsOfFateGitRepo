@@ -291,9 +291,13 @@ public class TacticDirector : MonoBehaviour
             if (!e) continue;
 
             var slot = e.GetComponent<EnemySlotLock>();
-            if (slot != null && slot.CanAcceptSlot)
+            if (slot == null) continue;
+
+            // we want enemies WITHOUT slots
+            if (!slot.HasSlot)
                 free.Add(e);
         }
+
 
         if (free.Count < 3)
             return;
@@ -336,6 +340,21 @@ public class TacticDirector : MonoBehaviour
 
         foreach (var e in activeEnemies)
             e?.GetComponent<EnemySlotLock>()?.ReleaseSlot();
+
+        for (int i = activeEnemies.Count - 1; i >= 0; i--)
+        {
+            var e = activeEnemies[i];
+            if (!e)
+            {
+                activeEnemies.RemoveAt(i);
+                continue;
+            }
+
+            var slot = e.GetComponent<EnemySlotLock>();
+            if (slot && slot.HasSlot)
+                slot.ReleaseSlot();
+        }
+
     }
 
     public void Register(Enemy enemy)

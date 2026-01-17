@@ -3,13 +3,12 @@ using UnityEngine;
 public class EnemyFacing : MonoBehaviour
 {
     [SerializeField] private Transform visualRoot;
-    // This can be the same GameObject or a child (recommended)
 
-    private EnemyChase chase;
+    private EnemyAgent agent;
 
     void Awake()
     {
-        chase = GetComponent<EnemyChase>();
+        agent = GetComponent<EnemyAgent>();
 
         if (visualRoot == null)
             visualRoot = transform;
@@ -17,10 +16,13 @@ public class EnemyFacing : MonoBehaviour
 
     void LateUpdate()
     {
-        if (chase == null) return;
+        if (agent == null)
+            return;
 
-        Vector2 dir = chase.CurrentDir;
-        if (dir.sqrMagnitude < 0.01f) return;
+        Vector2 dir = (agent.GetSmoothedTarget() - transform.position).normalized;
+
+        if (dir.sqrMagnitude < 0.01f)
+            return;
 
         float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
         visualRoot.rotation = Quaternion.Euler(0f, 0f, angle);

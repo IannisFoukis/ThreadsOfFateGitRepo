@@ -247,7 +247,7 @@ public class RunDirector : MonoBehaviour
         RunState run = gsm.RunState;
 
         if (role == RoomRole.Combat || role == RoomRole.Combat1)
-            run.runTension += 2;
+            run.runTension += 5;
 
         if (role == RoomRole.PressureSpike)
             run.runTension += 3;
@@ -412,6 +412,22 @@ public class RunDirector : MonoBehaviour
         // Delay here is SAFE — RunDirector is persistent
         StartCoroutine(AdvanceAfterCombat());
     }
+
+    public int CurrentTension => gsm != null ? gsm.RunState.runTension : 5;
+
+    public int CurrentCorruption
+    {
+        get
+        {
+            if (RunCorruptionState.Instance == null)
+                return 0;
+
+            return RunCorruptionState.Instance.CorruptionLevel;
+        }
+    }
+
+
+
 
     private System.Collections.IEnumerator AdvanceAfterCombat()
     {

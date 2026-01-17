@@ -9,7 +9,7 @@ public class EnemyRoleController : MonoBehaviour
     [SerializeField] private MonoBehaviour defender;
     [SerializeField] private MonoBehaviour activator;
 
-    [SerializeField] private EnemyRole currentRole = EnemyRole.Melee;
+    [SerializeField] public EnemyRole currentRole = EnemyRole.Melee;
 
     public EnemyRole CurrentRole => currentRole;
 

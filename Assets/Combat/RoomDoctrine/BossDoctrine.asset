@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5be343c12532b0c448d12853a61e5a84, type: 3}
+  m_Name: BossDoctrine
+  m_EditorClassIdentifier: 
+  doctrineType: 0
+  maxFrontSlots: 1
+  maxFlankSlots: 0
+  allowRearSlots: 1
+  hasAnchorObjective: 1
+  anchorHasPriority: 1
+  reassignmentAggression: 0.3
+  slotRequestCooldown: 1.5
+  layout:
+    frontOffset: {x: 0, y: 1.5, z: 0}
+    rearOffset: {x: 0, y: -1.2, z: 0}
+    flankLeftOffset: {x: -2, y: 0, z: 0}
+    flankRightOffset: {x: 2, y: 0, z: 0}
+    anchorOffset: {x: 0, y: 0, z: 0}

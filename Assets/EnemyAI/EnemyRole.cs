@@ -7,6 +7,9 @@ public enum EnemyRole
     Ranged = 4,
     Activator = 5,
     Elite = 6,
-    Joker = 7
+    Joker = 7,
+    Offender = 8,
+    Ranger = 9,
+    Boss = 10
 
 }

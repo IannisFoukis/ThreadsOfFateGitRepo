@@ -3,30 +3,20 @@
 public class EnemyBehaviorController : MonoBehaviour
 {
     EnemyChase chase;
-    EnemyMelee melee;
-    EnemyRanged ranged;
+    EnemyAgent agent;
 
     void Awake()
     {
         TryGetComponent(out chase);
-        TryGetComponent(out melee);
-        TryGetComponent(out ranged);
+        TryGetComponent(out agent);
     }
 
-    public void ApplySpeedMultiplier(float value)
+    public bool CanAct()
     {
-        chase?.SetSpeedMultiplier(value);
-        melee?.SetSpeedMultiplier(value);
-        ranged?.SetSpeedMultiplier(value);
+        return true;
     }
 
-    public void ResetSpeed()
-    {
-        chase?.ResetSpeed();
-    }
 
-    public void ApplyFireRateMultiplier(float value)
-    {
-        ranged?.MultiplyFireRate(value);
-    }
+    // Used by doctrines / shrine effects
+   
 }

@@ -3,6 +3,16 @@ using System;
 
 public class CombatRoom : MonoBehaviour
 {
+    public enum CombatCoordinationMode
+    {
+        Legacy,
+        EnemyCentric
+    }
+
+    [Header("Coordination System")]
+    [SerializeField] private CombatCoordinationMode coordinationMode = CombatCoordinationMode.EnemyCentric;
+
+
     [Header("Doctrine (Debug)")]
     [SerializeField] private RoomDoctrine selectedDoctrine;
     [SerializeField] private bool randomizeDoctrine = true;
@@ -12,20 +22,38 @@ public class CombatRoom : MonoBehaviour
     public Transform[] enemySpawnPoints;
 
     private TacticDirector tacticDirector;
+    private EncounterCoordinator encounterCoordinator;
+
     private int aliveEnemies;
+
+    [Header("Test Spawn Settings")]
+    public int offenders = 5;
+    public int defenders = 3;
+    public int rangers = 2;
+    public int activators = 0;
+    public int jokers = 0;
 
     private void Awake()
     {
         tacticDirector = GetComponent<TacticDirector>();
-        if (tacticDirector == null)
+        encounterCoordinator = GetComponentInChildren<EncounterCoordinator>();
+
+        if (coordinationMode == CombatCoordinationMode.Legacy && tacticDirector == null)
             Debug.LogError("[CombatRoom] TacticDirector missing on CombatRoom!");
+
+        if (coordinationMode == CombatCoordinationMode.EnemyCentric && encounterCoordinator == null)
+            Debug.LogError("[CombatRoom] EncounterCoordinator missing on CombatRoom!");
+
     }
 
     private void Start()
     {
         ApplyDoctrine();
         SpawnEncounter();
+
+       
     }
+
 
     // ─────────────────────────────────────────────────────
     // DOCTRINE
@@ -33,12 +61,20 @@ public class CombatRoom : MonoBehaviour
 
     private void ApplyDoctrine()
     {
-        if (randomizeDoctrine)
-            selectedDoctrine = RollDoctrine();
+        if (coordinationMode == CombatCoordinationMode.Legacy)
+        {
+            if (randomizeDoctrine)
+                selectedDoctrine = RollDoctrine();
 
-        Debug.Log($"[CombatRoom] Selected Doctrine: {selectedDoctrine}");
-        tacticDirector.ConfigureDoctrine(selectedDoctrine);
+            Debug.Log($"[CombatRoom] Selected Doctrine: {selectedDoctrine}");
+            tacticDirector.ConfigureDoctrine(selectedDoctrine);
+        }
+        else
+        {
+            Debug.Log("[CombatRoom] Using Enemy-Centric coordination – doctrine handled by EncounterCoordinator");
+        }
     }
+
 
     private RoomDoctrine RollDoctrine()
     {
@@ -60,40 +96,60 @@ public class CombatRoom : MonoBehaviour
             return;
         }
 
-        if (enemySpawnPoints == null || enemySpawnPoints.Length < 3)
+        if (enemySpawnPoints == null || enemySpawnPoints.Length == 0)
         {
-            Debug.LogError("[CombatRoom] Need at least 3 enemySpawnPoints.");
+            Debug.LogError("[CombatRoom] No spawn points configured.");
             return;
         }
 
         aliveEnemies = 0;
 
-        SpawnEnemy(EnemyRole.Melee, enemySpawnPoints[0]);
-        SpawnEnemy(EnemyRole.Ranged, enemySpawnPoints[1]);
-        SpawnEnemy(EnemyRole.Melee, enemySpawnPoints[2]);
+        int spawnIndex = 0;
 
-        if (enemySpawnPoints.Length > 3 && UnityEngine.Random.value < 0.35f)
-            SpawnEnemy(EnemyRole.Elite, enemySpawnPoints[3]);
+        void SpawnMany(EnemyRole role, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                var sp = enemySpawnPoints[spawnIndex % enemySpawnPoints.Length];
+                SpawnEnemy(role, sp);
+                spawnIndex++;
+            }
+        }
 
-        if (enemySpawnPoints.Length > 4 && UnityEngine.Random.value < 0.2f)
-            SpawnEnemy(EnemyRole.Joker, enemySpawnPoints[4]);
+        SpawnMany(EnemyRole.Melee, offenders);
+        SpawnMany(EnemyRole.Elite, defenders);
+        SpawnMany(EnemyRole.Ranged, rangers);
+        SpawnMany(EnemyRole.Activator, activators);
+        SpawnMany(EnemyRole.Joker, jokers);
 
-        Debug.Log("[CombatRoom] Mixed encounter spawned");
+        Debug.Log("[CombatRoom] Test encounter spawned via role counts");
     }
+
 
     private void SpawnEnemy(EnemyRole role, Transform sp)
     {
         var go = Instantiate(enemyPrefab, sp.position, Quaternion.identity);
 
-        var roleCtrl = go.GetComponent<EnemyRoleController>();
-        if (roleCtrl != null)
-            roleCtrl.ApplyRole(role);
-
         var enemy = go.GetComponent<Enemy>();
         if (enemy != null)
         {
             aliveEnemies++;
-            tacticDirector.Register(enemy);
+
+            // In BOTH systems we simply use EnemyRoleController
+            var roleCtrl = go.GetComponent<EnemyRoleController>();
+            if (roleCtrl != null)
+            {
+                roleCtrl.ApplyRole(role);
+            }
+
+            // Legacy tactical director only used in legacy mode
+            if (coordinationMode == CombatCoordinationMode.Legacy)
+            {
+                tacticDirector.Register(enemy);
+            }
+
+            // NEW SYSTEM: nothing else is required
+            // EncounterCoordinator + EnemyAgent handle everything automatically
 
             var relay = go.AddComponent<EnemyDeathRelay>();
             relay.OnEnemyDestroyed = OnEnemyDestroyed;
@@ -101,6 +157,7 @@ public class CombatRoom : MonoBehaviour
 
         Debug.Log($"[CombatRoom] Spawned {role} at {go.transform.position}");
     }
+
 
     // ─────────────────────────────────────────────────────
     // COMBAT LIFECYCLE

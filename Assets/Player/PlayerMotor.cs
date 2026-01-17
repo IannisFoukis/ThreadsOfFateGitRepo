@@ -5,43 +5,78 @@ public class PlayerMotor : MonoBehaviour
 {
     [Header("Movement")]
     public float moveSpeed = 6f;
+    public float dashDrag = 5f;
+    public float defaultDashForce = 12f;
 
-    [Header("Visuals")]
-    [Tooltip("Sprite root (child). Leave empty to rotate this transform.")]
-    public Transform visualRoot;
+    private Rigidbody2D rb;
 
-    Rigidbody2D rb;
+    private Vector2 moveInput;
+    private Vector2 aimInput;
+    private Vector2 dashVelocity;
+    [SerializeField] private Transform visualRoot;
 
-    Vector2 input;
-    Vector2 dashVelocity;
-    Vector2 lastMoveDir = Vector2.down; // default facing
-
-    public bool IsDashing => dashVelocity.sqrMagnitude > 0.01f;
+    public Vector2 FacingDir { get; private set; } = Vector2.right;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        rb.gravityScale = 0f;
-        rb.constraints = RigidbodyConstraints2D.FreezeRotation;
-
-        if (visualRoot == null)
-            visualRoot = transform;
     }
 
+    void FixedUpdate()
+    {
+        Vector2 velocity = moveInput * moveSpeed;
+
+        if (dashVelocity != Vector2.zero)
+        {
+            velocity += dashVelocity;
+            dashVelocity = Vector2.Lerp(
+                dashVelocity,
+                Vector2.zero,
+                dashDrag * Time.fixedDeltaTime
+            );
+        }
+        if (aimInput.sqrMagnitude > 0.01f)
+        {
+            float angle = Mathf.Atan2(aimInput.y, aimInput.x) * Mathf.Rad2Deg;
+            visualRoot.rotation = Quaternion.Euler(0f, 0f, angle);
+        }
+
+        rb.linearVelocity = velocity;
+        UpdateFacing();
+    }
+
+    // =====================================
+    // INPUT
+    // =====================================
+
+    // NEW (mouse / aim aware)
+    public void SetInput(Vector2 move, Vector2 aim)
+    {
+        moveInput = move;
+        aimInput = aim;
+    }
+
+    // OLD (movement only) — keeps PlayerController working
     public void SetInput(Vector2 move)
     {
-        input = Vector2.ClampMagnitude(move, 1f);
-
-        if (input.sqrMagnitude > 0.01f)
-            lastMoveDir = input.normalized;
+        moveInput = move;
+        aimInput = Vector2.zero;
     }
 
-    public void ApplyDashVelocity(Vector2 velocity)
-    {
-        dashVelocity = velocity;
+    // =====================================
+    // DASH
+    // =====================================
 
-        if (velocity.sqrMagnitude > 0.01f)
-            lastMoveDir = velocity.normalized;
+    // NEW (explicit force)
+    public void ApplyDashVelocity(Vector2 direction, float force)
+    {
+        dashVelocity = direction.normalized * force;
+    }
+
+    // OLD (Skill_Dash compatibility)
+    public void ApplyDashVelocity(Vector2 direction)
+    {
+        dashVelocity = direction.normalized * defaultDashForce;
     }
 
     public void ClearDashVelocity()
@@ -49,26 +84,14 @@ public class PlayerMotor : MonoBehaviour
         dashVelocity = Vector2.zero;
     }
 
-    void FixedUpdate()
-    {
-        if (IsDashing)
-        {
-            rb.linearVelocity = dashVelocity;
-        }
-        else
-        {
-            rb.linearVelocity = input * moveSpeed;
-        }
-
-        UpdateFacing();
-    }
-
+    // =====================================
+    // FACING
+    // =====================================
     void UpdateFacing()
     {
-        if (lastMoveDir.sqrMagnitude < 0.01f)
-            return;
-
-        float angle = Mathf.Atan2(lastMoveDir.y, lastMoveDir.x) * Mathf.Rad2Deg;
-        visualRoot.rotation = Quaternion.Euler(0f, 0f, angle - 90f);
+        if (aimInput.sqrMagnitude > 0.01f)
+            FacingDir = aimInput.normalized;
+        else if (moveInput.sqrMagnitude > 0.01f)
+            FacingDir = moveInput.normalized;
     }
 }

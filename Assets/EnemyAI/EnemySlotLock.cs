@@ -1,53 +1,63 @@
 ﻿using UnityEngine;
+using static UnityEditor.PlayerSettings;
 
 public class EnemySlotLock : MonoBehaviour
 {
-    public bool HasSlot => hasSlot;
-    public TacticSlotType CurrentSlot => currentSlot;
-    public bool CanAcceptSlot => !hasSlot && cooldownTimer <= 0f;
 
-    [SerializeField] float breakCooldown = 1.5f;
+    /// <summary>
+    /// ///API///////////////////////
+    /// </summary>
+    public bool HasSlot { get; private set; }
+    public Vector2 SlotPosition { get; private set; }
 
-    bool hasSlot;
-    TacticSlotType currentSlot;
-    Vector2 slotWorldPos;
-    float cooldownTimer;
+    public TacticSlotType CurrentSlot { get; private set; }
 
-    public void LockSlot(TacticSlotType slot, Vector2 worldPos)
+    private Vector2 lockedPosition;
+
+
+
+
+
+    /// <summary>
+    /// ///////////LOGIC////////////////////
+    /// </summary>
+    /// <returns></returns>
+    public Vector2 GetLockedPosition()
     {
-        hasSlot = true;
-        currentSlot = slot;
-        slotWorldPos = worldPos;
+        return lockedPosition;
+    }
+
+    public bool CanAcceptSlot => !HasSlot;
+
+    public bool CanTakeSlot(TacticSlotType slot)
+    {
+        return !HasSlot;
+    }
+
+    public void LockSlot(TacticSlotType slot, Vector2 position)
+    {
+        HasSlot = true;
+        SlotPosition = position;
+
+        CurrentSlot = slot;
+        lockedPosition = position;
 
         Debug.Log($"[SlotLock] {name} LOCKED {slot}");
     }
 
-    public void UpdateSlotPosition(Vector2 worldPos)
+    public void UpdateSlotPosition(Vector2 position)
     {
-        if (!hasSlot) return;
-        slotWorldPos = worldPos;
-    }
-
-    public Vector2 GetSlotPosition()
-    {
-        return slotWorldPos;
+        if (!HasSlot) return;
+        lockedPosition = position;
     }
 
     public void ReleaseSlot(float breakForce = 0f)
     {
-        if (!hasSlot) return;
+        if (!HasSlot) return;
 
-        Debug.Log($"[SlotLock] {name} RELEASED {currentSlot}");
+        Debug.Log($"[SlotLock] {name} RELEASED {CurrentSlot}");
 
-        hasSlot = false;
-        cooldownTimer = breakCooldown;
+        HasSlot = false;
+        CurrentSlot = TacticSlotType.None;
     }
-
-    void Update()
-    {
-        if (cooldownTimer > 0f)
-            cooldownTimer -= Time.deltaTime;
-    }
-
-    public bool CanTakeSlot(TacticSlotType slot) => CanAcceptSlot;
 }

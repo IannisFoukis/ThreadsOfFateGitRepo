@@ -378,6 +378,7 @@ GameObject:
   - component: {fileID: -5867268857388286375}
   - component: {fileID: -7901735522735537454}
   - component: {fileID: 6423340293739964804}
+  - component: {fileID: 2768854374013518013}
   m_Layer: 7
   m_Name: Enemy
   m_TagString: Untagged
@@ -498,7 +499,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8686355838142782365}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5c26144172d92434dbe352e8dd7790b5, type: 3}
   m_Name: 
@@ -533,8 +534,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 494b0c36641c17541861a8e561a8aed0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 20
-  currentHealth: 20
+  maxHealth: 1
+  currentHealth: 1
 --- !u!114 &351958192507417716
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -617,7 +618,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a96fd080b102134897bb86a3e4ce683, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  attackCooldown: 1.2
+  baseSpeed: 2
 --- !u!114 &1012162979977339158
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -631,6 +632,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fireCooldown: 1.5
+  fireRange: 10
+  projectilePrefab: {fileID: 0}
 --- !u!114 &5515608192190167746
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -681,12 +684,11 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8686355838142782365}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 742c4d8c5fc45994c800fd4d594e0d89, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  slotCooldownDuration: 1.5
 --- !u!114 &6423340293739964804
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -700,3 +702,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   visualRoot: {fileID: 6881615109564475472}
+--- !u!114 &2768854374013518013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8686355838142782365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4aab7b4f14cb4eb45b673948a8c5a89d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  role: 1
+  tier: 1
+  isElite: 0
+  isJoker: 0
+  desiredSlot: 0
+  formationLerpSpeed: 3
+  minSlotDistance: 0.5
+  lastAssignedTime: 0

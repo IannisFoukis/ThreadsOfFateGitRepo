@@ -27,9 +27,9 @@ public class CombatRoom : MonoBehaviour
     private int aliveEnemies;
 
     [Header("Test Spawn Settings")]
-    public int offenders = 5;
+    public int offenders = 6;
     public int defenders = 3;
-    public int rangers = 2;
+    public int rangers = 4;
     public int activators = 0;
     public int jokers = 0;
 
@@ -135,11 +135,25 @@ public class CombatRoom : MonoBehaviour
         {
             aliveEnemies++;
 
-            // In BOTH systems we simply use EnemyRoleController
+            // Apply visual / legacy role handling
             var roleCtrl = go.GetComponent<EnemyRoleController>();
             if (roleCtrl != null)
             {
                 roleCtrl.ApplyRole(role);
+            }
+
+            // NEW SYSTEM: also assign role to EnemyAgent so coordination knows it
+            var agent = go.GetComponent<EnemyAgent>();
+            if (agent != null)
+            {
+                agent.role = role switch
+                {
+                    EnemyRole.Melee => EnemyRole.Offender,
+                    EnemyRole.Ranged => EnemyRole.Ranger,
+                    EnemyRole.Elite => EnemyRole.Defender,
+                    EnemyRole.Joker => EnemyRole.Joker,
+                    _ => EnemyRole.Offender
+                };
             }
 
             // Legacy tactical director only used in legacy mode
@@ -148,15 +162,13 @@ public class CombatRoom : MonoBehaviour
                 tacticDirector.Register(enemy);
             }
 
-            // NEW SYSTEM: nothing else is required
-            // EncounterCoordinator + EnemyAgent handle everything automatically
-
             var relay = go.AddComponent<EnemyDeathRelay>();
             relay.OnEnemyDestroyed = OnEnemyDestroyed;
         }
 
         Debug.Log($"[CombatRoom] Spawned {role} at {go.transform.position}");
     }
+
 
 
     // ─────────────────────────────────────────────────────

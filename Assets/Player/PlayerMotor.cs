@@ -13,9 +13,16 @@ public class PlayerMotor : MonoBehaviour
     private Vector2 moveInput;
     private Vector2 aimInput;
     private Vector2 dashVelocity;
+
     [SerializeField] private Transform visualRoot;
 
     public Vector2 FacingDir { get; private set; } = Vector2.right;
+
+    [Header("Tactical Mode")]
+    public float tacticalSpeedMultiplier = 0.65f;
+
+    // 🔑 NEW: facing authority flag
+    public bool overrideFacing { get; set; }
 
     void Awake()
     {
@@ -26,6 +33,9 @@ public class PlayerMotor : MonoBehaviour
     {
         Vector2 velocity = moveInput * moveSpeed;
 
+        if (overrideFacing)
+            velocity *= tacticalSpeedMultiplier;
+
         if (dashVelocity != Vector2.zero)
         {
             velocity += dashVelocity;
@@ -35,28 +45,23 @@ public class PlayerMotor : MonoBehaviour
                 dashDrag * Time.fixedDeltaTime
             );
         }
-        if (aimInput.sqrMagnitude > 0.01f)
-        {
-            float angle = Mathf.Atan2(aimInput.y, aimInput.x) * Mathf.Rad2Deg;
-            visualRoot.rotation = Quaternion.Euler(0f, 0f, angle);
-        }
 
         rb.linearVelocity = velocity;
+
         UpdateFacing();
+        UpdateVisualRotation();
     }
 
     // =====================================
     // INPUT
     // =====================================
 
-    // NEW (mouse / aim aware)
     public void SetInput(Vector2 move, Vector2 aim)
     {
         moveInput = move;
         aimInput = aim;
     }
 
-    // OLD (movement only) — keeps PlayerController working
     public void SetInput(Vector2 move)
     {
         moveInput = move;
@@ -67,13 +72,11 @@ public class PlayerMotor : MonoBehaviour
     // DASH
     // =====================================
 
-    // NEW (explicit force)
     public void ApplyDashVelocity(Vector2 direction, float force)
     {
         dashVelocity = direction.normalized * force;
     }
 
-    // OLD (Skill_Dash compatibility)
     public void ApplyDashVelocity(Vector2 direction)
     {
         dashVelocity = direction.normalized * defaultDashForce;
@@ -87,11 +90,31 @@ public class PlayerMotor : MonoBehaviour
     // =====================================
     // FACING
     // =====================================
+
     void UpdateFacing()
     {
-        if (aimInput.sqrMagnitude > 0.01f)
-            FacingDir = aimInput.normalized;
-        else if (moveInput.sqrMagnitude > 0.01f)
-            FacingDir = moveInput.normalized;
+        if (overrideFacing)
+        {
+            if (aimInput.sqrMagnitude > 0.01f)
+                FacingDir = aimInput.normalized;
+        }
+        else
+        {
+            if (aimInput.sqrMagnitude > 0.01f)
+                FacingDir = aimInput.normalized;
+            else if (moveInput.sqrMagnitude > 0.01f)
+                FacingDir = moveInput.normalized;
+        }
+    }
+
+    void UpdateVisualRotation()
+    {
+        if (FacingDir.sqrMagnitude < 0.001f)
+            return;
+
+        float angle =
+            Mathf.Atan2(FacingDir.y, FacingDir.x) * Mathf.Rad2Deg - 90f;
+
+        visualRoot.rotation = Quaternion.Euler(0f, 0f, angle);
     }
 }

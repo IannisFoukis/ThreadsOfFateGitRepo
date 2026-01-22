@@ -1,5 +1,6 @@
 public enum EnemySlotType
 {
+    Reserve,
     Front,
     Rear,
     FlankLeft,

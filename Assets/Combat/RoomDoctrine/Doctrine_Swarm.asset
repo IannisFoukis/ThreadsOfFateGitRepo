@@ -27,3 +27,8 @@ MonoBehaviour:
     flankRightOffset: {x: 2.2, y: 0, z: 0}
     anchorOffset: {x: 0, y: 0, z: 0}
   usesAnchor: 0
+  offenderDistance: 2
+  defenderDistance: 3.5
+  rangerDistance: 6
+  activatorDistance: 8
+  formationMode: 2

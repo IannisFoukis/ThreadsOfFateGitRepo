@@ -27,3 +27,24 @@ MonoBehaviour:
     flankRightOffset: {x: 0.8, y: 0.4, z: 0}
     anchorOffset: {x: 0, y: 0, z: 0}
   usesAnchor: 0
+  offenderDistance: 2
+  defenderDistance: 2
+  rangerDistance: 2
+  activatorDistance: 4
+  formationMode: 1
+  maxOffenders: 5
+  maxDefenders: 3
+  maxRangers: 2
+  offenderArc: 70
+  defenderArc: 110
+  rangerArc: 140
+  offenderRadius: 4
+  defenderRadius: 7
+  rangerRadius: 10.5
+  slotSpacingMultiplier: 1
+  leaderTurnSmooth: 0.1
+  useFacingRotation: 1
+  allowAsymmetry: 0
+  verticalBias: 0
+  prioritizeRangers: 0
+  aggressiveOffenders: 1

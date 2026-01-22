@@ -1,4 +1,5 @@
 using UnityEngine;
+using static EncounterCoordinator;
 
 public enum DoctrineType
 {
@@ -35,6 +36,45 @@ public class RoomDoctrineConfig : ScriptableObject
     public DoctrineLayout layout = new DoctrineLayout();
 
     public bool usesAnchor;
+
+    [Header("Role Distances")]
+    public float offenderDistance = 2.0f;
+    public float defenderDistance = 3.5f;
+    public float rangerDistance = 6.0f;
+    public float activatorDistance = 8.0f;
+
+   
+
+    [Header("Phalanx Slot Limits")]
+    public int maxOffenders = 5;
+    public int maxDefenders = 3;
+    public int maxRangers = 4;
+
+    [Header("Phalanx Angles")]
+    public float offenderArc = 140f;
+    public float defenderArc = 120f;
+    public float rangerArc = 180f;
+
+    [Header("Role Radiuses")]
+    public float offenderRadius = 2.5f;
+    public float defenderRadius = 4.5f;
+    public float rangerRadius = 6.5f;
+
+    [Header("Slot Spacing")]
+    public float slotSpacingMultiplier = 1.3f;
+
+    [Header("Visual Identity")]
+    public float leaderTurnSmooth = 4f;
+    public bool useFacingRotation = true;
+
+    [Header("Formation Style")]
+    public bool allowAsymmetry = false;
+    public float verticalBias = 0f;
+
+    [Header("Behavior Emphasis")]
+    public bool prioritizeRangers = false;
+    public bool aggressiveOffenders = true;
+
 
 
 }

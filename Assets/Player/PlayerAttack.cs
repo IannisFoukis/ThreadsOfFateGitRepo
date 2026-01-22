@@ -3,8 +3,12 @@ using UnityEngine;
 public class PlayerAttack : MonoBehaviour
 {
     public Collider2D attackCollider;
+
     public float attackDuration = 0.2f;
     public float attackCooldown = 0.4f;
+
+    [Header("Attack Shape")]
+    public float attackReach = 0.7f;
 
     bool canAttack = true;
     Vector2 lastDirection = Vector2.right;
@@ -31,7 +35,7 @@ public class PlayerAttack : MonoBehaviour
     {
         if (!canAttack) return;
 
-        if (Input.GetKeyDown(KeyCode.J)) // TEMP attack key
+        if (Input.GetKeyDown(KeyCode.J))
         {
             StartCoroutine(DoAttack());
         }
@@ -53,6 +57,17 @@ public class PlayerAttack : MonoBehaviour
 
     void PositionAttackHitbox()
     {
-        attackCollider.transform.localPosition = lastDirection;
+        // Ensure it is always parented to player
+        if (attackCollider.transform.parent != transform)
+            attackCollider.transform.SetParent(transform);
+
+        // Instead of moving it far away, keep it close
+        attackCollider.transform.localPosition = lastDirection.normalized * 0.3f;
+
+        // Rotate the hitbox to face attack direction
+        attackCollider.transform.localRotation =
+            Quaternion.FromToRotation(Vector2.right, lastDirection);
     }
+
+
 }

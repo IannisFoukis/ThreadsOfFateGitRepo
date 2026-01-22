@@ -31,38 +31,50 @@ public class EnemyRoleController : MonoBehaviour
         //DisableAll();
     }
 
-    public void ApplyRole(EnemyRole role)
+    public void ApplyRole(EnemyRole newRole)
     {
-        //DisableAll();
-        currentRole = role;
-        Debug.Log($"[EnemyRoleController] {name} role set to {currentRole}");
-        switch (role)
+        currentRole = newRole;
+
+        // NEW: also apply visual color immediately
+        ApplyRoleColor();
+    }
+
+    private void ApplyRoleColor()
+    {
+        var sr = GetComponentInChildren<SpriteRenderer>();
+        if (sr == null) return;
+
+        switch (currentRole)
         {
             case EnemyRole.Melee:
-                Enable(melee);
+            case EnemyRole.Offender:
+                sr.color = Color.red;
+                break;
+
+            case EnemyRole.Elite:
+            case EnemyRole.Defender:
+                sr.color = Color.blue;
                 break;
 
             case EnemyRole.Ranged:
-                Enable(ranged);
-                break;
-
-            case EnemyRole.Charger:
-                Enable(charger);
-                break;
-
-            case EnemyRole.Defender:
-                Enable(defender);
+            case EnemyRole.Ranger:
+                sr.color = Color.green;
                 break;
 
             case EnemyRole.Activator:
-                Enable(activator);
+                sr.color = Color.magenta;
+                break;
+
+            case EnemyRole.Joker:
+                sr.color = Color.yellow;
                 break;
 
             default:
-                // None: keep all disabled
+                sr.color = Color.white;
                 break;
         }
     }
+
 
     private void DisableAll()
     {

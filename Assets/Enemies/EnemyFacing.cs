@@ -1,10 +1,12 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class EnemyFacing : MonoBehaviour
 {
     [SerializeField] private Transform visualRoot;
+    [SerializeField] private float turnSpeed = 720f;
 
     private EnemyAgent agent;
+    private Transform player;
 
     void Awake()
     {
@@ -12,19 +14,42 @@ public class EnemyFacing : MonoBehaviour
 
         if (visualRoot == null)
             visualRoot = transform;
+
+        var p = GameObject.FindGameObjectWithTag("Player");
+        if (p != null)
+            player = p.transform;
     }
 
     void LateUpdate()
     {
-        if (agent == null)
+        if (agent == null || player == null || agent.coordinator == null)
             return;
 
-        Vector2 dir = (agent.GetSmoothedTarget() - transform.position).normalized;
+        Vector3 lookDir;
 
-        if (dir.sqrMagnitude < 0.01f)
+        // 🔑 FORMATION RULE
+        if (agent.IsChangingFormation())
+        {
+            lookDir = agent.GetFormationTarget() - transform.position;
+        }
+        else
+        {
+            lookDir = player.position - transform.position;
+        }
+
+        if (lookDir.sqrMagnitude < 0.001f)
             return;
 
-        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-        visualRoot.rotation = Quaternion.Euler(0f, 0f, angle);
+        // 🔑 UP is forward → subtract 90 degrees
+        float angle =
+            Mathf.Atan2(lookDir.y, lookDir.x) * Mathf.Rad2Deg - 90f;
+
+        Quaternion targetRot = Quaternion.Euler(0f, 0f, angle);
+
+        visualRoot.localRotation = Quaternion.RotateTowards(
+            visualRoot.localRotation,
+            targetRot,
+            turnSpeed * Time.deltaTime
+        );
     }
 }

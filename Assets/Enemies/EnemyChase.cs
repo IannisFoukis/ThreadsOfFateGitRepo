@@ -8,9 +8,11 @@ public class EnemyChase : MonoBehaviour
     public float arriveDistance = 0.15f;
 
     [Header("Separation")]
-    public float separationRadius = 1.2f;
-    public float separationPushRadius = 0.8f;
+    public float separationRadius = 1.6f;
+    public float separationPushRadius = 1.1f;
     public float separationStrength = 1.5f;
+    public LayerMask enemyLayer;
+
 
     private EnemyAgent agent;
     private Rigidbody2D rb;
@@ -47,7 +49,7 @@ public class EnemyChase : MonoBehaviour
         }
 
         // Prefer formation target ALWAYS (agent may still return a "best effort" target even before slot assignment)
-        Vector3 target = agent.GetSmoothedTarget();
+        Vector3 target = agent.GetFormationTarget();
 
         // Safety fallback only if agent gives something unusable
         if (!IsFinite(target))
@@ -114,7 +116,7 @@ public class EnemyChase : MonoBehaviour
 
     private Vector2 GetSeparationForce()
     {
-        Collider2D[] nearby = Physics2D.OverlapCircleAll(transform.position, separationRadius);
+        Collider2D[] nearby = Physics2D.OverlapCircleAll(transform.position, separationRadius, enemyLayer);
 
         Vector2 force = Vector2.zero;
         int count = 0;

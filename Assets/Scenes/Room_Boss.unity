@@ -372,6 +372,7 @@ GameObject:
   m_Component:
   - component: {fileID: 619201719}
   - component: {fileID: 619201718}
+  - component: {fileID: 619201720}
   m_Layer: 0
   m_Name: Room
   m_TagString: Untagged
@@ -406,6 +407,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &619201720
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 619201717}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 559918c7cd2032b429403ae78ee3d511, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  biomeConfig: {fileID: 11400000, guid: 930e68551f217624d850fdbee0472a50, type: 2}
+  keeperPronouncement: {fileID: 0}
 --- !u!1 &1736636102
 GameObject:
   m_ObjectHideFlags: 0

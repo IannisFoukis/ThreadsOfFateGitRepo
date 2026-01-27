@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class EnemyAgent : MonoBehaviour
 {
@@ -27,6 +27,9 @@ public class EnemyAgent : MonoBehaviour
     private Vector3 smoothedSlotPosition;
     public float formationLerpSpeed = 6f;
 
+    // 🔒 ATTACK OWNERSHIP
+    [HideInInspector] public bool attackLock = false;
+
     void Start()
     {
         if (coordinator == null)
@@ -47,12 +50,18 @@ public class EnemyAgent : MonoBehaviour
 
     void Update()
     {
+        // 🔒 If attacking, DO NOTHING (attack owns movement)
+        if (attackLock)
+            return;
+
         if (coordinator == null)
             return;
 
-        // Reset reaction timer whenever NOT in BreakChase
         if (coordinator.phalanxState != EncounterCoordinator.PhalanxState.BreakChase)
-            reactionTimer = Random.Range(reactionDelayMin, reactionDelayMax);
+        {
+            if (!coordinator.IsLeaderDead())
+                reactionTimer = Random.Range(reactionDelayMin, reactionDelayMax);
+        }
 
         if (assignedSlot == EnemySlotType.Reserve)
         {
@@ -61,7 +70,6 @@ public class EnemyAgent : MonoBehaviour
             return;
         }
 
-        // ===== LEADER =====
         if (coordinator.IsLeader(this))
         {
             if (coordinator.phalanxState != EncounterCoordinator.PhalanxState.Encircle)
@@ -72,7 +80,6 @@ public class EnemyAgent : MonoBehaviour
             return;
         }
 
-        // ===== BREAK CHASE =====
         if (coordinator.phalanxState == EncounterCoordinator.PhalanxState.BreakChase)
         {
             if (reactionTimer > 0f)
@@ -89,7 +96,6 @@ public class EnemyAgent : MonoBehaviour
             return;
         }
 
-        // ===== FORMATION MOVEMENT (SMOOTHED) =====
         Vector3 desiredSlot = coordinator.GetWorldPositionFor(this);
 
         smoothedSlotPosition = Vector3.Lerp(
@@ -113,14 +119,12 @@ public class EnemyAgent : MonoBehaviour
             ActBasedOnSlot();
             return;
         }
-        
 
         ActBasedOnSlot();
     }
 
-    // =========================================================
-    // COMPATIBILITY HELPERS (OTHER SCRIPTS CALL THESE)
-    // =========================================================
+    // ================= HELPERS =================
+
     public Vector3 GetFormationTarget()
     {
         if (coordinator == null)
@@ -128,21 +132,6 @@ public class EnemyAgent : MonoBehaviour
 
         return coordinator.GetWorldPositionFor(this);
     }
-
-    public bool IsAtSlot()
-    {
-        float dist = Vector3.Distance(transform.position, smoothedSlotPosition);
-        return dist <= slotArrivalThreshold;
-    }
-    public bool IsChangingFormation()
-    {
-        return !IsAtSlot();
-    }
-
-
-    // =========================================================
-    // MOVEMENT LOGIC (RELATIVE TO PLAYER SPEED)
-    // =========================================================
 
     void MoveTowardPlayer()
     {
@@ -170,16 +159,9 @@ public class EnemyAgent : MonoBehaviour
 
     float GetPlayerSpeedEstimate()
     {
-        if (coordinator.playerTransform == null)
-            return 6f;
-
         var rb2d = coordinator.playerTransform.GetComponent<Rigidbody2D>();
         if (rb2d != null)
             return rb2d.linearVelocity.magnitude;
-
-        var rb = coordinator.playerTransform.GetComponent<Rigidbody>();
-        if (rb != null)
-            return rb.linearVelocity.magnitude;
 
         return 6f;
     }
@@ -195,28 +177,25 @@ public class EnemyAgent : MonoBehaviour
         );
     }
 
-    // =========================================================
-    // STATE BASED ACTIONS
-    // =========================================================
-
     void ActBasedOnSlot()
     {
         var state = coordinator.phalanxState;
 
         if (state == EncounterCoordinator.PhalanxState.Encircle)
         {
-            if (coordinator.IsHammer(this))
+            if (role == EnemyRole.Ranger)
             {
-                EnableMelee();
-                DisableRanged();
+                EnableRanged();
+                DisableMelee();
             }
             else
             {
                 EnableMelee();
-                EnableRanged();
+                DisableRanged();
             }
             return;
         }
+
 
         if (state == EncounterCoordinator.PhalanxState.HoldFire)
         {
@@ -241,36 +220,28 @@ public class EnemyAgent : MonoBehaviour
         DisableMelee();
         DisableRanged();
     }
+    public bool IsChangingFormation(float thresholdMultiplier = 1.5f)
+    {
+        Vector3 target = GetFormationTarget();
+        float dist = Vector3.Distance(transform.position, target);
+        return dist > slotArrivalThreshold * thresholdMultiplier;
+    }
 
-    // =========================================================
-    // HELPERS
-    // =========================================================
+    public bool IsAtSlot(float toleranceMultiplier = 1f)
+    {
+        Vector3 target = GetFormationTarget();
+        float dist = Vector3.Distance(transform.position, target);
+        return dist <= slotArrivalThreshold * toleranceMultiplier;
+    }
 
     void EnableMelee() { if (melee) melee.enabled = true; }
     void DisableMelee() { if (melee) melee.enabled = false; }
     void EnableRanged() { if (ranged) ranged.enabled = true; }
     void DisableRanged() { if (ranged) ranged.enabled = false; }
-    
 
     void OnDisable()
     {
         if (coordinator != null)
             coordinator.Unregister(this);
-    }
-
-    // =========================================================
-    // GIZMOS (READ-ONLY)
-    // =========================================================
-
-    void OnDrawGizmos()
-    {
-        if (coordinator == null)
-            return;
-
-        Gizmos.color = Color.white;
-        Gizmos.DrawLine(transform.position, smoothedSlotPosition);
-
-        Gizmos.color = coordinator.IsHammer(this) ? Color.magenta : Color.gray;
-        Gizmos.DrawSphere(smoothedSlotPosition, 0.25f);
     }
 }

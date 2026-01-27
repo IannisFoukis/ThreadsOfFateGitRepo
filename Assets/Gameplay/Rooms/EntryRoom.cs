@@ -95,7 +95,7 @@ public class EntryRoom : RoomController
             return;
         }
 
-        runDirector.BeginRun();
+        //runDirector.BeginRun();
     }
 
     private IEnumerator SettleCamera()

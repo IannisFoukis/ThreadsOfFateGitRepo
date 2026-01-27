@@ -594,6 +594,8 @@ GameObject:
   - component: {fileID: 985146256}
   - component: {fileID: 985146258}
   - component: {fileID: 985146259}
+  - component: {fileID: 985146260}
+  - component: {fileID: 985146261}
   m_Layer: 0
   m_Name: Room
   m_TagString: Untagged
@@ -613,11 +615,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1dbcfd613a887124f9b25c3a141f26ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  coordinationMode: 1
+  selectedDoctrine: 0
+  randomizeDoctrine: 1
   enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
   enemySpawnPoints:
   - {fileID: 231717701}
   - {fileID: 1621558813}
   - {fileID: 145448317}
+  offenders: 6
+  defenders: 3
+  rangers: 4
+  activators: 0
+  jokers: 0
+  contract: {fileID: 11400000, guid: 93c5ad2b4511a334b8d70de161fd0885, type: 2}
 --- !u!4 &985146257
 Transform:
   m_ObjectHideFlags: 0
@@ -652,7 +663,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 985146255}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 949287ba7576cfc4d92e62628706f333, type: 3}
   m_Name: 
@@ -661,6 +672,88 @@ MonoBehaviour:
   flankCooldown: 2
   flankDistance: 3
   frontDistance: 2.5
+  baseSlotCooldown: 1.5
+  baseFormationPersistence: 1
+  baseInitialCommitDelay: 0.5
+  baseFlankWeight: 1
+  baseFrontWeight: 1
+  formationPersistenceMult: 1
+  slotCooldownMult: 1
+  flankBiasMult: 1
+  frontPriorityMult: 1
+  initialCommitDelayMult: 1
+  formationDisrupted: 0
+  disruptionTimer: 0
+  slotScrambleActive: 0
+  scrambleTimer: 0
+  scrambleInterval: 0.8
+  scrambleTickTimer: 0
+  tier3Active: 0
+  tier3Timer: 0
+  scrambleBreaksPerTick: 1
+  tacticalLockout: 0
+--- !u!114 &985146260
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 985146255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b1127d3f1be9ec4c9d215d8e3197567, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerTransform: {fileID: 4619573443503270045, guid: 05c8ed09963ef08489c5807b5ae1b09d, type: 3}
+  doctrine: {fileID: 11400000, guid: 058e6a6da44eadd418a5aa2e465d371f, type: 2}
+  leaderDeathHesitation: 0.6
+  coordinationDecayTime: 10
+  maxSlotJitter: 0.6
+  maxRotationWobble: 18
+  hammerIntervalDeadMultiplier: 0.65
+  minDriftStrength: 0.15
+  maxDriftStrength: 0.45
+  holdRadius: 12
+  encircleRadius: 6
+  encircleDuration: 3.5
+  breakChaseDuration: 2
+  encircleRadiusOffenders: 5
+  encircleRadiusDefenders: 7
+  encircleRadiusRangers: 9
+  hammerInterval: 2.2
+  hammerWindow: 0.8
+  stateGraceTime: 0.3
+  chaseDelay: 2
+  breakChaseSpeedMultiplier: 0.25
+  globalFormationLerp: 6
+  lineSpacing: 1.8
+  wedgeSpacing: 1.6
+  boxSpacing: 2.4
+  diamondSpacing: 2.8
+  activeFormation: 3
+  phalanxState: 0
+  allowHammer: 1
+  allowEncircle: 1
+  allowElites: 1
+  hammerAggressionMultiplier: 1
+  encircleSpeedMultiplier: 1
+  silencePhase: 0
+  fakeOutChance: 0
+  delayedDashChance: 0
+--- !u!114 &985146261
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 985146255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 559918c7cd2032b429403ae78ee3d511, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  biomeConfig: {fileID: 11400000, guid: 930e68551f217624d850fdbee0472a50, type: 2}
+  keeperPronouncement: {fileID: 0}
 --- !u!1 &1013622540
 GameObject:
   m_ObjectHideFlags: 0
@@ -834,6 +927,7 @@ GameObject:
   - component: {fileID: 1654226486}
   - component: {fileID: 1654226483}
   - component: {fileID: 1654226485}
+  - component: {fileID: 1654226487}
   m_Layer: 0
   m_Name: Shrine
   m_TagString: Untagged
@@ -850,7 +944,7 @@ Transform:
   m_GameObject: {fileID: 1654226481}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -4.5, y: -0.07851744, z: -0.02104183}
+  m_LocalPosition: {x: 0, y: -0.07851744, z: -0.02104183}
   m_LocalScale: {x: 10, y: 10, z: 10}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -872,6 +966,9 @@ MonoBehaviour:
   corruptionThreshold: 50
   currentTier: 1
   attackController: {fileID: 1654226485}
+  formationJamDuration: 4
+  tier2ScrambleDuration: 6
+  overrideTier: 0
 --- !u!212 &1654226484
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -997,6 +1094,18 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 0.16, y: 0.16}
   m_EdgeRadius: 0
+--- !u!114 &1654226487
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1654226481}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: addc9164313fd8948a9bb28ccfd65397, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1955298278
 GameObject:
   m_ObjectHideFlags: 0
@@ -1117,6 +1226,26 @@ MonoBehaviour:
   flankCooldown: 2
   flankDistance: 2.5
   frontDistance: 1.2
+  baseSlotCooldown: 1.5
+  baseFormationPersistence: 1
+  baseInitialCommitDelay: 0.5
+  baseFlankWeight: 1
+  baseFrontWeight: 1
+  formationPersistenceMult: 1
+  slotCooldownMult: 1
+  flankBiasMult: 1
+  frontPriorityMult: 1
+  initialCommitDelayMult: 1
+  formationDisrupted: 0
+  disruptionTimer: 0
+  slotScrambleActive: 0
+  scrambleTimer: 0
+  scrambleInterval: 0.8
+  scrambleTickTimer: 0
+  tier3Active: 0
+  tier3Timer: 0
+  scrambleBreaksPerTick: 1
+  tacticalLockout: 0
 --- !u!4 &1957218181
 Transform:
   m_ObjectHideFlags: 0

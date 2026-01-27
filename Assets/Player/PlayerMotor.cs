@@ -3,6 +3,9 @@
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerMotor : MonoBehaviour
 {
+    [HideInInspector]
+    public bool externalForceActive = false;
+
     [Header("Movement")]
     public float moveSpeed = 6f;
     public float dashDrag = 5f;
@@ -31,25 +34,46 @@ public class PlayerMotor : MonoBehaviour
 
     void FixedUpdate()
     {
-        Vector2 velocity = moveInput * moveSpeed;
+        Vector2 velocity = rb.linearVelocity;
 
-        if (overrideFacing)
-            velocity *= tacticalSpeedMultiplier;
-
-        if (dashVelocity != Vector2.zero)
+        // ✅ ONLY apply movement if no external force (shove, knockback, etc.)
+        if (!externalForceActive)
         {
-            velocity += dashVelocity;
-            dashVelocity = Vector2.Lerp(
-                dashVelocity,
-                Vector2.zero,
-                dashDrag * Time.fixedDeltaTime
-            );
+            velocity = moveInput * moveSpeed;
+
+            if (overrideFacing)
+                velocity *= tacticalSpeedMultiplier;
+
+            if (dashVelocity != Vector2.zero)
+            {
+                velocity += dashVelocity;
+                dashVelocity = Vector2.Lerp(
+                    dashVelocity,
+                    Vector2.zero,
+                    dashDrag * Time.fixedDeltaTime
+                );
+            }
+        }
+        else
+        {
+            // External force active → decay dash gently, don't overwrite shove
+            dashVelocity = Vector2.zero;
         }
 
         rb.linearVelocity = velocity;
 
         UpdateFacing();
         UpdateVisualRotation();
+    }
+
+    public Vector2 GetVelocity()
+    {
+        return rb.linearVelocity;
+    }
+
+    public void SetVelocity(Vector2 v)
+    {
+        rb.linearVelocity = v;
     }
 
     // =====================================

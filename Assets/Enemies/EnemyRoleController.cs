@@ -48,17 +48,18 @@ public class EnemyRoleController : MonoBehaviour
         {
             case EnemyRole.Melee:
             case EnemyRole.Offender:
-                sr.color = Color.red;
+               // sr.color = Color.red;
                 break;
 
             case EnemyRole.Elite:
+
             case EnemyRole.Defender:
-                sr.color = Color.blue;
+                //sr.color = Color.blue;
                 break;
 
             case EnemyRole.Ranged:
             case EnemyRole.Ranger:
-                sr.color = Color.green;
+               // sr.color = Color.green;
                 break;
 
             case EnemyRole.Activator:

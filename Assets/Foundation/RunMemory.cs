@@ -1,4 +1,4 @@
-public class RunMemory
+﻿public class RunMemory
 {
     public int soulsCarried;
     public int corruption;
@@ -21,5 +21,8 @@ public class RunMemory
     public int hesitationCount;
     public int rushCount;
 
+    // ───── Silence Phase ─────
+    public bool silenceActive;
+    public int silenceRoomsRemaining;
 
 }

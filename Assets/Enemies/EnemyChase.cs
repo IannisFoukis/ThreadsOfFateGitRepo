@@ -52,12 +52,21 @@ public class EnemyChase : MonoBehaviour
         Vector3 target = agent.GetFormationTarget();
 
         // Safety fallback only if agent gives something unusable
+        // Safety fallback ONLY if leader is alive
         if (!IsFinite(target))
         {
+            // If leader is dead, NEVER collapse to player-chase
+            if (agent.coordinator != null && agent.coordinator.IsLeaderDead())
+            {
+                rb.linearVelocity = Vector2.zero;
+                return;
+            }
+
             ResolvePlayerOnce();
             if (cachedPlayer == null) return;
             target = cachedPlayer.position;
         }
+
 
         Vector2 toTarget = (Vector2)(target - transform.position);
 

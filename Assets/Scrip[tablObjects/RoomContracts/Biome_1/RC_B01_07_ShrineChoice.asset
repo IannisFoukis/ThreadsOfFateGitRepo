@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: add2d7d5155a65e478e176966f8351a4, type: 3}
+  m_Name: RC_B01_07_ShrineChoice
+  m_EditorClassIdentifier: 
+  contractName: "ROOM 07 \u2014 SHRINE CHOICE"
+  roomRole: 1
+  enableCombat: 1
+  useCoordinator: 1
+  hasShrine: 1
+  shrineDestroyable: 1
+  silencePhase: 0
+  pressureSpike: 0
+  allowHammer: 1
+  allowEncircle: 1
+  hammerAggression: 0.8
+  encircleSpeedMultiplier: 0.9
+  fakeOutChance: 0.2
+  delayedDashChance: 0.25
+  allowElites: 0
+  reduceAudio: 0

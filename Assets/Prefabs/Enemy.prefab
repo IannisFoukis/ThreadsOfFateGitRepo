@@ -73,9 +73,9 @@ SpriteRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingLayerID: -1491808207
+  m_SortingLayer: 2
+  m_SortingOrder: 1
   m_Sprite: {fileID: 21300000, guid: f80290feee39047438ca54bd8b1e1f65, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -209,7 +209,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3025127238657826487}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3a964766c3d9e3e428ef6b6accaeb871, type: 3}
   m_Name: 
@@ -323,6 +323,9 @@ GameObject:
   - component: {fileID: -7901735522735537454}
   - component: {fileID: 6423340293739964804}
   - component: {fileID: 2768854374013518013}
+  - component: {fileID: 4416444779031813629}
+  - component: {fileID: 3224009665960575784}
+  - component: {fileID: -730332515291210627}
   m_Layer: 7
   m_Name: Enemy
   m_TagString: Untagged
@@ -571,6 +574,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   attackRange: 1.5
   attackCooldown: 1.2
+  attackVisualDuration: 0.25
+  attackColor: {r: 1, g: 0, b: 0, a: 1}
+  attackFlashTime: 0.35
 --- !u!114 &1012162979977339158
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -583,7 +589,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d878b3151a3abd4696c2d701ac4fb5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  projectilePrefab: {fileID: -7159479602090134345, guid: a16b2bb256930fb418670b93f3c9aecf, type: 3}
   fireCooldown: 1.5
+  fireRange: 9
+  projectileSpeed: 7
+  projectileLifetime: 3
+  damage: 1
+  modifiers:
+    speedMultiplier: 1.67
+    speedVariance: 0
+    wobble: 0
+    wobbleStrength: 0
+    wobbleFrequency: 0
+    delayedExplode: 0
+    explodeDelay: 0
+  aimTime: 0.6
+  aimLineWidth: 0.05
+  aimColor: {r: 0.990566, g: 0, b: 0, a: 0.78431374}
+  fleeDistance: 2.5
+  repositionCooldown: 2
+  repositionSpeed: 8
+  repositionDuration: 0.25
+  pressureBonusCooldown: 0.6
 --- !u!114 &5515608192190167746
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -652,6 +679,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   visualRoot: {fileID: 6881615109564475472}
+  turnSpeed: 720
 --- !u!114 &2768854374013518013
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -671,3 +699,63 @@ MonoBehaviour:
   reactionDelayMin: 0.1
   reactionDelayMax: 0.5
   formationLerpSpeed: 6
+  attackLock: 0
+--- !u!114 &4416444779031813629
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8686355838142782365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a32decfa8f874ae45b986b66aec630b1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  offenderSprite: {fileID: 21300000, guid: f80290feee39047438ca54bd8b1e1f65, type: 3}
+  defenderSprite: {fileID: 21300000, guid: edc447749bc6c8040b18e9886b9fc04f, type: 3}
+  rangerSprite: {fileID: 21300000, guid: 5e70c9ebaa73d844ba6b9b1871ebef50, type: 3}
+--- !u!114 &3224009665960575784
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8686355838142782365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24c41518731301641a0730783cab791a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shoveRange: 4
+  shoveForce: 20
+  shoveCooldown: 2
+  defenderIntentDuration: 1
+  slotToleranceMultiplier: 2.5
+--- !u!114 &-730332515291210627
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8686355838142782365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c2c3f5e893d87ba46bfab6a3422da8c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  offenderIntentDuration: 2
+  canFakeOut: 0
+  fakeCancelAt: 0.7
+  fakePause: 0.35
+  delayedDash: 0
+  postWindUpDelay: 0.2
+  doubleDash: 0
+  secondDashDelay: 0.15
+  secondDashMultiplier: 1.4
+  windUpTime: 0.6
+  attackDashForce: 14
+  dashDuration: 0.18
+  recoverTime: 0.8
+  slotTriggerMultiplier: 1.5
+  windUpCircleMaxScale: 0.5

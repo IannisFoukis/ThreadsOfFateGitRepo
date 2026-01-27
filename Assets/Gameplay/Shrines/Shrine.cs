@@ -283,5 +283,38 @@ public class Shrine : MonoBehaviour
             Debug.LogError("[SHRINE] TacticDirector not found for Tier-3 escalation");
         }
     }
+    // ─────────────────────────────────────────────
+    // SHRINE RESOLUTION (RUN MEMORY)
+    // ─────────────────────────────────────────────
+
+    public void ResolveDestroyed()
+    {
+        if (RunContext.Instance == null || RunContext.Instance.memory == null)
+        {
+            Debug.LogError("[SHRINE] RunContext or RunMemory missing on ResolveDestroyed");
+            return;
+        }
+
+        RunContext.Instance.memory.shrineDestroyedCount++;
+
+        Debug.Log(
+            $"[SHRINE] RESOLVED AS DESTROYED → total = {RunContext.Instance.memory.shrineDestroyedCount}"
+        );
+    }
+
+    public void ResolveEndured()
+    {
+        if (RunContext.Instance == null || RunContext.Instance.memory == null)
+        {
+            Debug.LogError("[SHRINE] RunContext or RunMemory missing on ResolveEndured");
+            return;
+        }
+
+        RunContext.Instance.memory.shrineEnduredCount++;
+
+        Debug.Log(
+            $"[SHRINE] RESOLVED AS ENDURED → total = {RunContext.Instance.memory.shrineEnduredCount}"
+        );
+    }
 
 }

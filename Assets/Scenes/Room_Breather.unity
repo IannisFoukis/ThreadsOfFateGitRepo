@@ -1405,6 +1405,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed6330093a21d4e4489a2c05fb225ecf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  worldModifiers:
+    enemyAggressionMultiplier: 1
+    formationStrictness: 1
+    enemiesFavorHonestAttacks: 0
+    silenceDurationMultiplier: 1
+    environmentalHazardRate: 1
+    playerGraceWindow: 1
+    worldFeelsWatchful: 0
   lastRunEndReason: 0
 --- !u!4 &1818724192
 Transform:

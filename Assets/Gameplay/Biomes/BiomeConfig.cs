@@ -7,12 +7,26 @@ public class BiomeConfig : ScriptableObject
     [System.Serializable]
     public class RoomEntry
     {
+        [Header("Identity")]
         public RoomRole role;
+
+        [Header("Encounter")]
         public EncounterType encounterType;
         public GameObject enemyPrefab;
+
+        [Header("Shrine")]
+        public bool hasShrine;
+        public bool shrineDestroyable;
         public ShrineProjectileConfig shrineOverride;
-        // Additional per-room data can be added here (pacing, hazards, etc.)
+
+        [Header("Room Contract Flags")]
+        public bool silencePhase;
+        public bool pressureSpike;
+        public bool allowHammer = true;
+        public bool allowEncircle = true;
+        public bool allowElites = false;
     }
+
 
     public RoomEntry[] entries;
 

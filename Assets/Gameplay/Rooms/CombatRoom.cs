@@ -12,19 +12,9 @@ public class CombatRoom : MonoBehaviour
     [Header("Coordination System")]
     [SerializeField] private CombatCoordinationMode coordinationMode = CombatCoordinationMode.EnemyCentric;
 
-
-    [Header("Doctrine (Debug)")]
-    [SerializeField] private RoomDoctrine selectedDoctrine;
-    [SerializeField] private bool randomizeDoctrine = true;
-
     [Header("Prefab + Spawn Points")]
     public GameObject enemyPrefab;
     public Transform[] enemySpawnPoints;
-
-    private TacticDirector tacticDirector;
-    private EncounterCoordinator encounterCoordinator;
-
-    private int aliveEnemies;
 
     [Header("Test Spawn Settings")]
     public int offenders = 6;
@@ -33,55 +23,12 @@ public class CombatRoom : MonoBehaviour
     public int activators = 0;
     public int jokers = 0;
 
-    private void Awake()
-    {
-        tacticDirector = GetComponent<TacticDirector>();
-        encounterCoordinator = GetComponentInChildren<EncounterCoordinator>();
-
-        if (coordinationMode == CombatCoordinationMode.Legacy && tacticDirector == null)
-            Debug.LogError("[CombatRoom] TacticDirector missing on CombatRoom!");
-
-        if (coordinationMode == CombatCoordinationMode.EnemyCentric && encounterCoordinator == null)
-            Debug.LogError("[CombatRoom] EncounterCoordinator missing on CombatRoom!");
-
-    }
+    private int aliveEnemies;
+    private bool completed = false; // 🔒 one-shot guard
 
     private void Start()
     {
-        ApplyDoctrine();
         SpawnEncounter();
-
-       
-    }
-
-
-    // ─────────────────────────────────────────────────────
-    // DOCTRINE
-    // ─────────────────────────────────────────────────────
-
-    private void ApplyDoctrine()
-    {
-        if (coordinationMode == CombatCoordinationMode.Legacy)
-        {
-            if (randomizeDoctrine)
-                selectedDoctrine = RollDoctrine();
-
-            Debug.Log($"[CombatRoom] Selected Doctrine: {selectedDoctrine}");
-            tacticDirector.ConfigureDoctrine(selectedDoctrine);
-        }
-        else
-        {
-            Debug.Log("[CombatRoom] Using Enemy-Centric coordination – doctrine handled by EncounterCoordinator");
-        }
-    }
-
-
-    private RoomDoctrine RollDoctrine()
-    {
-        var values = Enum.GetValues(typeof(RoomDoctrine));
-        return (RoomDoctrine)values.GetValue(
-            UnityEngine.Random.Range(0, values.Length)
-        );
     }
 
     // ─────────────────────────────────────────────────────
@@ -103,16 +50,22 @@ public class CombatRoom : MonoBehaviour
         }
 
         aliveEnemies = 0;
-
         int spawnIndex = 0;
 
         void SpawnMany(EnemyRole role, int count)
         {
             for (int i = 0; i < count; i++)
             {
-                var sp = enemySpawnPoints[spawnIndex % enemySpawnPoints.Length];
-                SpawnEnemy(role, sp);
+                Transform sp = enemySpawnPoints[spawnIndex % enemySpawnPoints.Length];
                 spawnIndex++;
+
+                if (sp == null)
+                {
+                    Debug.LogWarning("[CombatRoom] Spawn point missing — skipped");
+                    continue;
+                }
+
+                SpawnEnemy(role, sp);
             }
         }
 
@@ -122,54 +75,39 @@ public class CombatRoom : MonoBehaviour
         SpawnMany(EnemyRole.Activator, activators);
         SpawnMany(EnemyRole.Joker, jokers);
 
-        Debug.Log("[CombatRoom] Test encounter spawned via role counts");
+        Debug.Log("[CombatRoom] Encounter spawned via role counts");
     }
-
 
     private void SpawnEnemy(EnemyRole role, Transform sp)
     {
         var go = Instantiate(enemyPrefab, sp.position, Quaternion.identity);
+        aliveEnemies++;
 
-        var enemy = go.GetComponent<Enemy>();
-        if (enemy != null)
+        // Apply visual / legacy role handling
+        var roleCtrl = go.GetComponent<EnemyRoleController>();
+        if (roleCtrl != null)
+            roleCtrl.ApplyRole(role);
+
+        // Enemy-centric coordination
+        var agent = go.GetComponent<EnemyAgent>();
+        if (agent != null)
         {
-            aliveEnemies++;
-
-            // Apply visual / legacy role handling
-            var roleCtrl = go.GetComponent<EnemyRoleController>();
-            if (roleCtrl != null)
+            agent.role = role switch
             {
-                roleCtrl.ApplyRole(role);
-            }
-
-            // NEW SYSTEM: also assign role to EnemyAgent so coordination knows it
-            var agent = go.GetComponent<EnemyAgent>();
-            if (agent != null)
-            {
-                agent.role = role switch
-                {
-                    EnemyRole.Melee => EnemyRole.Offender,
-                    EnemyRole.Ranged => EnemyRole.Ranger,
-                    EnemyRole.Elite => EnemyRole.Defender,
-                    EnemyRole.Joker => EnemyRole.Joker,
-                    _ => EnemyRole.Offender
-                };
-            }
-
-            // Legacy tactical director only used in legacy mode
-            if (coordinationMode == CombatCoordinationMode.Legacy)
-            {
-                tacticDirector.Register(enemy);
-            }
-
-            var relay = go.AddComponent<EnemyDeathRelay>();
-            relay.OnEnemyDestroyed = OnEnemyDestroyed;
+                EnemyRole.Melee => EnemyRole.Offender,
+                EnemyRole.Ranged => EnemyRole.Ranger,
+                EnemyRole.Elite => EnemyRole.Defender,
+                EnemyRole.Joker => EnemyRole.Joker,
+                EnemyRole.Activator => EnemyRole.Activator,
+                _ => EnemyRole.Offender
+            };
         }
+
+        var relay = go.AddComponent<EnemyDeathRelay>();
+        relay.OnEnemyDestroyed = OnEnemyDestroyed;
 
         Debug.Log($"[CombatRoom] Spawned {role} at {go.transform.position}");
     }
-
-
 
     // ─────────────────────────────────────────────────────
     // COMBAT LIFECYCLE
@@ -177,13 +115,15 @@ public class CombatRoom : MonoBehaviour
 
     private void OnEnemyDestroyed()
     {
-        aliveEnemies--;
+        if (completed)
+            return;
 
+        aliveEnemies--;
         Debug.Log($"[CombatRoom] Enemy died. Remaining: {aliveEnemies}");
 
         if (aliveEnemies <= 0)
         {
-            Debug.Log("[CombatRoom] Combat cleared");
+            completed = true;
             CompleteRoom();
         }
     }
@@ -192,9 +132,9 @@ public class CombatRoom : MonoBehaviour
     {
         var runDirector = FindAnyObjectByType<RunDirector>();
 
-        if (runDirector == null || !runDirector.IsRunActive)
+        if (runDirector == null)
         {
-            Debug.Log("[CombatRoom] Combat cleared, but run is no longer active. Ignoring.");
+            Debug.LogError("[CombatRoom] RunDirector missing — aborting completion");
             return;
         }
 

@@ -15,6 +15,9 @@ EditorBuildSettings:
     path: Assets/Scenes/Room_Entry.unity
     guid: c8ff253a83ece14439e8021ac8cfd3b1
   - enabled: 1
+    path: Assets/Scenes/Room_Keeper.unity
+    guid: ec2ca04af7aa0aa418a668be677cfbbd
+  - enabled: 1
     path: Assets/Scenes/Room_Combat.unity
     guid: ccd44e1af17751e428c021234969e64f
   - enabled: 1

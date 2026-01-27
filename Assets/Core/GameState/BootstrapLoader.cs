@@ -15,5 +15,6 @@ public class BootstrapLoader : MonoBehaviour
         Debug.Log("[Bootstrap] Loading EntryRoom");
 
         SceneManager.LoadScene("Room_Entry");
+
     }
 }

@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 5878882762746155959}
   - component: {fileID: 1310264027177654621}
   - component: {fileID: 3741299884007588557}
+  - component: {fileID: 8655960434941142861}
   m_Layer: 0
   m_Name: Shrine
   m_TagString: Untagged
@@ -152,6 +153,9 @@ MonoBehaviour:
   corruptionThreshold: 50
   currentTier: 0
   attackController: {fileID: 3741299884007588557}
+  formationJamDuration: 4
+  tier2ScrambleDuration: 6
+  overrideTier: 0
 --- !u!114 &3741299884007588557
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -176,3 +180,15 @@ MonoBehaviour:
   pulseCount: 6
   pulseSpeedMultiplier: 1.2
   currentTier: 0
+--- !u!114 &8655960434941142861
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4289699002947295707}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: addc9164313fd8948a9bb28ccfd65397, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

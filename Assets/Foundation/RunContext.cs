@@ -6,6 +6,10 @@ public class RunContext : MonoBehaviour
 
     public RunMemory memory;
     public RunRules rules;
+
+    // 👇 ADD THIS
+    public WorldModifiers worldModifiers;
+
     public RunEndReason lastRunEndReason;
 
     void Awake()
@@ -25,6 +29,10 @@ public class RunContext : MonoBehaviour
 
         if (rules == null)
             rules = new RunRules();
+
+        // 🔑 GUARANTEE NON-NULL (NEW)
+        if (worldModifiers == null)
+            worldModifiers = new WorldModifiers();
 
         Debug.Log("[RunContext] Initialized");
     }

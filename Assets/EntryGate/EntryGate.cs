@@ -84,7 +84,7 @@ public class EntryGate : MonoBehaviour
         Debug.Log("[EntryGate] Starting run via gate");
 
         // This is SAFE — BeginRun is idempotent
-        runDirector.BeginRun();
+       // runDirector.BeginRun();
 
         // ⚠️ THIS WAS MISSING
         runDirector.EnterNextRoom();

@@ -57,6 +57,14 @@ public class RunDirector : MonoBehaviour
 
         Debug.Log("RunDirector ready.");
     }
+    public void ApplyRoomTension(int amount)
+    {
+        if (amount == 0 || gsm == null)
+            return;
+
+        gsm.RunState.runTension += amount;
+        Debug.Log($"[RunDirector] Room contract tension applied: +{amount} (Total={gsm.RunState.runTension})");
+    }
 
     public void BeginRun()
     {

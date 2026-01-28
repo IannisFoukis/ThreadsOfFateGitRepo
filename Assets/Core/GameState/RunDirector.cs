@@ -2,18 +2,8 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-// ✅ RESTORED ENUM (THIS WAS MISSING)
-public enum RoomRole
-{
-    Entry,
-    Combat,
-    Breather,
-    Combat1,
-    PressureSpike,
-    Combat2,
-    Boss,
-    Keeper
-}
+
+
 
 public class RunDirector : MonoBehaviour
 {

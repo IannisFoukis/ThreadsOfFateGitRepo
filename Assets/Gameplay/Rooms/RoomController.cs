@@ -25,7 +25,16 @@ public abstract class RoomController : MonoBehaviour
         RunDirector director = FindFirstObjectByType<RunDirector>();
         Object.FindAnyObjectByType<RoomDemandTracker>()?.Resolve();
 
-        director.OnRoomCompleted();
+        var roomDirector = FindFirstObjectByType<RoomDirector>();
+        if (roomDirector != null)
+        {
+            roomDirector.NotifyRoomCompleted();
+        }
+        else
+        {
+            Debug.LogError("[RoomController] RoomDirector not found");
+        }
+
 
     }
 }

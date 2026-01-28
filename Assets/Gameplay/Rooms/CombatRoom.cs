@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System;
 
-public class CombatRoom : MonoBehaviour
+public class CombatRoom : RoomController
 {
     public enum CombatCoordinationMode
     {
@@ -24,28 +24,22 @@ public class CombatRoom : MonoBehaviour
     public int jokers = 0;
 
     private int aliveEnemies;
-    private bool completed = false; // 🔒 one-shot guard
 
-    private void Start()
+    protected override void Start()
     {
+        base.Start();
         SpawnEncounter();
     }
 
-    // ─────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────
     // SPAWNING
-    // ─────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────
 
     private void SpawnEncounter()
     {
-        if (enemyPrefab == null)
+        if (enemyPrefab == null || enemySpawnPoints == null || enemySpawnPoints.Length == 0)
         {
-            Debug.LogError("[CombatRoom] Missing enemyPrefab.");
-            return;
-        }
-
-        if (enemySpawnPoints == null || enemySpawnPoints.Length == 0)
-        {
-            Debug.LogError("[CombatRoom] No spawn points configured.");
+            Debug.LogError("[CombatRoom] Missing prefab or spawn points.");
             return;
         }
 
@@ -58,13 +52,6 @@ public class CombatRoom : MonoBehaviour
             {
                 Transform sp = enemySpawnPoints[spawnIndex % enemySpawnPoints.Length];
                 spawnIndex++;
-
-                if (sp == null)
-                {
-                    Debug.LogWarning("[CombatRoom] Spawn point missing — skipped");
-                    continue;
-                }
-
                 SpawnEnemy(role, sp);
             }
         }
@@ -83,12 +70,10 @@ public class CombatRoom : MonoBehaviour
         var go = Instantiate(enemyPrefab, sp.position, Quaternion.identity);
         aliveEnemies++;
 
-        // Apply visual / legacy role handling
         var roleCtrl = go.GetComponent<EnemyRoleController>();
         if (roleCtrl != null)
             roleCtrl.ApplyRole(role);
 
-        // Enemy-centric coordination
         var agent = go.GetComponent<EnemyAgent>();
         if (agent != null)
         {
@@ -97,54 +82,34 @@ public class CombatRoom : MonoBehaviour
                 EnemyRole.Melee => EnemyRole.Offender,
                 EnemyRole.Ranged => EnemyRole.Ranger,
                 EnemyRole.Elite => EnemyRole.Defender,
-                EnemyRole.Joker => EnemyRole.Joker,
                 EnemyRole.Activator => EnemyRole.Activator,
+                EnemyRole.Joker => EnemyRole.Joker,
                 _ => EnemyRole.Offender
             };
         }
 
         var relay = go.AddComponent<EnemyDeathRelay>();
         relay.OnEnemyDestroyed = OnEnemyDestroyed;
-
-        Debug.Log($"[CombatRoom] Spawned {role} at {go.transform.position}");
     }
 
-    // ─────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────
     // COMBAT LIFECYCLE
-    // ─────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────
 
     private void OnEnemyDestroyed()
     {
-        if (completed)
-            return;
-
         aliveEnemies--;
         Debug.Log($"[CombatRoom] Enemy died. Remaining: {aliveEnemies}");
 
         if (aliveEnemies <= 0)
         {
-            completed = true;
-            CompleteRoom();
+            CompleteRoom(); // 🔒 SINGLE AUTHORITY PATH
         }
     }
 
-    private void CompleteRoom()
-    {
-        var runDirector = FindAnyObjectByType<RunDirector>();
-
-        if (runDirector == null)
-        {
-            Debug.LogError("[CombatRoom] RunDirector missing — aborting completion");
-            return;
-        }
-
-        Debug.Log("[CombatRoom] Combat cleared → notifying RunDirector");
-        runDirector.OnCombatRoomCleared();
-    }
-
-    // ─────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────
     // DEATH RELAY
-    // ─────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────
 
     private class EnemyDeathRelay : MonoBehaviour
     {
@@ -152,10 +117,8 @@ public class CombatRoom : MonoBehaviour
 
         private void OnDestroy()
         {
-            if (!Application.isPlaying)
-                return;
-
-            OnEnemyDestroyed?.Invoke();
+            if (Application.isPlaying)
+                OnEnemyDestroyed?.Invoke();
         }
     }
 }

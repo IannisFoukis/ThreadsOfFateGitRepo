@@ -3,48 +3,34 @@ using System;
 
 public class CombatRoom : RoomController
 {
-    public enum CombatCoordinationMode
-    {
-        Legacy,
-        EnemyCentric
-    }
-
-    [Header("Coordination System")]
-    [SerializeField] private CombatCoordinationMode coordinationMode = CombatCoordinationMode.EnemyCentric;
-
     [Header("Prefab + Spawn Points")]
     public GameObject enemyPrefab;
     public Transform[] enemySpawnPoints;
 
-    [Header("Test Spawn Settings")]
-    public int offenders = 6;
-    public int defenders = 3;
-    public int rangers = 4;
-    public int activators = 0;
-    public int jokers = 0;
-
     private int aliveEnemies;
+    private RoomContract contract;
+    private int spawnIndex;
 
     protected override void Start()
     {
         base.Start();
 
-        var contract = RoomAccess.Current;
+        contract = RoomAccess.Current;
+
         if (contract == null || !contract.enableCombat)
         {
             Debug.Log("[CombatRoom] Combat disabled by contract");
             return;
         }
 
-        SpawnEncounter();
+        SpawnFromContract();
     }
 
-
     // ─────────────────────────────────────────────
-    // SPAWNING
+    // CONTRACT-DRIVEN SPAWN
     // ─────────────────────────────────────────────
 
-    private void SpawnEncounter()
+    private void SpawnFromContract()
     {
         if (enemyPrefab == null || enemySpawnPoints == null || enemySpawnPoints.Length == 0)
         {
@@ -53,25 +39,25 @@ public class CombatRoom : RoomController
         }
 
         aliveEnemies = 0;
-        int spawnIndex = 0;
+        spawnIndex = 0;
 
-        void SpawnMany(EnemyRole role, int count)
+        SpawnMany(EnemyRole.Offender, contract.offenders);
+        SpawnMany(EnemyRole.Defender, contract.defenders);
+        SpawnMany(EnemyRole.Ranger, contract.rangers);
+        SpawnMany(EnemyRole.Activator, contract.activators);
+        SpawnMany(EnemyRole.Joker, contract.jokers);
+
+        Debug.Log("[CombatRoom] Encounter spawned from RoomContract");
+    }
+
+    private void SpawnMany(EnemyRole role, int count)
+    {
+        for (int i = 0; i < count; i++)
         {
-            for (int i = 0; i < count; i++)
-            {
-                Transform sp = enemySpawnPoints[spawnIndex % enemySpawnPoints.Length];
-                spawnIndex++;
-                SpawnEnemy(role, sp);
-            }
+            Transform sp = enemySpawnPoints[spawnIndex % enemySpawnPoints.Length];
+            spawnIndex++;
+            SpawnEnemy(role, sp);
         }
-
-        SpawnMany(EnemyRole.Melee, offenders);
-        SpawnMany(EnemyRole.Elite, defenders);
-        SpawnMany(EnemyRole.Ranged, rangers);
-        SpawnMany(EnemyRole.Activator, activators);
-        SpawnMany(EnemyRole.Joker, jokers);
-
-        Debug.Log("[CombatRoom] Encounter spawned via role counts");
     }
 
     private void SpawnEnemy(EnemyRole role, Transform sp)
@@ -79,27 +65,28 @@ public class CombatRoom : RoomController
         var go = Instantiate(enemyPrefab, sp.position, Quaternion.identity);
         aliveEnemies++;
 
+        // Apply role
         var roleCtrl = go.GetComponent<EnemyRoleController>();
         if (roleCtrl != null)
             roleCtrl.ApplyRole(role);
 
-        var agent = go.GetComponent<EnemyAgent>();
-        if (agent != null)
-        {
-            agent.role = role switch
-            {
-                EnemyRole.Melee => EnemyRole.Offender,
-                EnemyRole.Ranged => EnemyRole.Ranger,
-                EnemyRole.Elite => EnemyRole.Defender,
-                EnemyRole.Activator => EnemyRole.Activator,
-                EnemyRole.Joker => EnemyRole.Joker,
-                _ => EnemyRole.Offender
-            };
-        }
+        var enemyAgent = go.GetComponent<EnemyAgent>();
+        if (enemyAgent != null)
+            enemyAgent.role = role;
 
+        // G1: Decide elite intent (NO BEHAVIOR YET)
+        bool isElite =
+            contract.allowElites &&
+            UnityEngine.Random.value < contract.eliteChance;
+
+        if (isElite)
+            go.name += " [ELITE]"; // visible + harmless marker
+
+        // Death relay
         var relay = go.AddComponent<EnemyDeathRelay>();
         relay.OnEnemyDestroyed = OnEnemyDestroyed;
     }
+
 
     // ─────────────────────────────────────────────
     // COMBAT LIFECYCLE
@@ -111,9 +98,7 @@ public class CombatRoom : RoomController
         Debug.Log($"[CombatRoom] Enemy died. Remaining: {aliveEnemies}");
 
         if (aliveEnemies <= 0)
-        {
-            CompleteRoom(); // 🔒 SINGLE AUTHORITY PATH
-        }
+            CompleteRoom(); // 🔒 single authority path
     }
 
     // ─────────────────────────────────────────────

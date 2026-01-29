@@ -420,7 +420,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bdfd67ea224059c44936ba3562edb417, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  contract: {fileID: 11400000, guid: 1582f6a62b926264b97b8d48cd4e18dd, type: 2}
+  contract:
+    contractName: Unnamed Contract
+    roomRole: 0
+    enableCombat: 1
+    useCoordinator: 1
+    enforceHonestCombat: 0
+    offenders: 0
+    defenders: 0
+    rangers: 0
+    activators: 0
+    jokers: 0
+    allowElites: 1
+    eliteChance: 0.1
+    allowHammer: 1
+    allowEncircle: 1
+    hammerAggression: 1
+    encircleSpeedMultiplier: 1
+    fakeOutChance: 0
+    delayedDashChance: 0
+    silencePhase: 0
+    pressureSpike: 0
+    reduceAudio: 0
+    hasShrine: 1
+    allowShrines: 1
 --- !u!114 &619201721
 MonoBehaviour:
   m_ObjectHideFlags: 0

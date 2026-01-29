@@ -1,4 +1,5 @@
 using UnityEngine;
+using TOF.Rooms.Contracts;
 
 public static class RoomAccess
 {

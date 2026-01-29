@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using TOF.Rooms.Contracts;
 
 public class RoomDirector : MonoBehaviour
 {

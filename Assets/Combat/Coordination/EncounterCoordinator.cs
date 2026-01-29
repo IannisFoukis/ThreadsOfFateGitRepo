@@ -1,8 +1,10 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using TOF.Rooms.Contracts;
 
 public class EncounterCoordinator : MonoBehaviour
 {
+
     private bool silenceActive;
 
     public Transform playerTransform;

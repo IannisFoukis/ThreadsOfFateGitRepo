@@ -1032,6 +1032,7 @@ MonoBehaviour:
   - {fileID: 2084065889}
   - {fileID: 1543483110}
   - {fileID: 486309522}
+  applyFallbackIfZeroCounts: 1
 --- !u!4 &985146257
 Transform:
   m_ObjectHideFlags: 0
@@ -1066,7 +1067,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 985146255}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 949287ba7576cfc4d92e62628706f333, type: 3}
   m_Name: 
@@ -1167,7 +1168,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bdfd67ea224059c44936ba3562edb417, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  contract: {fileID: 11400000, guid: c4df855cbb5b03447b787219df1f400a, type: 2}
+  contract:
+    contractName: Unnamed Contract
+    roomRole: 1
+    enableCombat: 1
+    useCoordinator: 1
+    enforceHonestCombat: 0
+    offenders: 6
+    defenders: 4
+    rangers: 2
+    activators: 1
+    jokers: 0
+    allowElites: 1
+    eliteChance: 0.1
+    allowHammer: 1
+    allowEncircle: 1
+    hammerAggression: 1
+    encircleSpeedMultiplier: 1
+    fakeOutChance: 0
+    delayedDashChance: 0
+    silencePhase: 0
+    pressureSpike: 0
+    reduceAudio: 0
+    hasShrine: 1
+    allowShrines: 1
 --- !u!114 &985146264
 MonoBehaviour:
   m_ObjectHideFlags: 0

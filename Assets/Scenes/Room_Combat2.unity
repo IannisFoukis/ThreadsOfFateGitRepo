@@ -683,6 +683,7 @@ GameObject:
   - component: {fileID: 985146259}
   - component: {fileID: 985146260}
   - component: {fileID: 985146261}
+  - component: {fileID: 985146262}
   m_Layer: 0
   m_Name: Room
   m_TagString: Untagged
@@ -702,17 +703,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1dbcfd613a887124f9b25c3a141f26ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  coordinationMode: 1
   enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
   enemySpawnPoints:
   - {fileID: 72645255}
   - {fileID: 551611922}
   - {fileID: 2054737905}
-  offenders: 6
-  defenders: 3
-  rangers: 4
-  activators: 0
-  jokers: 0
 --- !u!4 &985146257
 Transform:
   m_ObjectHideFlags: 0
@@ -837,6 +832,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   contract: {fileID: 11400000, guid: 461fb8a902315054f8099ce83b1ce782, type: 2}
+--- !u!114 &985146262
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 985146255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c9b3748099f2d1544bb0c78ad41d799d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1013622540
 GameObject:
   m_ObjectHideFlags: 0

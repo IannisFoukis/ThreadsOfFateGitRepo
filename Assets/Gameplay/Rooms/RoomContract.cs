@@ -1,52 +1,86 @@
-using UnityEngine;
+﻿using UnityEngine;
 
-[CreateAssetMenu(menuName = "TOF/Room Contract")]
-public class RoomContract : ScriptableObject
+[System.Serializable]
+public class RoomContract
 {
-    [Header("Identity")]
-    public string contractName;
+    // ─────────────────────────────────────────────
+    // IDENTITY
+    // ─────────────────────────────────────────────
+
+    public string contractName = "Unnamed Contract";
     public RoomRole roomRole;
 
-    [Header("Combat Toggles")]
+    // ─────────────────────────────────────────────
+    // COMBAT ENABLEMENT
+    // ─────────────────────────────────────────────
+
     public bool enableCombat = true;
     public bool useCoordinator = true;
+    public bool enforceHonestCombat = false;
 
-    [Header("Enemy Composition (G1)")]
-    public int offenders = 3;
-    public int defenders = 2;
-    public int rangers = 1;
-    public int activators = 0;
-    public int jokers = 0;
+    // ─────────────────────────────────────────────
+    // ENEMY COMPOSITION
+    // ─────────────────────────────────────────────
 
-    [Range(0f, 1f)]
-    public float eliteChance = 0.15f;
+    public int offenders;
+    public int defenders;
+    public int rangers;
+    public int activators;
+    public int jokers;
 
-    [Header("Formation Permissions")]
-    public bool allowPhalanx = true;
-    public bool allowFlank = true;
-    public bool allowSwarm = false;
+    // ─────────────────────────────────────────────
+    // ELITES
+    // ─────────────────────────────────────────────
 
-    [Header("Shrine")]
-    public bool hasShrine = false;
-    public bool shrineDestroyable = false;
+    public bool allowElites = true;
+    [Range(0f, 1f)] public float eliteChance = 0.1f;
 
-    [Header("Silence Phase")]
-    public bool silencePhase = false;
+    // ─────────────────────────────────────────────
+    // FORMATION / DOCTRINE FLAGS
+    // ─────────────────────────────────────────────
 
-    [Header("Pressure")]
-    public bool pressureSpike = false;
+    public bool allowHammer = true;
+    public bool allowEncircle = true;
 
-    [Header("Encounter Rules")]
-    public bool allowHammer = false;
-    public bool allowEncircle = false;
-    public float hammerAggression = 1f;
-    public float encircleSpeedMultiplier = 1f;
+    [Header("Formation Tuning")]
+    [Range(0f, 3f)] public float hammerAggression = 1f;
+    [Range(0.2f, 3f)] public float encircleSpeedMultiplier = 1f;
 
-    [Header("Variants")]
+    [Header("Tactical Variance")]
     [Range(0f, 1f)] public float fakeOutChance = 0f;
     [Range(0f, 1f)] public float delayedDashChance = 0f;
-    public bool allowElites = false;
 
-    [Header("Audio / Atmosphere")]
+    // ─────────────────────────────────────────────
+    // MOOD / PRESSURE
+    // ─────────────────────────────────────────────
+
+    public bool silencePhase = false;
+    public bool pressureSpike = false;
     public bool reduceAudio = false;
+
+    // ─────────────────────────────────────────────
+    // SHRINES
+    // ─────────────────────────────────────────────
+
+    public bool hasShrine = true;
+    public bool allowShrines = true;
+
+    // ─────────────────────────────────────────────
+    // G3 — APPLY KEEPER WORLD STATE
+    // ─────────────────────────────────────────────
+
+    public void ApplyKeeperWorldState()
+    {
+        if (KeeperWorldState.silenceEnforced)
+            silencePhase = true;
+
+        if (KeeperWorldState.honestCombat)
+            enforceHonestCombat = true;
+
+        if (KeeperWorldState.pressureBias > 0)
+            pressureSpike = true;
+
+        if (KeeperWorldState.shrineHatred > 0)
+            allowShrines = false;
+    }
 }

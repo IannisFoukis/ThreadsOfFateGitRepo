@@ -3,28 +3,31 @@
 public class RoomController : MonoBehaviour
 {
     private bool completed = false;
+    protected bool roomCompleted;
 
     protected virtual void Start()
     {
         Debug.Log($"Room started: {gameObject.name}");
     }
 
-    public void CompleteRoom()
+    public virtual void CompleteRoom()
     {
-        if (completed)
-            return; // 🔒 HARD GUARD
+        if (roomCompleted)
+            return;
 
-        completed = true;
+        roomCompleted = true;
 
         Debug.Log($"Room completed: {gameObject.name}");
 
-        var director = FindFirstObjectByType<RoomDirector>();
+        var director = Object.FindFirstObjectByType<RoomDirector>();
+
         if (director == null)
         {
-            Debug.LogWarning("[RoomController] RoomDirector not found (scene likely unloading)");
+            Debug.LogError("[RoomController] RoomDirector not found");
             return;
         }
 
         director.NotifyRoomCompleted();
     }
+
 }

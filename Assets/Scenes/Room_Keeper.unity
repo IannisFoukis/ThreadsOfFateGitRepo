@@ -1483,6 +1483,7 @@ GameObject:
   - component: {fileID: 1369920811}
   - component: {fileID: 1369920810}
   - component: {fileID: 1369920812}
+  - component: {fileID: 1369920813}
   m_Layer: 0
   m_Name: KeeperGameObject
   m_TagString: Player
@@ -1643,6 +1644,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   contract: {fileID: 11400000, guid: 31a434257f60831439ff50dd421eaec5, type: 2}
+--- !u!114 &1369920813
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1369920805}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c9b3748099f2d1544bb0c78ad41d799d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1419584910
 GameObject:
   m_ObjectHideFlags: 0

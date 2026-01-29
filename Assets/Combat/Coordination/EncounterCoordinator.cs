@@ -144,6 +144,25 @@ public class EncounterCoordinator : MonoBehaviour
 
     void Update()
     {
+        var contract = RoomAccess.Current;
+        if (contract != null && contract.silencePhase)
+        {
+            silencePhase = true;
+        }
+        if (contract == null)
+            return;
+
+        bool shouldRun = contract.useCoordinator && !contract.silencePhase;
+        if (!shouldRun)
+        {
+            if (enabled)
+                Debug.Log("[Coordinator] Disabled by contract");
+            enabled = false;
+            return;
+        }
+
+        enabled = true;
+
         if (agents.Count == 0) return;
 
         ResolveLeader();

@@ -28,8 +28,17 @@ public class CombatRoom : RoomController
     protected override void Start()
     {
         base.Start();
+
+        var contract = RoomAccess.Current;
+        if (contract == null || !contract.enableCombat)
+        {
+            Debug.Log("[CombatRoom] Combat disabled by contract");
+            return;
+        }
+
         SpawnEncounter();
     }
+
 
     // ─────────────────────────────────────────────
     // SPAWNING

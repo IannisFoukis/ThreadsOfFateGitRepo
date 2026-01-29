@@ -4,6 +4,19 @@ public class Keeper : MonoBehaviour
 {
     public void Offer()
     {
+        var contract = RoomAccess.Current;
+
+        // Phase F6 (read-only): Keeper is aware of the current room contract.
+        if (contract != null)
+        {
+            Debug.Log($"[Keeper] RoomContract detected: {contract.contractName} | Role={contract.roomRole} | " +
+                      $"Silence={contract.silencePhase} | PressureSpike={contract.pressureSpike} | ReduceAudio={contract.reduceAudio}");
+        }
+        else
+        {
+            Debug.LogWarning("[Keeper] No RoomContract found (RoomDirector missing or unassigned).");
+        }
+
         Debug.Log("KEEPER OFFERED OPTIONS:");
         Debug.Log("[C] Cleanse  |  [L] Lock  |  [T] Twist");
     }
@@ -22,7 +35,6 @@ public class Keeper : MonoBehaviour
 
     void Apply(KeeperOption option)
     {
-
         switch (option)
         {
             case KeeperOption.Cleanse:
@@ -37,6 +49,9 @@ public class Keeper : MonoBehaviour
                 Twist();
                 break;
         }
+
+        // Phase F6: no RunMemory calls here yet (your RunMemory doesn't have RecordKeeperInfluence).
+        // Keeper consequences remain handled by existing systems:
         GodDirector.Instance?.EvaluateRun();
     }
 

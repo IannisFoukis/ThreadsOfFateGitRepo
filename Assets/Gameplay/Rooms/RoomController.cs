@@ -1,40 +1,30 @@
-using UnityEngine;
+﻿using UnityEngine;
 
-// ==================================================
-// SCRIPT ROLE: READS ONLY
-// SYSTEM: Rooms
-// RESPONSIBILITY: Base room lifecycle
-// ==================================================
-
-public abstract class RoomController : MonoBehaviour
+public class RoomController : MonoBehaviour
 {
-    protected bool isCompleted = false;
+    private bool completed = false;
 
     protected virtual void Start()
     {
-        Debug.Log($"Room started: {GetType().Name}");
+        Debug.Log($"Room started: {gameObject.name}");
     }
 
-    protected void CompleteRoom()
+    public void CompleteRoom()
     {
-        if (isCompleted) return;
+        if (completed)
+            return; // 🔒 HARD GUARD
 
-        isCompleted = true;
-        Debug.Log($"Room completed: {GetType().Name}");
+        completed = true;
 
-        RunDirector director = FindFirstObjectByType<RunDirector>();
-        Object.FindAnyObjectByType<RoomDemandTracker>()?.Resolve();
+        Debug.Log($"Room completed: {gameObject.name}");
 
-        var roomDirector = FindFirstObjectByType<RoomDirector>();
-        if (roomDirector != null)
+        var director = FindFirstObjectByType<RoomDirector>();
+        if (director == null)
         {
-            roomDirector.NotifyRoomCompleted();
-        }
-        else
-        {
-            Debug.LogError("[RoomController] RoomDirector not found");
+            Debug.LogWarning("[RoomController] RoomDirector not found (scene likely unloading)");
+            return;
         }
 
-
+        director.NotifyRoomCompleted();
     }
 }

@@ -49,6 +49,13 @@ public class ShrineAttackController : MonoBehaviour
 
     public void StartAttacksForTier(ShrineTier tier)
     {
+        var contract = RoomAccess.Current;
+        if (contract == null || !contract.hasShrine)
+        {
+            Debug.Log("[ShrineAttackController] Shrine attacks disabled by contract");
+            return;
+        }
+
         // Keep local state in sync
         currentTier = tier;
 

@@ -27,7 +27,7 @@ public class CombatRoom : RoomController
     }
 
     // ─────────────────────────────────────────────
-    // CONTRACT-DRIVEN SPAWN
+    // CONTRACT-DRIVEN SPAWN (G1)
     // ─────────────────────────────────────────────
 
     private void SpawnFromContract()
@@ -47,7 +47,7 @@ public class CombatRoom : RoomController
         SpawnMany(EnemyRole.Activator, contract.activators);
         SpawnMany(EnemyRole.Joker, contract.jokers);
 
-        Debug.Log("[CombatRoom] Encounter spawned from RoomContract");
+        Debug.Log("[CombatRoom] Spawned encounter from RoomContract (G1)");
     }
 
     private void SpawnMany(EnemyRole role, int count)
@@ -65,7 +65,6 @@ public class CombatRoom : RoomController
         var go = Instantiate(enemyPrefab, sp.position, Quaternion.identity);
         aliveEnemies++;
 
-        // Apply role
         var roleCtrl = go.GetComponent<EnemyRoleController>();
         if (roleCtrl != null)
             roleCtrl.ApplyRole(role);
@@ -74,19 +73,14 @@ public class CombatRoom : RoomController
         if (enemyAgent != null)
             enemyAgent.role = role;
 
-        // G1: Decide elite intent (NO BEHAVIOR YET)
-        bool isElite =
-            contract.allowElites &&
-            UnityEngine.Random.value < contract.eliteChance;
+        // G1: Elite intent only (no behavior yet)
+        if (contract.allowElites && UnityEngine.Random.value < contract.eliteChance)
 
-        if (isElite)
-            go.name += " [ELITE]"; // visible + harmless marker
+            go.name += " [ELITE]";
 
-        // Death relay
         var relay = go.AddComponent<EnemyDeathRelay>();
         relay.OnEnemyDestroyed = OnEnemyDestroyed;
     }
-
 
     // ─────────────────────────────────────────────
     // COMBAT LIFECYCLE
@@ -98,7 +92,7 @@ public class CombatRoom : RoomController
         Debug.Log($"[CombatRoom] Enemy died. Remaining: {aliveEnemies}");
 
         if (aliveEnemies <= 0)
-            CompleteRoom(); // 🔒 single authority path
+            CompleteRoom();
     }
 
     // ─────────────────────────────────────────────

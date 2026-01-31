@@ -71,6 +71,15 @@ public class TacticDirector : MonoBehaviour
 
     private void Update()
     {
+        if (runDirector.ActiveDoctrine == null)
+            return;
+
+        if (runDirector.ActiveDoctrine.chaotic)
+            return; // Chaos disables tactics
+
+        if (runDirector.ActiveDoctrine.formationDiscipline < 0.6f)
+            return; // Low discipline disables tactics
+
         // 🔒 Tier-3 Tactical Lockout
         if (tacticalLockout)
         {

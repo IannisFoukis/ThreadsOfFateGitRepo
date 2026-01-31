@@ -503,7 +503,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: -1491808207
-  m_SortingLayer: 2
+  m_SortingLayer: 1
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: ba78c957ff87333418411a885a590a3d, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -708,6 +708,7 @@ MonoBehaviour:
   - {fileID: 72645255}
   - {fileID: 551611922}
   - {fileID: 2054737905}
+  applyFallbackIfZeroCounts: 1
 --- !u!4 &985146257
 Transform:
   m_ObjectHideFlags: 0
@@ -742,11 +743,16 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 985146255}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 949287ba7576cfc4d92e62628706f333, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  keeperFormationMult: 1
+  keeperCooldownMult: 1
+  keeperFlankBiasMult: 1
+  keeperFrontBiasMult: 1
+  keeperCommitDelayMult: 1
   tacticCooldown: 3
   flankCooldown: 2
   flankDistance: 3
@@ -784,41 +790,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerTransform: {fileID: 4619573443503270045, guid: 05c8ed09963ef08489c5807b5ae1b09d, type: 3}
-  doctrine: {fileID: 11400000, guid: 447e600a417839b41bee98b62d848330, type: 2}
-  leaderDeathHesitation: 0.6
-  coordinationDecayTime: 10
-  maxSlotJitter: 0.6
-  maxRotationWobble: 18
-  hammerIntervalDeadMultiplier: 0.65
-  minDriftStrength: 0.15
-  maxDriftStrength: 0.45
-  holdRadius: 12
+  globalFormationLerp: 6
+  phalanxState: 0
+  holdCompression: 0.6
+  encircleCompression: 0.3
   encircleRadius: 6
   encircleDuration: 3.5
-  breakChaseDuration: 2
-  encircleRadiusOffenders: 5
-  encircleRadiusDefenders: 7
-  encircleRadiusRangers: 9
-  hammerInterval: 2.2
-  hammerWindow: 0.8
-  stateGraceTime: 0.3
-  chaseDelay: 2
-  breakChaseSpeedMultiplier: 0.25
-  globalFormationLerp: 6
-  lineSpacing: 1.8
-  wedgeSpacing: 1.6
-  boxSpacing: 2.4
-  diamondSpacing: 2.8
-  activeFormation: 2
-  phalanxState: 0
-  allowHammer: 1
-  allowEncircle: 1
-  allowElites: 1
-  hammerAggressionMultiplier: 1
-  encircleSpeedMultiplier: 1
-  silencePhase: 0
-  fakeOutChance: 0
-  delayedDashChance: 0
 --- !u!114 &985146261
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -831,7 +808,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bdfd67ea224059c44936ba3562edb417, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  contract: {fileID: 11400000, guid: 461fb8a902315054f8099ce83b1ce782, type: 2}
+  contract:
+    corruptionBias: 0
+    contractName: Unnamed Contract
+    roomRole: 0
+    enableCombat: 1
+    useCoordinator: 1
+    enforceHonestCombat: 0
+    offenders: 0
+    defenders: 0
+    rangers: 0
+    activators: 0
+    jokers: 0
+    allowElites: 1
+    eliteChance: 0.1
+    allowHammer: 1
+    allowEncircle: 1
+    hammerAggression: 1
+    encircleSpeedMultiplier: 1
+    fakeOutChance: 0
+    delayedDashChance: 0
+    silencePhase: 0
+    pressureSpike: 0
+    reduceAudio: 0
+    hasShrine: 1
+    allowShrines: 1
 --- !u!114 &985146262
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1034,7 +1035,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: -1491808207
-  m_SortingLayer: 2
+  m_SortingLayer: 1
   m_SortingOrder: 1
   m_Sprite: {fileID: 21300000, guid: 61373b2682163a34caa88e7f3c655d50, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}

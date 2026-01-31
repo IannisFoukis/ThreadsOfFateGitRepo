@@ -131,6 +131,7 @@ GameObject:
   - component: {fileID: 380230214}
   - component: {fileID: 380230216}
   - component: {fileID: 380230217}
+  - component: {fileID: 380230218}
   m_Layer: 0
   m_Name: Room
   m_TagString: Untagged
@@ -177,7 +178,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bdfd67ea224059c44936ba3562edb417, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  contract: {fileID: 11400000, guid: 9acb0a1cac88f8a42858a17a4531a604, type: 2}
+  contract:
+    corruptionBias: 0
+    contractName: Unnamed Contract
+    roomRole: 0
+    enableCombat: 1
+    useCoordinator: 1
+    enforceHonestCombat: 0
+    offenders: 0
+    defenders: 0
+    rangers: 0
+    activators: 0
+    jokers: 0
+    allowElites: 1
+    eliteChance: 0.1
+    allowHammer: 1
+    allowEncircle: 1
+    hammerAggression: 1
+    encircleSpeedMultiplier: 1
+    fakeOutChance: 0
+    delayedDashChance: 0
+    silencePhase: 0
+    pressureSpike: 0
+    reduceAudio: 0
+    hasShrine: 1
+    allowShrines: 1
 --- !u!114 &380230217
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -190,6 +215,47 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c9b3748099f2d1544bb0c78ad41d799d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &380230218
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 380230213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 949287ba7576cfc4d92e62628706f333, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  keeperFormationMult: 1
+  keeperCooldownMult: 1
+  keeperFlankBiasMult: 1
+  keeperFrontBiasMult: 1
+  keeperCommitDelayMult: 1
+  tacticCooldown: 3
+  flankCooldown: 2
+  flankDistance: 3
+  frontDistance: 2.5
+  baseSlotCooldown: 1.5
+  baseFormationPersistence: 1
+  baseInitialCommitDelay: 0.5
+  baseFlankWeight: 1
+  baseFrontWeight: 1
+  formationPersistenceMult: 1
+  slotCooldownMult: 1
+  flankBiasMult: 1
+  frontPriorityMult: 1
+  initialCommitDelayMult: 1
+  formationDisrupted: 0
+  disruptionTimer: 0
+  slotScrambleActive: 0
+  scrambleTimer: 0
+  scrambleInterval: 0.8
+  scrambleTickTimer: 0
+  tier3Active: 0
+  tier3Timer: 0
+  scrambleBreaksPerTick: 1
+  tacticalLockout: 0
 --- !u!1 &669834231
 GameObject:
   m_ObjectHideFlags: 0

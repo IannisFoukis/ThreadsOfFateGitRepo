@@ -22,25 +22,19 @@ public class RoomDirector : MonoBehaviour
             return;
         }
 
-        // 1️⃣ Resolve corruption (derived from Keeper / run state)
+        // 1) Resolve corruption (from Keeper / run state)
         corruption = CorruptionResolver.ResolveFromKeeper();
 
-        
-        // 🔗 Wire doctrine into EncounterCoordinator (read-only, if present)
-        var encounter = FindFirstObjectByType<EncounterCoordinator>();
-        if (encounter != null && doctrineState != null)
-        {
-            encounter.ApplyDoctrine(doctrineState);
-        }
-        // 2️⃣ Pull doctrine from RunDirector (SINGLE SOURCE OF TRUTH)
+        // 2) Pull doctrine from RunDirector (single source of truth)
         var runDirector = FindFirstObjectByType<RunDirector>();
         if (runDirector == null || runDirector.ActiveDoctrine == null)
         {
             Debug.Log("[RoomDirector] No ActiveDoctrine yet (pre-Keeper). Skipping doctrine injection.");
+            GameEvents.RaiseRoomStart(); // still allow spawn systems
             return;
         }
 
-        // 3️⃣ Clone doctrine so the room can safely mutate it
+        // 3) Clone doctrine so the room can safely mutate it
         doctrineState = new DoctrineState
         {
             canRetreat = runDirector.ActiveDoctrine.canRetreat,
@@ -52,12 +46,9 @@ public class RoomDirector : MonoBehaviour
             coordinationDelay = runDirector.ActiveDoctrine.coordinationDelay
         };
 
-        // 4️⃣ Apply corruption as a MODIFIER (never a creator)
+        // 4) Apply corruption as a modifier
         switch (corruption)
         {
-            case CorruptionTier.Low:
-                break;
-
             case CorruptionTier.Medium:
                 doctrineState.formationDiscipline *= 0.9f;
                 doctrineState.coordinationDelay *= 1.1f;
@@ -68,36 +59,41 @@ public class RoomDirector : MonoBehaviour
                 doctrineState.coordinationDelay *= 1.25f;
                 doctrineState.chaotic = true;
                 break;
+
+            case CorruptionTier.Extreme:
+                doctrineState.formationDiscipline *= 1.15f;
+                doctrineState.coordinationDelay *= 0.9f;
+                doctrineState.fanatic = true;
+                break;
         }
 
-        // 5️⃣ Init stress tracker (enemy count comes later)
+        // 5) Init stress tracker (enemy count comes later)
         stressTracker = new DoctrineStressTracker();
 
-        Debug.Log(
-            $"[RoomDirector] Room started | Role={contract.roomRole} | Corruption={corruption}"
-        );
+        Debug.Log($"[RoomDirector] Room started | Role={contract.roomRole} | Corruption={corruption}");
 
-        // 🔔 Let systems spawn enemies & subscribe
+        // Let systems spawn enemies & subscribe
         GameEvents.RaiseRoomStart();
 
-        // 🗣️ Emit initial doctrine intent
-        EmitDoctrineSpeech(doctrineState);
+        // 6) Inject doctrine into EncounterCoordinator (Phase L/M)
+        var encounter = FindFirstObjectByType<EncounterCoordinator>();
+        if (encounter != null)
+            encounter.ApplyDoctrine(doctrineState);
 
-        // 6️⃣ Hand doctrine to TacticDirector (read-only consumption)
+        // Optional: TacticDirector can consume run-wide doctrine too
         var tactic = FindFirstObjectByType<TacticDirector>();
         if (tactic != null)
-        {
             tactic.ApplyKeeperDoctrine(doctrineState);
-        }
+
+        // 7) Room start speech
+        EmitDoctrineSpeech(doctrineState);
     }
 
-    // Called by EncounterCoordinator AFTER enemies spawn
     public void RegisterInitialEnemyCount(int totalEnemies)
     {
         stressTracker?.Init(totalEnemies);
     }
 
-    // Called by EncounterCoordinator on every enemy death
     public void NotifyEnemyKilled()
     {
         if (doctrineBroken || stressTracker == null)
@@ -117,13 +113,11 @@ public class RoomDirector : MonoBehaviour
 
         if (doctrineState.fanatic)
         {
-            // Fanatics harden instead of scattering
             doctrineState.formationDiscipline += 0.3f;
             SpeechBus.Emit(EnemySpeechEvent.FanaticLock);
         }
         else
         {
-            // Chaos explodes
             doctrineState.formationDiscipline = 0.2f;
             doctrineState.chaotic = true;
             SpeechBus.Emit(EnemySpeechEvent.FormationBreak);
@@ -132,8 +126,7 @@ public class RoomDirector : MonoBehaviour
 
     private void EmitDoctrineSpeech(DoctrineState state)
     {
-        if (state == null)
-            return;
+        if (state == null) return;
 
         SpeechBus.Emit(EnemySpeechEvent.DoctrineEngaged);
 
@@ -143,8 +136,7 @@ public class RoomDirector : MonoBehaviour
         if (state.fanatic)
             SpeechBus.Emit(EnemySpeechEvent.FanaticLock);
 
-        if (state.canSacrifice && !state.fanatic)
-            SpeechBus.Emit(EnemySpeechEvent.SacrificeIntent);
+        // NOTE: SacrificeIntent removed (not in enum)
     }
 
     public void NotifyRoomCompleted()
@@ -161,9 +153,7 @@ public class RoomDirector : MonoBehaviour
         if (runDirector != null)
             runDirector.OnRoomCompleted();
     }
-    // ─────────────────────────────────────────────
-    // SHRINE → DOCTRINE DISRUPTION
-    // ─────────────────────────────────────────────
+
     public void ApplyShrineDisruption(int tier)
     {
         if (doctrineState == null)
@@ -174,18 +164,13 @@ public class RoomDirector : MonoBehaviour
         switch (tier)
         {
             case 1:
-                // Temporary confusion
                 doctrineState.formationDiscipline -= 0.2f;
                 break;
-
             case 2:
-                // Discipline erosion + chaos leak
                 doctrineState.formationDiscipline -= 0.4f;
                 doctrineState.chaotic = true;
                 break;
-
             case 3:
-                // Total collapse
                 doctrineState.formationDiscipline = 0.1f;
                 doctrineState.chaotic = true;
                 doctrineState.canRetreat = false;
@@ -193,7 +178,6 @@ public class RoomDirector : MonoBehaviour
                 break;
         }
 
-        doctrineState.formationDiscipline =
-            Mathf.Clamp01(doctrineState.formationDiscipline);
+        doctrineState.formationDiscipline = Mathf.Clamp01(doctrineState.formationDiscipline);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
-using System.Collections;   
+using System.Collections;
+
 public class EnemyDefenderShove : MonoBehaviour
 {
     [Header("Shove")]
@@ -37,18 +38,17 @@ public class EnemyDefenderShove : MonoBehaviour
 
     void Update()
     {
-        // 🔁 Lazy resolve coordinator (CRITICAL FIX)
+        // 🔁 Lazy resolve coordinator
         if (coordinator == null && agent != null)
             coordinator = agent.coordinator;
 
         if (agent == null || coordinator == null || player == null || playerRb == null)
             return;
 
-        // 🔒 Latch defender intent when role becomes Defender
-        if (agent.role == EnemyRole.Defender)
+        // 🔒 Latch defender intent ONCE
+        if (agent.role == EnemyRole.Defender && Time.time > defenderIntentUntil)
             defenderIntentUntil = Time.time + defenderIntentDuration;
 
-        // 🔒 No active defender intent
         if (Time.time > defenderIntentUntil)
             return;
 
@@ -60,10 +60,12 @@ public class EnemyDefenderShove : MonoBehaviour
         if (Time.time < lastShoveTime + shoveCooldown)
             return;
 
-        // 🔒 Functional slot arrival (NOT pixel-perfect)
-        Vector2 slotPos = agent.GetFormationTarget();
+        // 🔒 Functional slot arrival
+        Vector3 slotPos3 = agent.GetFormationTarget();
+        Vector2 slotPos = new Vector2(slotPos3.x, slotPos3.y);
+
         float slotDist = Vector2.Distance(transform.position, slotPos);
-        if (slotDist > agent.slotArrivalThreshold * slotToleranceMultiplier)
+        if (slotDist > agent.SlotArrivalThreshold * slotToleranceMultiplier)
             return;
 
         // 🔒 Player proximity
@@ -77,15 +79,13 @@ public class EnemyDefenderShove : MonoBehaviour
     void ExecuteShove()
     {
         lastShoveTime = Time.time;
+
         Time.timeScale = 0.92f;
         Invoke(nameof(ResetTimeScale), 0.05f);
-       // Camera.main.transform.position += (Vector3)(-dir * 0.15f);
 
         Vector2 dir = (player.position - transform.position).normalized;
 
-        // Displacement only
         StartCoroutine(ApplyShove(dir));
-
 
         // 🔵 Defender visual intent
         if (sr != null)
@@ -96,6 +96,7 @@ public class EnemyDefenderShove : MonoBehaviour
 
         Debug.Log($"[DEFENDER] SHOVE → {name}");
     }
+
     void ResetTimeScale()
     {
         Time.timeScale = 1f;
@@ -110,7 +111,7 @@ public class EnemyDefenderShove : MonoBehaviour
         if (playerMotor != null)
             playerMotor.externalForceActive = true;
 
-        float originalDamping = playerRb.linearDamping;
+        float originalDrag = playerRb.linearDamping;
         playerRb.linearDamping = 0f;
 
         while (timer < shoveTime)
@@ -120,13 +121,11 @@ public class EnemyDefenderShove : MonoBehaviour
             yield return null;
         }
 
-        playerRb.linearDamping = originalDamping;
+        playerRb.linearDamping = originalDrag;
 
         if (playerMotor != null)
             playerMotor.externalForceActive = false;
     }
-
-
 
     void ResetColor()
     {
@@ -143,11 +142,12 @@ public class EnemyDefenderShove : MonoBehaviour
         if (agent == null) return;
 
         // Slot tolerance zone (CYAN)
-        Vector2 slotPos = agent.GetFormationTarget();
-        float slotThresh = agent.slotArrivalThreshold * slotToleranceMultiplier;
+        Vector3 slotPos3 = agent.GetFormationTarget();
+        Vector2 slotPos = new Vector2(slotPos3.x, slotPos3.y);
+
+        float slotThresh = agent.SlotArrivalThreshold * slotToleranceMultiplier;
 
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireSphere(slotPos, slotThresh);
     }
-
 }

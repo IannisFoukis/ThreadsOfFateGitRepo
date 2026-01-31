@@ -66,8 +66,14 @@ public class Shrine : MonoBehaviour
         IsActive = true;
 
         DetermineTier();
+
         ApplyTierVisuals();
 
+        var roomDirector = FindAnyObjectByType<RoomDirector>();
+        if (roomDirector != null)
+        {
+            roomDirector.ApplyShrineDisruption((int)currentTier + 1);
+        }
         if (attackController == null)
             attackController = GetComponent<ShrineAttackController>();
 

@@ -1,487 +1,248 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
-using TOF.Rooms.Contracts;
 
 public class EncounterCoordinator : MonoBehaviour
 {
-
-    private bool silenceActive;
-
     public Transform playerTransform;
-    public RoomDoctrineConfig doctrine;
-    private EnemyAgent formationLeader;
-    private bool honestAttacks;
 
-    private readonly List<EnemyAgent> agents = new List<EnemyAgent>();
+    // ───────── Doctrine (Injected by RoomDirector) ─────────
+    private DoctrineState doctrine;
 
-    [Header("Leader Death / Coordination Decay")]
-    public float leaderDeathHesitation = 0.6f;
-    public float coordinationDecayTime = 10f;
-    public float maxSlotJitter = 0.6f;
-    public float maxRotationWobble = 18f;
-    public float hammerIntervalDeadMultiplier = 0.65f;
-
-    [Header("Leaderless Drift")]
-    public float minDriftStrength = 0.15f;
-    public float maxDriftStrength = 0.45f;
-
-    private bool leaderDead = false;
-    private float leaderDiedAt = -1f;
-    private float cohesion01 = 1f;
-    private Vector3 leaderAnchorPos;
-
-    private float lastLeaderAngle = 0f;
-    private bool rotationLocked = false;
-    private Vector3 encircleCenter;
-
-    [Header("Arcade Phalanx Radii")]
-    public float holdRadius = 12f;
-    public float encircleRadius = 6f;
-
-    [Header("Phase Timers")]
-    public float encircleDuration = 3.5f;
-    public float breakChaseDuration = 2.0f;
-
-    [Header("Encircle Geometry")]
-    public float encircleRadiusOffenders = 5f;
-    public float encircleRadiusDefenders = 7f;
-    public float encircleRadiusRangers = 9f;
-
-    [Header("Hammer Logic")]
-    public float hammerInterval = 2.2f;
-    public float hammerWindow = 0.8f;
-
-    private float stateTimer = 0f;
-    private float hammerTimer = 0f;
-    private EnemyAgent currentHammer;
-    private float hammerUntil = 0f;
-
-    [Header("Spawn Grace")]
-    public float stateGraceTime = 0.3f;
-    private float encounterStartTime = -1f;
-
-    [Header("Chase Delay")]
-    public float chaseDelay = 2f;
-    private float chaseDelayTimer = 0f;
-
-    [Header("Relative Speeds")]
-    public float breakChaseSpeedMultiplier = 0.25f;
-
-    [Header("Formation Smoothing")]
+    // ───────── Legacy compatibility ─────────
     public float globalFormationLerp = 6f;
+    public bool SilenceActive => false;
 
-    [Header("Formation Spacing")]
-    public float lineSpacing = 1.8f;
-    public float wedgeSpacing = 1.6f;
-    public float boxSpacing = 2.4f;
-    public float diamondSpacing = 2.8f;
+    private readonly List<EnemyAgent> agents = new();
+    private EnemyAgent formationLeader;
+    private EnemyAgent currentHammer;
+    private bool leaderDead;
 
-    public enum PhalanxState { March, HoldFire, Encircle, BreakChase, Collapse }
-    public enum FormationType { Line, Wedge, Box, Diamond }
+    // ───────── States ─────────
+    public enum PhalanxState
+    {
+        March,
+        HoldFire,
+        Encircle,
+        BreakChase,
+        Collapse
+    }
 
-    public FormationType activeFormation = FormationType.Line;
     public PhalanxState phalanxState = PhalanxState.March;
 
-    // ─────────────────────────────────────────────
-    // ROOM CONTRACT FLAGS (DATA ONLY – NO LOGIC YET)
-    // ─────────────────────────────────────────────
+    [Header("Phase L – Formation Compression Thresholds")]
+    [Tooltip("Average distance to slot before holding fire")]
+    public float holdCompression = 0.6f;
 
-    [Header("Room Contract Flags")]
-    public bool allowHammer = true;
-    public bool allowEncircle = true;
-    public bool allowElites = true;
+    [Tooltip("Average distance to slot before encircle")]
+    public float encircleCompression = 0.3f;
 
-    [Header("Room Contract Multipliers")]
-    public float hammerAggressionMultiplier = 1f;
-    public float encircleSpeedMultiplier = 1f;
-    public bool SilenceActive => silenceActive;
-    public bool silencePhase = false;
+    [Header("Encircle")]
+    public float encircleRadius = 4f;
+    public float encircleDuration = 3.5f;
 
-    [Header("Room Contract Variant Chances")]
-    [Range(0f, 1f)] public float fakeOutChance = 0f;
-    [Range(0f, 1f)] public float delayedDashChance = 0f;
+    private float stateTimer;
+    private Vector3 encircleCenter;
 
     void Start()
     {
-        if (RunContext.Instance != null)
-        {
-            // Silence from memory
-            if (RunContext.Instance.memory != null)
-                silenceActive = RunContext.Instance.memory.silenceActive;
-
-            // 👇 NEW: Honest attack bias from Keeper
-            honestAttacks = RunContext.Instance.worldModifiers != null &&
-                            RunContext.Instance.worldModifiers.enemiesFavorHonestAttacks;
-        }
-
-        // Silence overrides everything
-        if (silenceActive)
-        {
-            silencePhase = true;
-            allowHammer = false;
-            allowEncircle = false;
-
-            fakeOutChance = 0f;
-            delayedDashChance = 0f;
-
-            hammerAggressionMultiplier = 0.7f;
-            encircleSpeedMultiplier = 0.6f;
-        }
-
-        // 👇 Keeper judgment: honest combat (no tricks)
-        if (honestAttacks)
-        {
-            fakeOutChance = 0f;
-            delayedDashChance = 0f;
-
-            Debug.Log("[EncounterCoordinator] Honest attacks enforced (Keeper judgment)");
-        }
-
-        Debug.Log($"[EncounterCoordinator] Silence={silenceActive} Honest={honestAttacks}");
-
         ResolvePlayer();
-        SetState(PhalanxState.March);
+        phalanxState = PhalanxState.March;
     }
-
 
     void Update()
     {
-        var contract = RoomAccess.Current;
-        if (contract != null && contract.silencePhase)
-        {
-            silencePhase = true;
-        }
-        if (contract == null)
+        if (agents.Count == 0 || playerTransform == null)
             return;
-
-        bool shouldRun = contract.useCoordinator && !contract.silencePhase;
-        if (!shouldRun)
-        {
-            if (enabled)
-                Debug.Log("[Coordinator] Disabled by contract");
-            enabled = false;
-            return;
-        }
-
-        enabled = true;
-
-        if (agents.Count == 0) return;
 
         ResolveLeader();
-        if (playerTransform == null) ResolvePlayer();
-        if (playerTransform == null) return;
 
-        if (leaderDead)
+        // 🔥 Doctrine-driven collapse
+        if (doctrine != null && doctrine.chaotic && doctrine.IsFormationBreaking())
         {
-            float t = (Time.time - leaderDiedAt) / Mathf.Max(0.01f, coordinationDecayTime);
-            cohesion01 = Mathf.Clamp01(1f - t);
+            if (phalanxState != PhalanxState.Collapse)
+                EnterCollapse();
+            return;
         }
-        else cohesion01 = 1f;
 
-        Vector3 leaderPos = formationLeader != null ? formationLeader.transform.position : leaderAnchorPos;
-        float dist = Vector3.Distance(leaderPos, playerTransform.position);
+        if (stateTimer > 0f)
+            stateTimer -= Time.deltaTime;
 
-        if (stateTimer > 0f) stateTimer -= Time.deltaTime;
+        float compression = GetFormationCompression();
 
         switch (phalanxState)
         {
             case PhalanxState.March:
-                rotationLocked = false;
-                if (dist <= encircleRadius) EnterEncircle();
-                else if (dist <= holdRadius) EnterHoldFire();
+                if (compression <= encircleCompression)
+                    EnterEncircle();
+                else if (compression <= holdCompression)
+                    phalanxState = PhalanxState.HoldFire;
                 break;
 
             case PhalanxState.HoldFire:
-                rotationLocked = true;
-                if (dist <= encircleRadius) EnterEncircle();
-                else if (dist > holdRadius * 1.1f) EnterBreakChase();
+                if (compression <= encircleCompression)
+                    EnterEncircle();
+                else if (compression > holdCompression * 1.25f)
+                    phalanxState = PhalanxState.March;
                 break;
 
             case PhalanxState.Encircle:
-                rotationLocked = true;
-                UpdateHammerLogic();
-                if (dist > holdRadius * 1.1f) EnterBreakChase();
-                else if (stateTimer <= 0f) EnterHoldFire();
+                if (stateTimer <= 0f)
+                    phalanxState = PhalanxState.HoldFire;
                 break;
 
             case PhalanxState.BreakChase:
-                rotationLocked = false;
-                if (chaseDelayTimer > 0f)
-                {
-                    chaseDelayTimer -= Time.deltaTime;
-                    break;
-                }
-                if (stateTimer <= 0f) SetState(PhalanxState.March);
+                // Reserved (Phase M)
+                break;
+
+            case PhalanxState.Collapse:
+                // Pure chaos – enemies act individually
                 break;
         }
     }
-    public void ApplyRoomContract(RoomContract contract)
+
+    // ───────── Doctrine Injection (FINAL) ─────────
+    public void ApplyDoctrine(DoctrineState state)
     {
-        Debug.Log($"[EncounterCoordinator] Applying contract: {contract.contractName}");
+        doctrine = state;
 
-        allowHammer = contract.allowHammer;
-        allowEncircle = contract.allowEncircle;
-
-        hammerAggressionMultiplier = contract.hammerAggression;
-        encircleSpeedMultiplier = contract.encircleSpeedMultiplier;
-
-        silencePhase = contract.silencePhase;
-
-        fakeOutChance = contract.fakeOutChance;
-        delayedDashChance = contract.delayedDashChance;
-
-        allowElites = contract.allowElites;
-
-        if (contract.reduceAudio)
-        {
-            // Hook later to audio system
-            Debug.Log("[EncounterCoordinator] Audio dampened (Silence Phase)");
-        }
+        Debug.Log(
+            $"[EncounterCoordinator] Doctrine applied | " +
+            $"Retreat={state.canRetreat}, Sacrifice={state.canSacrifice}, " +
+            $"Chaos={state.chaotic}, Discipline={state.formationDiscipline:0.00}"
+        );
     }
 
-    // =========================================================
-    // WORLD POSITION (FINAL, LOCKED)
-    // =========================================================
-
+    // ───────── Position API ─────────
     public Vector3 GetWorldPositionFor(EnemyAgent agent)
     {
-        if (playerTransform == null)
-            return agent.transform.position;
-
-        if (leaderDead)
+        return phalanxState switch
         {
-            Vector3 pos = (phalanxState == PhalanxState.Encircle)
-                ? GetEncirclePosition(agent)
-                : GetPhalanxPositionAnchored(agent);
-
-            // 🔻 LEADERLESS DRIFT (THE KEY)
-            float drift = Mathf.Lerp(minDriftStrength, maxDriftStrength, 1f - cohesion01);
-            pos += (playerTransform.position - leaderAnchorPos) * drift;
-
-            return pos;
-        }
-
-        if (formationLeader == null)
-            return agent.transform.position;
-
-        if (phalanxState == PhalanxState.Encircle)
-            return GetEncirclePosition(agent);
-
-        if (phalanxState == PhalanxState.BreakChase)
-            return playerTransform.position;
-
-        return GetPhalanxPosition(agent);
+            PhalanxState.March => GetMarchPosition(agent),
+            PhalanxState.Encircle => GetEncirclePosition(agent),
+            _ => agent.transform.position
+        };
     }
 
-    // =========================================================
-    // FORMATION POSITIONS
-    // =========================================================
-
-    Vector3 GetPhalanxPositionAnchored(EnemyAgent agent)
+    Vector3 GetMarchPosition(EnemyAgent agent)
     {
-        float angle = GetLeaderRotation();
-        Quaternion rot = Quaternion.Euler(0, 0, angle);
-        Vector3 forward = rot * Vector3.up;
-        Vector3 right = rot * Vector3.right;
+        Vector3 avg = GetAverageEnemyPosition();
+        Vector3 toPlayer = (playerTransform.position - avg).normalized;
+
+        Vector3 anchor = playerTransform.position - toPlayer * 2.5f;
+
+        Vector3 forward = (playerTransform.position - anchor).normalized;
+        Vector3 right = new Vector3(-forward.y, forward.x, 0f);
 
         int index = agents.IndexOf(agent);
-        Vector3 pos;
 
-        switch (activeFormation)
+        float depth = agent.role switch
         {
-            case FormationType.Line:
-                pos = leaderAnchorPos + forward * doctrine.offenderRadius +
-                      right * ((index - agents.Count / 2f) * lineSpacing);
-                break;
+            EnemyRole.Offender => 1.2f,
+            EnemyRole.Defender => 2.4f,
+            EnemyRole.Ranger => 3.8f,
+            _ => 2.5f
+        };
 
-            case FormationType.Box:
-                int size = Mathf.CeilToInt(Mathf.Sqrt(agents.Count));
-                int row = index / size;
-                int col = index % size;
-                pos = leaderAnchorPos + forward * (row * boxSpacing) +
-                      right * ((col - (size - 1) / 2f) * boxSpacing);
-                break;
+        float lateral = ((index % 3) - 1) * 0.8f;
 
-            case FormationType.Wedge:
-                int r = index / 2;
-                int s = (index % 2 == 0) ? -1 : 1;
-                pos = leaderAnchorPos + forward * (r * wedgeSpacing) +
-                      right * (r * wedgeSpacing * s);
-                break;
-
-            default:
-                int layer = index / 4 + 1;
-                int p = index % 4;
-                pos = leaderAnchorPos + (p switch
-                {
-                    0 => forward,
-                    1 => right,
-                    2 => -forward,
-                    _ => -right
-                }) * diamondSpacing * layer;
-                break;
-        }
-
-        float j = Mathf.Lerp(0f, maxSlotJitter, 1f - cohesion01);
-        return pos + new Vector3(Random.Range(-j, j), Random.Range(-j, j), 0f);
-    }
-
-    Vector3 GetPhalanxPosition(EnemyAgent agent)
-    {
-        return GetPhalanxPositionAnchored(agent);
+        return anchor - forward * depth + right * lateral;
     }
 
     Vector3 GetEncirclePosition(EnemyAgent agent)
     {
-        float radius = agent.role switch
-        {
-            EnemyRole.Offender => encircleRadiusOffenders,
-            EnemyRole.Defender => encircleRadiusDefenders,
-            EnemyRole.Ranger => encircleRadiusRangers,
-            _ => encircleRadiusDefenders
-        };
-
         int index = agents.IndexOf(agent);
         float angle = (360f / Mathf.Max(1, agents.Count)) * index;
-        return encircleCenter + Quaternion.Euler(0, 0, angle) * Vector3.up * radius;
+        return encircleCenter + Quaternion.Euler(0, 0, angle) * Vector3.up * encircleRadius;
     }
-
-    float GetLeaderRotation()
-    {
-        Vector3 leaderPos = formationLeader != null ? formationLeader.transform.position : leaderAnchorPos;
-        Vector3 toPlayer = playerTransform.position - leaderPos;
-        float baseAngle = Mathf.Atan2(toPlayer.y, toPlayer.x) * Mathf.Rad2Deg - 90f;
-
-        if (!leaderDead)
-        {
-            lastLeaderAngle = baseAngle;
-            return baseAngle;
-        }
-
-        float wobble = Mathf.Sin(Time.time * 3.2f) *
-                       Mathf.Lerp(0f, maxRotationWobble, 1f - cohesion01);
-
-        lastLeaderAngle = baseAngle + wobble;
-        return lastLeaderAngle;
-    }
-
-    // =========================================================
-    // LEADER + HAMMER
-    // =========================================================
-
-    void ResolveLeader()
-    {
-        if (formationLeader != null)
-        {
-            leaderAnchorPos = formationLeader.transform.position;
-            return;
-        }
-
-        if (leaderDead) return;
-
-        formationLeader = agents.Find(a => a.role == EnemyRole.Offender);
-        if (formationLeader == null && agents.Count > 0)
-            formationLeader = agents[0];
-
-        if (formationLeader != null)
-            leaderAnchorPos = formationLeader.transform.position;
-    }
-
-    void UpdateHammerLogic()
-    {
-        if (!allowHammer || silencePhase)
-            return;
-
-        hammerTimer -= Time.deltaTime;
-        if (hammerTimer <= 0f)
-        {
-            PickNewHammer();
-            hammerTimer = hammerInterval * hammerAggressionMultiplier;
-        }
-    }
-
-
-    void PickNewHammer()
-    {
-        var offenders = agents.FindAll(a => a.role == EnemyRole.Offender);
-        if (offenders.Count == 0) return;
-
-        currentHammer = offenders[Random.Range(0, offenders.Count)];
-        float window = leaderDead ? hammerWindow * hammerIntervalDeadMultiplier : hammerWindow;
-        hammerUntil = Time.time + window;
-    }
-
-    // =========================================================
-    // STATE TRANSITIONS
-    // =========================================================
-
-    void EnterHoldFire() => SetState(PhalanxState.HoldFire);
 
     void EnterEncircle()
     {
-        if (!allowEncircle || silencePhase)
-            return;
-
-        SetState(PhalanxState.Encircle);
+        phalanxState = PhalanxState.Encircle;
         encircleCenter = playerTransform.position;
-        stateTimer = encircleDuration * encircleSpeedMultiplier;
-        hammerTimer = hammerInterval;
+        stateTimer = encircleDuration;
+        PickHammer();
+
+        Debug.Log("[PHALANX] ENCIRCLE");
     }
 
-
-    void EnterBreakChase()
+    void EnterCollapse()
     {
-        SetState(PhalanxState.BreakChase);
-        stateTimer = breakChaseDuration;
-        chaseDelayTimer = chaseDelay;
+        phalanxState = PhalanxState.Collapse;
+        Debug.Log("[PHALANX] FORMATION COLLAPSE");
+
+        if (doctrine != null && doctrine.canSacrifice)
+            Debug.Log("[PHALANX] Sacrifice behaviors permitted");
     }
 
-    void SetState(PhalanxState s) => phalanxState = s;
-
-    // =========================================================
-    // REG / UNREG
-    // =========================================================
-
+    // ───────── Registration ─────────
     public void Register(EnemyAgent agent)
     {
         if (!agents.Contains(agent))
-        {
             agents.Add(agent);
-            if (encounterStartTime < 0f) encounterStartTime = Time.time;
-        }
     }
 
     public void Unregister(EnemyAgent agent)
     {
         agents.Remove(agent);
+
         if (agent == formationLeader)
         {
             leaderDead = true;
-            leaderDiedAt = Time.time;
-            leaderAnchorPos = agent.transform.position;
             Debug.Log("[PHALANX] LEADER DOWN");
+
+            if (doctrine != null && doctrine.canRetreat)
+            {
+                phalanxState = PhalanxState.BreakChase;
+                Debug.Log("[PHALANX] RETREAT AUTHORIZED");
+            }
         }
     }
-    // =========================================================
-    // PUBLIC API (EXPECTED BY EnemyAgent / DEBUG / GIZMOS)
-    // =========================================================
 
-    public bool IsLeader(EnemyAgent agent)
+    void ResolveLeader()
     {
-        return agent != null && agent == formationLeader;
+        if (formationLeader != null || leaderDead)
+            return;
+
+        formationLeader = agents.Find(a => a.role == EnemyRole.Offender);
+        if (formationLeader == null && agents.Count > 0)
+            formationLeader = agents[0];
     }
 
-    public List<EnemyAgent> GetEnemies()
+    // ───────── Helpers ─────────
+    float GetFormationCompression()
     {
-        return new List<EnemyAgent>(agents);
+        float sum = 0f;
+        foreach (var a in agents)
+            sum += Vector3.Distance(a.transform.position, GetWorldPositionFor(a));
+
+        return sum / Mathf.Max(1, agents.Count);
+    }
+
+    Vector3 GetAverageEnemyPosition()
+    {
+        Vector3 sum = Vector3.zero;
+        foreach (var a in agents)
+            sum += a.transform.position;
+
+        return sum / Mathf.Max(1, agents.Count);
     }
 
     void ResolvePlayer()
     {
         var go = GameObject.FindGameObjectWithTag("Player");
-        if (go != null) playerTransform = go.transform;
+        if (go != null)
+            playerTransform = go.transform;
     }
 
-    public bool IsHammer(EnemyAgent a) => a == currentHammer;
+    // ───────── Legacy API ─────────
     public bool IsLeaderDead() => leaderDead;
+    public bool IsHammer(EnemyAgent agent) => agent == currentHammer;
+    public List<EnemyAgent> GetEnemies() => new List<EnemyAgent>(agents);
+
+    void PickHammer()
+    {
+        var offenders = agents.FindAll(a => a.role == EnemyRole.Offender);
+        if (offenders.Count > 0)
+            currentHammer = offenders[Random.Range(0, offenders.Count)];
+    }
 }

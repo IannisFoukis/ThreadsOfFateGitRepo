@@ -42,11 +42,14 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
-  - name: Overlay
-    uniqueID: 4256084457
-    locked: 0
   - name: Ground
     uniqueID: 2803159089
+    locked: 0
+  - name: Actors
+    uniqueID: 4256084457
+    locked: 0
+  - name: EnemySpeech
+    uniqueID: 595053251
     locked: 0
   m_RenderingLayers:
   - Default

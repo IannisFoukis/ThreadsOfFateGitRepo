@@ -2,6 +2,8 @@
 
 public class EnemyRanged : MonoBehaviour
 {
+    // ───────── Doctrine (read-only) ─────────
+    DoctrineState doctrine;
     [Header("Firing")]
     public Projectile projectilePrefab;
     public float fireCooldown = 1.8f;
@@ -41,6 +43,7 @@ public class EnemyRanged : MonoBehaviour
     Vector2 repositionDir;
 
     EnemyAgent agent;
+    EncounterCoordinator coordinator;
     Transform player;
     LineRenderer aimLine;
 
@@ -64,9 +67,36 @@ public class EnemyRanged : MonoBehaviour
         aimLine.sortingOrder = 0;
     }
 
+    void OnDisable()
+    {
+        CancelAim();
+    }
+
     void Update()
     {
         if (agent == null || player == null)
+        {
+            CancelAim();
+            return;
+        }
+        // 🔥 Collapse: panic or freeze
+        if (coordinator.phalanxState == EncounterCoordinator.PhalanxState.Collapse)
+        {
+            CancelAim();
+
+            // 50% panic fire, 50% freeze
+            if (Random.value < 0.5f && Time.time > lastFireTime + fireCooldown * 0.5f)
+            {
+                Fire();
+            }
+
+            return;
+        }
+        // 🔁 Lazy resolve coordinator
+        if (coordinator == null)
+            coordinator = agent.coordinator;
+
+        if (coordinator == null)
         {
             CancelAim();
             return;
@@ -79,12 +109,11 @@ public class EnemyRanged : MonoBehaviour
             return;
         }
 
-        // ===== Silence Phase check =====
-        bool silence =
-            agent.coordinator != null &&
-            agent.coordinator.SilenceActive;
+        // ===== Silence Phase =====
+        bool silence = coordinator.SilenceActive;
 
-        // ===== Soft reposition burst =====
+        var d = GetDoctrine();
+        // ===== Soft reposition =====
         if (isRepositioning)
         {
             CancelAim();
@@ -101,7 +130,7 @@ public class EnemyRanged : MonoBehaviour
             return;
         }
 
-        // Reposition trigger if player too close
+        // Trigger reposition if player too close
         float closeDist = Vector2.Distance(transform.position, player.position);
         if (closeDist < fleeDistance && Time.time > lastRepositionTime + repositionCooldown)
         {
@@ -120,14 +149,18 @@ public class EnemyRanged : MonoBehaviour
         // ===== Dynamic cooldown =====
         float dynamicCooldown = fireCooldown;
 
+        // Chaos ruins cadence
+        if (d != null && d.chaotic)
+        {
+            dynamicCooldown += Random.Range(-0.5f, 0.7f);
+            dynamicCooldown = Mathf.Max(0.3f, dynamicCooldown);
+        }
         if (silence)
         {
-            // Silence = slower, deliberate shots
             dynamicCooldown *= silenceCooldownMultiplier;
         }
-        else if (agent.coordinator != null && agent.coordinator.IsLeaderDead())
+        else if (coordinator.IsLeaderDead())
         {
-            // Panic fire only when NOT silent
             dynamicCooldown = Mathf.Max(0.2f, dynamicCooldown - pressureBonusCooldown);
         }
 
@@ -145,11 +178,25 @@ public class EnemyRanged : MonoBehaviour
             return;
         }
 
-        // ===== AIM PHASE =====
+        // ===== AIM =====
         if (!isAiming)
             StartAim();
 
-        aimTimer += Time.deltaTime;
+        float aimSpeed = 1f;
+
+        // Formation breaking = sloppy aim
+        if (d != null && d.IsFormationBreaking())
+            aimSpeed = 1.5f;
+
+        // Chaos = unstable aim
+        if (d != null && d.chaotic && Random.value < 0.01f)
+        {
+            CancelAim();
+            return;
+        }
+
+        aimTimer += Time.deltaTime * aimSpeed;
+
         UpdateAimLine();
 
         if (aimTimer >= aimTime)
@@ -201,6 +248,9 @@ public class EnemyRanged : MonoBehaviour
         CancelAim();
         lastFireTime = Time.time;
 
+        if (projectilePrefab == null)
+            return;
+
         Vector2 dir = ((Vector2)player.position - (Vector2)transform.position).normalized;
 
         var proj = Instantiate(projectilePrefab, transform.position, Quaternion.identity);
@@ -230,5 +280,19 @@ public class EnemyRanged : MonoBehaviour
         var sr = GetComponentInChildren<SpriteRenderer>();
         if (sr != null)
             sr.color = Color.white;
+    }
+    DoctrineState GetDoctrine()
+    {
+        if (doctrine != null)
+            return doctrine;
+
+        if (coordinator == null)
+            return null;
+
+        doctrine = coordinator.GetType()
+            .GetField("doctrine", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+            ?.GetValue(coordinator) as DoctrineState;
+
+        return doctrine;
     }
 }

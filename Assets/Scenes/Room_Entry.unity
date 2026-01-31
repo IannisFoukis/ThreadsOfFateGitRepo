@@ -1240,7 +1240,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bdfd67ea224059c44936ba3562edb417, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  contract: {fileID: 11400000, guid: 615ef318b2a5bbc479c87038d5d719dd, type: 2}
+  contract:
+    corruptionBias: 0
+    contractName: Unnamed Contract
+    roomRole: 0
+    enableCombat: 1
+    useCoordinator: 1
+    enforceHonestCombat: 0
+    offenders: 0
+    defenders: 0
+    rangers: 0
+    activators: 0
+    jokers: 0
+    allowElites: 1
+    eliteChance: 0.1
+    allowHammer: 1
+    allowEncircle: 1
+    hammerAggression: 1
+    encircleSpeedMultiplier: 1
+    fakeOutChance: 0
+    delayedDashChance: 0
+    silencePhase: 0
+    pressureSpike: 0
+    reduceAudio: 0
+    hasShrine: 1
+    allowShrines: 1
 --- !u!114 &976998299
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1897,12 +1921,20 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 517064345654418186, guid: 58f7030ffcccdd34ea3557cfb090da2d, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 17.214693
+      objectReference: {fileID: 0}
+    - target: {fileID: 517064345654418186, guid: 58f7030ffcccdd34ea3557cfb090da2d, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 17.080908
+      objectReference: {fileID: 0}
+    - target: {fileID: 517064345654418186, guid: 58f7030ffcccdd34ea3557cfb090da2d, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -5.71
+      value: -5.54
       objectReference: {fileID: 0}
     - target: {fileID: 517064345654418186, guid: 58f7030ffcccdd34ea3557cfb090da2d, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 11.2
+      value: 2.38
       objectReference: {fileID: 0}
     - target: {fileID: 517064345654418186, guid: 58f7030ffcccdd34ea3557cfb090da2d, type: 3}
       propertyPath: m_LocalPosition.z

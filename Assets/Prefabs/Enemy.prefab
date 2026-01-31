@@ -74,7 +74,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: -1491808207
-  m_SortingLayer: 2
+  m_SortingLayer: 1
   m_SortingOrder: 1
   m_Sprite: {fileID: 21300000, guid: f80290feee39047438ca54bd8b1e1f65, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -326,6 +326,7 @@ GameObject:
   - component: {fileID: 4416444779031813629}
   - component: {fileID: 3224009665960575784}
   - component: {fileID: -730332515291210627}
+  - component: {fileID: 5253263128070963683}
   m_Layer: 7
   m_Name: Enemy
   m_TagString: Untagged
@@ -538,7 +539,7 @@ MonoBehaviour:
   projectileLifetime: 3
   projectileDamage: 10
   shieldDuration: 0.5
-  dashForce: 6
+  dashForce: 12
   currentTier: 3
 --- !u!114 &8044081107075911408
 MonoBehaviour:
@@ -552,7 +553,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6707ecef135c99c4f936863b014f0a35, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 1
+  moveSpeed: 4
   arriveDistance: 0.15
   separationRadius: 1.2
   separationPushRadius: 0.8
@@ -574,7 +575,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   attackRange: 1.5
   attackCooldown: 1.2
-  attackVisualDuration: 0.25
   attackColor: {r: 1, g: 0, b: 0, a: 1}
   attackFlashTime: 0.35
 --- !u!114 &1012162979977339158
@@ -591,7 +591,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   projectilePrefab: {fileID: -7159479602090134345, guid: a16b2bb256930fb418670b93f3c9aecf, type: 3}
   fireCooldown: 1.5
-  fireRange: 9
+  fireRange: 15
   projectileSpeed: 7
   projectileLifetime: 3
   damage: 1
@@ -611,6 +611,7 @@ MonoBehaviour:
   repositionSpeed: 8
   repositionDuration: 0.25
   pressureBonusCooldown: 0.6
+  silenceCooldownMultiplier: 1.5
 --- !u!114 &5515608192190167746
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -623,7 +624,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bab5cd40f26a95345b3218871da675b1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  chargeForce: 8
+  chargeForce: 20
   chargeCooldown: 2
 --- !u!114 &8394341910229455449
 MonoBehaviour:
@@ -693,13 +694,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   coordinator: {fileID: 0}
-  slotArrivalThreshold: 0.5
-  followSmoothTime: 0.15
   role: 1
-  reactionDelayMin: 0.1
-  reactionDelayMax: 0.5
-  formationLerpSpeed: 6
-  attackLock: 0
+  slotArrivalThreshold: 0.5
+  assignedSlot: -1
+  isChaotic: 1
+  hasChaoticImpulse: 0
 --- !u!114 &4416444779031813629
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -759,3 +758,17 @@ MonoBehaviour:
   recoverTime: 0.8
   slotTriggerMultiplier: 1.5
   windUpCircleMaxScale: 0.5
+--- !u!114 &5253263128070963683
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8686355838142782365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4fa50b99b8d01c48b7f3252d00ca6dc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  role: 2
+  textPrefab: {fileID: 267297060001915325, guid: 197cdb17357ce43418d73779f4716e6d, type: 3}

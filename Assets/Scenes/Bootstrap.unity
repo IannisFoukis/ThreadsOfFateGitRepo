@@ -377,6 +377,7 @@ GameObject:
   - component: {fileID: 376241794}
   - component: {fileID: 376241795}
   - component: {fileID: 376241796}
+  - component: {fileID: 376241797}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -481,8 +482,8 @@ MonoBehaviour:
     m_Bits: 1
   m_VolumeTrigger: {fileID: 0}
   m_VolumeFrameworkUpdateModeOption: 2
-  m_RenderPostProcessing: 0
-  m_Antialiasing: 0
+  m_RenderPostProcessing: 1
+  m_Antialiasing: 1
   m_AntialiasingQuality: 2
   m_StopNaN: 0
   m_Dithering: 0
@@ -553,6 +554,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 400fe209417062641a4e45cbcc2a74e8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &376241797
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 376241788}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a3bf34cf4b5dd848821c354b3f5c24c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxShake: 0.15
+  shakeSpeed: 6
 --- !u!1 &378685163
 GameObject:
   m_ObjectHideFlags: 0
@@ -1791,7 +1806,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: -38882839
-  m_SortingLayer: 1
+  m_SortingLayer: 2
   m_SortingOrder: 1000
   m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
   m_Color: {r: 1, g: 0, b: 0, a: 0.77254903}

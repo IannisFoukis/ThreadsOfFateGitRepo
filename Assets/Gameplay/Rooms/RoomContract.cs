@@ -10,6 +10,10 @@ namespace TOF.Rooms.Contracts
     [System.Serializable]
     public class RoomContract
     {
+        [Range(-0.2f, 0.2f)]
+        public float corruptionBias = 0f;
+
+
         // ─────────────────────────────────────────────
         // IDENTITY
         // ─────────────────────────────────────────────

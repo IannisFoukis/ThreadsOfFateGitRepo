@@ -3,6 +3,15 @@ using UnityEngine;
 
 public class TacticDirector : MonoBehaviour
 {
+    private RunDirector runDirector;
+    private bool keeperDoctrineApplied = false;
+
+    // Multipliers driven ONLY by Keeper DoctrineState (run-wide)
+    [SerializeField] private float keeperFormationMult = 1f;
+    [SerializeField] private float keeperCooldownMult = 1f;
+    [SerializeField] private float keeperFlankBiasMult = 1f;
+    [SerializeField] private float keeperFrontBiasMult = 1f;
+    [SerializeField] private float keeperCommitDelayMult = 1f;
     private readonly List<Enemy> activeEnemies = new();
 
     [Header("Timing")]
@@ -57,6 +66,7 @@ public class TacticDirector : MonoBehaviour
     private void Awake()
     {
         FindPlayer();
+        runDirector = FindAnyObjectByType<RunDirector>(); // ✅ read-only source
     }
 
     private void Update()
@@ -97,7 +107,17 @@ public class TacticDirector : MonoBehaviour
             FindPlayer();
             return;
         }
-
+        if (player == null || tracker == null)
+        {
+            FindPlayer();
+            return;
+        }
+        // ✅ Apply Keeper doctrine ONCE per run (read-only)
+        if (!keeperDoctrineApplied && runDirector != null && runDirector.ActiveDoctrine != null)
+        {
+            ApplyKeeperDoctrine(runDirector.ActiveDoctrine);
+            keeperDoctrineApplied = true;
+        }
         if (formationDisrupted)
         {
             disruptionTimer -= Time.deltaTime;
@@ -226,9 +246,46 @@ public class TacticDirector : MonoBehaviour
                 initialCommitDelayMult = 1.0f;
                 break;
         }
+        // Layer Keeper doctrine on top of RoomDoctrine (run-wide pressure)
+        formationPersistenceMult *= keeperFormationMult;
+        flankBiasMult *= keeperFlankBiasMult;
+        frontPriorityMult *= keeperFrontBiasMult;
+        initialCommitDelayMult *= keeperCommitDelayMult;
 
     }
+    public void ApplyKeeperDoctrine(DoctrineState ds)
+    {
+        if (ds == null) return;
 
+        // Formation stability comes from Keeper discipline
+        keeperFormationMult = Mathf.Clamp(ds.formationDiscipline, 0.35f, 1.8f);
+
+        // CoordinationDelay: >1 means slower coordination, <1 means tighter
+        keeperCooldownMult = Mathf.Clamp(ds.coordinationDelay, 0.6f, 1.6f);
+
+        // AggressionMultiplier biases flank vs front
+        float aggr = Mathf.Clamp(ds.aggressionMultiplier, 0.6f, 1.6f);
+
+        if (ds.chaotic)
+        {
+            // Chaos: flanks more likely, front less committed
+            keeperFlankBiasMult = 1.25f * aggr;
+            keeperFrontBiasMult = 0.85f;
+            keeperCommitDelayMult = 0.85f;
+        }
+        else
+        {
+            // Order/Bind: front priority and persistence
+            keeperFlankBiasMult = 0.85f;
+            keeperFrontBiasMult = 1.15f / Mathf.Max(0.8f, aggr);
+            keeperCommitDelayMult = 1.05f;
+        }
+
+        Debug.Log(
+            $"[TacticDirector] Keeper doctrine applied " +
+            $"(disc={ds.formationDiscipline:0.00}, chaotic={ds.chaotic}, aggr={ds.aggressionMultiplier:0.00}, coord={ds.coordinationDelay:0.00})"
+        );
+    }
     private void FindPlayer()
     {
         var go = GameObject.FindGameObjectWithTag("Player");
@@ -328,16 +385,14 @@ public class TacticDirector : MonoBehaviour
             return;
 
         flankActive = true;
-        cooldownTimer = tacticCooldown;
-
+        cooldownTimer = tacticCooldown * keeperCooldownMult;
         Debug.Log("[TacticDirector] Flank started");
     }
 
     public void EndFlank()
     {
         flankActive = false;
-        nextFlankTime = Time.time + flankCooldown;
-
+        nextFlankTime = Time.time + flankCooldown * keeperCooldownMult;
         foreach (var e in activeEnemies)
             e?.GetComponent<EnemySlotLock>()?.ReleaseSlot();
 

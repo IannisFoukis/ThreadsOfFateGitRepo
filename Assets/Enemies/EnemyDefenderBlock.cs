@@ -43,8 +43,8 @@ public class EnemyDefenderBlock : MonoBehaviour
         if (coordinator == null)
             return;
 
-        // 🔒 Latch defender intent
-        if (agent.role == EnemyRole.Defender)
+        // 🔒 Latch defender intent ONCE
+        if (agent.role == EnemyRole.Defender && Time.time > defenderIntentUntil)
             defenderIntentUntil = Time.time + defenderIntentDuration;
 
         if (Time.time > defenderIntentUntil)
@@ -55,9 +55,11 @@ public class EnemyDefenderBlock : MonoBehaviour
             return;
 
         // 🔒 Functional slot check
-        Vector2 slotPos = agent.GetFormationTarget();
+        Vector3 slotPos3 = agent.GetFormationTarget();
+        Vector2 slotPos = new Vector2(slotPos3.x, slotPos3.y);
+
         float slotDist = Vector2.Distance(transform.position, slotPos);
-        if (slotDist > agent.slotArrivalThreshold * slotToleranceMultiplier)
+        if (slotDist > agent.SlotArrivalThreshold * slotToleranceMultiplier)
             return;
 
         // 🔒 Player proximity

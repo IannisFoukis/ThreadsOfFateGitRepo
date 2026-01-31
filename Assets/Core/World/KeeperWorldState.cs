@@ -2,6 +2,7 @@ using UnityEngine;
 
 public static class KeeperWorldState
 {
+    public static float corruptionPressure = 0f;
     public static bool silenceEnforced;
     public static bool honestCombat;
     public static int pressureBias;

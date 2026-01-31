@@ -9,7 +9,7 @@ public class RunDirector : MonoBehaviour
 {
     private GameStateManager gsm;
     private List<RoomRole> demoRun;
-
+    public DoctrineState ActiveDoctrine { get; private set; }
     [SerializeField] BiomeConfig biomeConfig;
     [SerializeField] KeeperPronouncement keeperPronouncement;
 
@@ -56,6 +56,50 @@ public class RunDirector : MonoBehaviour
             biomeEntries = new List<BiomeConfig.RoomEntry>(biomeConfig.entries);
 
         Debug.Log("RunDirector ready.");
+    }
+    public void ApplyDoctrineFromKeeperChoice(KeeperChoice choice)
+    {
+        var doctrine = new DoctrineState();
+
+        switch (choice)
+        {
+            case KeeperChoice.BindSouls:
+                doctrine.canRetreat = false;
+                doctrine.canSacrifice = false;
+                doctrine.formationDiscipline = 1.2f;
+                doctrine.fanatic = false;
+                doctrine.chaotic = false;
+                doctrine.aggressionMultiplier = 0.75f;
+                doctrine.coordinationDelay = 0.8f;
+                break;
+
+            case KeeperChoice.EnforceOrder:
+                doctrine.canRetreat = true;
+                doctrine.canSacrifice = false;
+                doctrine.formationDiscipline = 1.0f;
+                doctrine.fanatic = false;
+                doctrine.chaotic = false;
+                doctrine.aggressionMultiplier = 1.0f;
+                doctrine.coordinationDelay = 1.0f;
+                break;
+
+            case KeeperChoice.AccelerateChaos:
+                doctrine.canRetreat = true;
+                doctrine.canSacrifice = true;
+                doctrine.formationDiscipline = 0.4f;
+                doctrine.fanatic = false;
+                doctrine.chaotic = true;
+                doctrine.aggressionMultiplier = 1.4f;
+                doctrine.coordinationDelay = 1.3f;
+                break;
+        }
+
+        ActiveDoctrine = doctrine;
+
+        Debug.Log(
+            $"[RunDirector] Doctrine applied from KeeperChoice: {choice} " +
+            $"(Discipline={doctrine.formationDiscipline}, Chaos={doctrine.chaotic})"
+        );
     }
     public void ApplyRoomTension(int amount)
     {

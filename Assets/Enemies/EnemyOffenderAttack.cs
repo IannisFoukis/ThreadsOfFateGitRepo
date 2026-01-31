@@ -21,7 +21,7 @@ public class EnemyOffenderAttack : MonoBehaviour
 
     [Header("Attack")]
     public float windUpTime = 0.6f;
-    public float attackDashForce = 14f; // units/sec (transform-driven)
+    public float attackDashForce = 14f;
     public float dashDuration = 0.18f;
     public float recoverTime = 0.8f;
 
@@ -56,7 +56,6 @@ public class EnemyOffenderAttack : MonoBehaviour
 
     void OnDisable()
     {
-        // Safety: never leave movement locked if enemy disables/dies mid-attack
         if (agent != null) agent.attackLock = false;
 
         if (attackRoutine != null)
@@ -73,7 +72,8 @@ public class EnemyOffenderAttack : MonoBehaviour
 
     void Update()
     {
-        if (agent == null || player == null) return;
+        if (agent == null || player == null)
+            return;
 
         // Silence Phase: force honest attacks
         if (agent.coordinator != null && agent.coordinator.SilenceActive)
@@ -83,21 +83,23 @@ public class EnemyOffenderAttack : MonoBehaviour
             doubleDash = false;
         }
 
-        // Latch Offender intent
-        if (agent.role == EnemyRole.Offender)
+        // 🔒 Latch offender intent ONCE
+        if (agent.role == EnemyRole.Offender && Time.time > offenderIntentUntil)
             offenderIntentUntil = Time.time + offenderIntentDuration;
 
-        // No intent OR busy recovering
+        // No intent or busy recovering
         if (Time.time > offenderIntentUntil || isRecovering)
         {
             CancelWindUp();
             return;
         }
 
-        // Slot-based trigger (formation-driven)
-        Vector2 slotPos = agent.GetFormationTarget();
+        // Slot-based trigger (formation driven)
+        Vector3 slotPos3 = agent.GetFormationTarget();
+        Vector2 slotPos = new Vector2(slotPos3.x, slotPos3.y);
+
         float slotDist = Vector2.Distance(transform.position, slotPos);
-        float slotThreshold = agent.slotArrivalThreshold * slotTriggerMultiplier;
+        float slotThreshold = agent.SlotArrivalThreshold * slotTriggerMultiplier;
 
         if (!isWindingUp && slotDist <= slotThreshold)
             StartWindUp();
@@ -108,12 +110,13 @@ public class EnemyOffenderAttack : MonoBehaviour
             return;
         }
 
-        if (!isWindingUp) return;
+        if (!isWindingUp)
+            return;
 
         windUpTimer += Time.deltaTime;
         UpdateCircleVisual();
 
-        // Fake-out: cancel at % then restart after pause
+        // Fake-out
         if (canFakeOut && !hasFaked && windUpTimer >= windUpTime * fakeCancelAt)
         {
             hasFaked = true;
@@ -131,7 +134,8 @@ public class EnemyOffenderAttack : MonoBehaviour
 
     void RestartWindUp()
     {
-        if (!isRecovering) StartWindUp();
+        if (!isRecovering)
+            StartWindUp();
     }
 
     void StartWindUp()
@@ -152,35 +156,36 @@ public class EnemyOffenderAttack : MonoBehaviour
         isWindingUp = false;
         HideCircle();
 
-        // Take ownership of movement (EnemyAgent will early-out when attackLock is true)
         agent.attackLock = true;
         isRecovering = true;
 
         Vector2 dir = ((Vector2)player.position - (Vector2)transform.position).normalized;
-        if (dir.sqrMagnitude < 0.0001f) dir = Vector2.right;
+        if (dir.sqrMagnitude < 0.0001f)
+            dir = Vector2.right;
 
-        if (attackRoutine != null) StopCoroutine(attackRoutine);
+        if (attackRoutine != null)
+            StopCoroutine(attackRoutine);
+
         attackRoutine = StartCoroutine(AttackSequence(dir));
     }
 
     IEnumerator AttackSequence(Vector2 dir)
     {
-        // Optional: delayed release
         if (delayedDash && postWindUpDelay > 0f)
             yield return new WaitForSeconds(postWindUpDelay);
 
-        // Dash 1
         yield return Dash(dir, attackDashForce, dashDuration);
 
-        // Optional: dash 2 (elite feel)
         if (doubleDash)
         {
-            if (secondDashDelay > 0f) yield return new WaitForSeconds(secondDashDelay);
+            if (secondDashDelay > 0f)
+                yield return new WaitForSeconds(secondDashDelay);
+
             yield return Dash(dir, attackDashForce * secondDashMultiplier, dashDuration);
         }
 
-        // Recovery window
-        if (recoverTime > 0f) yield return new WaitForSeconds(recoverTime);
+        if (recoverTime > 0f)
+            yield return new WaitForSeconds(recoverTime);
 
         agent.attackLock = false;
         isRecovering = false;
@@ -198,7 +203,7 @@ public class EnemyOffenderAttack : MonoBehaviour
         }
     }
 
-    // ---------------- VISUALS ----------------
+    // ───────────── VISUALS ─────────────
 
     void CreateWindUpCircle()
     {

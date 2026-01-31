@@ -9,7 +9,7 @@ public class CombatRoom : RoomController
     public Transform[] enemySpawnPoints;
 
     [Header("Debug / Safety")]
-    public bool applyFallbackIfZeroCounts = true; // turn off later
+    public bool applyFallbackIfZeroCounts = true;
 
     private int aliveEnemies;
     private RoomContract contract;
@@ -21,26 +21,14 @@ public class CombatRoom : RoomController
         base.Start();
 
         contract = RoomAccess.Current;
-
         if (contract == null)
         {
-            Debug.LogError("[CombatRoom] RoomAccess.Current is NULL (no contract).");
+            Debug.LogError("[CombatRoom] RoomAccess.Current is NULL.");
             return;
         }
-
-        Debug.Log($"[CombatRoom] Contract='{contract.contractName}' Role={contract.roomRole} enableCombat={contract.enableCombat}");
 
         if (!contract.enableCombat)
-        {
-            Debug.Log("[CombatRoom] Combat disabled by contract");
             return;
-        }
-
-        Debug.Log(
-            $"[CombatRoom] Counts → " +
-            $"Off:{contract.offenders} Def:{contract.defenders} Ran:{contract.rangers} " +
-            $"Act:{contract.activators} Jok:{contract.jokers}"
-        );
 
         int total =
             contract.offenders +
@@ -49,34 +37,20 @@ public class CombatRoom : RoomController
             contract.activators +
             contract.jokers;
 
-        if (total <= 0)
+        if (total <= 0 && applyFallbackIfZeroCounts)
         {
-            Debug.LogWarning("[CombatRoom] Contract has ZERO enemy counts. Nothing will spawn.");
-
-            if (applyFallbackIfZeroCounts)
-            {
-                // DEV fallback so you can keep testing rooms even if a contract wasn't authored yet
-                contract.offenders = 3;
-                contract.defenders = 1;
-                contract.rangers = 1;
-                Debug.LogWarning("[CombatRoom] Applied fallback counts: Off=3 Def=1 Ran=1");
-            }
-            else
-            {
-                return;
-            }
+            contract.offenders = 3;
+            contract.defenders = 1;
+            contract.rangers = 1;
         }
 
         SpawnFromContract();
+        Debug.Log("[CombatRoom] Combat started");
     }
 
-    // ─────────────────────────────────────────────
-    // CONTRACT-DRIVEN SPAWN (G1)
-    // ─────────────────────────────────────────────
-
-    private void SpawnFromContract()
+    void SpawnFromContract()
     {
-        if (enemyPrefab == null || enemySpawnPoints == null || enemySpawnPoints.Length == 0)
+        if (enemyPrefab == null || enemySpawnPoints.Length == 0)
         {
             Debug.LogError("[CombatRoom] Missing prefab or spawn points.");
             return;
@@ -91,10 +65,10 @@ public class CombatRoom : RoomController
         SpawnMany(EnemyRole.Activator, contract.activators);
         SpawnMany(EnemyRole.Joker, contract.jokers);
 
-        Debug.Log($"[CombatRoom] Spawned encounter from RoomContract | Alive={aliveEnemies}");
+        Debug.Log($"[CombatRoom] Enemies spawned: {aliveEnemies}");
     }
 
-    private void SpawnMany(EnemyRole role, int count)
+    void SpawnMany(EnemyRole role, int count)
     {
         for (int i = 0; i < count; i++)
         {
@@ -104,7 +78,7 @@ public class CombatRoom : RoomController
         }
     }
 
-    private void SpawnEnemy(EnemyRole role, Transform sp)
+    void SpawnEnemy(EnemyRole role, Transform sp)
     {
         var go = Instantiate(enemyPrefab, sp.position, Quaternion.identity);
         aliveEnemies++;
@@ -113,32 +87,20 @@ public class CombatRoom : RoomController
         if (roleCtrl != null)
             roleCtrl.ApplyRole(role);
 
-        var enemyAgent = go.GetComponent<EnemyAgent>();
-        if (enemyAgent != null)
-            enemyAgent.role = role;
-
-        // G1: Elite intent only (no behavior yet)
-        if (contract.allowElites && UnityEngine.Random.value < contract.eliteChance)
-        {
-            go.name += " [ELITE]";
-        }
+        var agent = go.GetComponent<EnemyAgent>();
+        if (agent != null)
+            agent.role = role;
 
         var relay = go.AddComponent<EnemyDeathRelay>();
         relay.OnEnemyDestroyed = OnEnemyDestroyed;
     }
 
-    // ─────────────────────────────────────────────
-    // COMBAT LIFECYCLE
-    // ─────────────────────────────────────────────
-
-    private void OnEnemyDestroyed()
+    void OnEnemyDestroyed()
     {
         if (shuttingDown)
             return;
 
         aliveEnemies--;
-
-        Debug.Log($"[CombatRoom] Enemy died. Remaining: {aliveEnemies}");
 
         if (aliveEnemies <= 0)
         {
@@ -147,31 +109,19 @@ public class CombatRoom : RoomController
         }
     }
 
-
-    // ─────────────────────────────────────────────
-    // DEATH RELAY
-    // ─────────────────────────────────────────────
-
     private class EnemyDeathRelay : MonoBehaviour
     {
         public Action OnEnemyDestroyed;
         private bool quitting;
 
-        private void OnApplicationQuit()
-        {
-            quitting = true;
-        }
+        void OnApplicationQuit() => quitting = true;
 
-        private void OnDestroy()
+        void OnDestroy()
         {
             if (!Application.isPlaying || quitting)
                 return;
 
-            if (OnEnemyDestroyed == null)
-                return;
-
-            OnEnemyDestroyed.Invoke();
+            OnEnemyDestroyed?.Invoke();
         }
     }
-
 }

@@ -19,6 +19,8 @@ public class EnemyDefenderShove : MonoBehaviour
 
     private EnemyAgent agent;
     private EncounterCoordinator coordinator;
+    private TacticalAuthority tacticalAuthority;
+
     private Transform player;
     private Rigidbody2D playerRb;
     private SpriteRenderer sr;
@@ -28,6 +30,9 @@ public class EnemyDefenderShove : MonoBehaviour
         agent = GetComponent<EnemyAgent>();
         sr = GetComponentInChildren<SpriteRenderer>();
 
+        tacticalAuthority = GetComponent<TacticalAuthority>();
+        if (tacticalAuthority == null)
+            tacticalAuthority = FindAnyObjectByType<TacticalAuthority>();
         var p = GameObject.FindGameObjectWithTag("Player");
         if (p != null)
         {
@@ -38,6 +43,11 @@ public class EnemyDefenderShove : MonoBehaviour
 
     void Update()
     {
+        // 🔒 STEP 1: Defender shove requires Coordinated intelligence
+        if (tacticalAuthority == null ||
+            !tacticalAuthority.Allows(TacticalLevel.Coordinated))
+            return;
+
         // 🔁 Lazy resolve coordinator
         if (coordinator == null && agent != null)
             coordinator = agent.coordinator;

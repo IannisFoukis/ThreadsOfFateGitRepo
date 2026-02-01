@@ -1232,10 +1232,14 @@ GameObject:
   - component: {fileID: 985146256}
   - component: {fileID: 985146258}
   - component: {fileID: 985146259}
-  - component: {fileID: 985146262}
+  - component: {fileID: 985146268}
+  - component: {fileID: 985146267}
+  - component: {fileID: 985146266}
   - component: {fileID: 985146263}
   - component: {fileID: 985146264}
   - component: {fileID: 985146265}
+  - component: {fileID: 985146262}
+  - component: {fileID: 985146269}
   m_Layer: 0
   m_Name: Room
   m_TagString: Untagged
@@ -1350,9 +1354,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerTransform: {fileID: 4619573443503270045, guid: 05c8ed09963ef08489c5807b5ae1b09d, type: 3}
+  formationResolver: {fileID: 985146267}
+  tacticalAuthority: {fileID: 985146268}
   globalFormationLerp: 2
   phalanxState: 1
-  holdRadius: 4
+  holdCompression: 0.6
+  encircleCompression: 0.3
   encircleRadius: 3
   encircleDuration: 3
 --- !u!114 &985146262
@@ -1386,9 +1393,9 @@ MonoBehaviour:
     enableCombat: 1
     useCoordinator: 1
     enforceHonestCombat: 0
-    offenders: 2
-    defenders: 1
-    rangers: 1
+    offenders: 4
+    defenders: 3
+    rangers: 2
     activators: 0
     jokers: 0
     allowElites: 1
@@ -1428,6 +1435,62 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e5b64baf379f8eb4c92ed3b386230666, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &985146266
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 985146255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9302b1cc0a5ccf4c9e19b7dc42e33ee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  tacticAuthority: {fileID: 985146268}
+  formationResolver: {fileID: 985146267}
+  currentShrineState: 0
+  jokerPresent: 0
+--- !u!114 &985146267
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 985146255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe252c8083b29ec4d87a02fa2e73bbde, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &985146268
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 985146255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b2bb3975043dfb4ca04a3725daeb78b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentLevel: 1
+--- !u!114 &985146269
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 985146255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b801507ba2db134e8be4b3be1fb5bf0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  tacticalLevel: 1
+  initialFormation: 0
+  verbose: 1
 --- !u!1 &1013622540
 GameObject:
   m_ObjectHideFlags: 0

@@ -128,10 +128,16 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 380230215}
+  - component: {fileID: 380230223}
   - component: {fileID: 380230214}
+  - component: {fileID: 380230218}
+  - component: {fileID: 380230222}
+  - component: {fileID: 380230221}
+  - component: {fileID: 380230226}
   - component: {fileID: 380230216}
   - component: {fileID: 380230217}
-  - component: {fileID: 380230218}
+  - component: {fileID: 380230220}
+  - component: {fileID: 380230219}
   m_Layer: 0
   m_Name: Room
   m_TagString: Untagged
@@ -256,6 +262,83 @@ MonoBehaviour:
   tier3Timer: 0
   scrambleBreaksPerTick: 1
   tacticalLockout: 0
+--- !u!114 &380230219
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 380230213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8f3b4d68a475be40865703277eabd27, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &380230220
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 380230213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5b64baf379f8eb4c92ed3b386230666, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &380230221
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 380230213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe252c8083b29ec4d87a02fa2e73bbde, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &380230222
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 380230213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b2bb3975043dfb4ca04a3725daeb78b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentLevel: 0
+--- !u!114 &380230223
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 380230213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a5df05ef060f6e4497c9a1eababc766, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &380230226
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 380230213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9302b1cc0a5ccf4c9e19b7dc42e33ee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  tacticAuthority: {fileID: 0}
+  formationResolver: {fileID: 0}
+  currentShrineState: 0
+  jokerPresent: 0
 --- !u!1 &669834231
 GameObject:
   m_ObjectHideFlags: 0

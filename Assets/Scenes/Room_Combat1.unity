@@ -591,12 +591,18 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 985146257}
+  - component: {fileID: 985146260}
   - component: {fileID: 985146256}
   - component: {fileID: 985146258}
-  - component: {fileID: 985146259}
-  - component: {fileID: 985146260}
+  - component: {fileID: 985146267}
+  - component: {fileID: 985146268}
+  - component: {fileID: 985146266}
+  - component: {fileID: 985146265}
   - component: {fileID: 985146261}
   - component: {fileID: 985146262}
+  - component: {fileID: 985146264}
+  - component: {fileID: 985146263}
+  - component: {fileID: 985146269}
   m_Layer: 0
   m_Name: Room
   m_TagString: Untagged
@@ -649,7 +655,129 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a5df05ef060f6e4497c9a1eababc766, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &985146259
+--- !u!114 &985146260
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 985146255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b1127d3f1be9ec4c9d215d8e3197567, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerTransform: {fileID: 4619573443503270045, guid: 05c8ed09963ef08489c5807b5ae1b09d, type: 3}
+  formationResolver: {fileID: 985146266}
+  tacticalAuthority: {fileID: 985146268}
+  globalFormationLerp: 6
+  phalanxState: 0
+  holdCompression: 0.6
+  encircleCompression: 0.3
+  encircleRadius: 6
+  encircleDuration: 3.5
+--- !u!114 &985146261
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 985146255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bdfd67ea224059c44936ba3562edb417, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  contract:
+    corruptionBias: 0
+    contractName: Unnamed Contract
+    roomRole: 0
+    enableCombat: 1
+    useCoordinator: 1
+    enforceHonestCombat: 0
+    offenders: 4
+    defenders: 3
+    rangers: 2
+    activators: 0
+    jokers: 0
+    allowElites: 1
+    eliteChance: 0.1
+    allowHammer: 1
+    allowEncircle: 1
+    hammerAggression: 1
+    encircleSpeedMultiplier: 1
+    fakeOutChance: 0
+    delayedDashChance: 0
+    silencePhase: 0
+    pressureSpike: 0
+    reduceAudio: 0
+    hasShrine: 1
+    allowShrines: 1
+--- !u!114 &985146262
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 985146255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c9b3748099f2d1544bb0c78ad41d799d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &985146263
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 985146255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8f3b4d68a475be40865703277eabd27, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &985146264
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 985146255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5b64baf379f8eb4c92ed3b386230666, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &985146265
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 985146255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9302b1cc0a5ccf4c9e19b7dc42e33ee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  tacticAuthority: {fileID: 985146268}
+  formationResolver: {fileID: 985146266}
+  currentShrineState: 0
+  jokerPresent: 0
+--- !u!114 &985146266
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 985146255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe252c8083b29ec4d87a02fa2e73bbde, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &985146267
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -690,7 +818,7 @@ MonoBehaviour:
   tier3Timer: 0
   scrambleBreaksPerTick: 1
   tacticalLockout: 0
---- !u!114 &985146260
+--- !u!114 &985146268
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -699,16 +827,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 985146255}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8b1127d3f1be9ec4c9d215d8e3197567, type: 3}
+  m_Script: {fileID: 11500000, guid: 6b2bb3975043dfb4ca04a3725daeb78b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerTransform: {fileID: 4619573443503270045, guid: 05c8ed09963ef08489c5807b5ae1b09d, type: 3}
-  globalFormationLerp: 6
-  phalanxState: 0
-  holdRadius: 12
-  encircleRadius: 6
-  encircleDuration: 3.5
---- !u!114 &985146261
+  currentLevel: 0
+--- !u!114 &985146269
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -717,46 +840,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 985146255}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bdfd67ea224059c44936ba3562edb417, type: 3}
+  m_Script: {fileID: 11500000, guid: 3b801507ba2db134e8be4b3be1fb5bf0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  contract:
-    corruptionBias: 0
-    contractName: Unnamed Contract
-    roomRole: 0
-    enableCombat: 1
-    useCoordinator: 1
-    enforceHonestCombat: 0
-    offenders: 0
-    defenders: 0
-    rangers: 0
-    activators: 0
-    jokers: 0
-    allowElites: 1
-    eliteChance: 0.1
-    allowHammer: 1
-    allowEncircle: 1
-    hammerAggression: 1
-    encircleSpeedMultiplier: 1
-    fakeOutChance: 0
-    delayedDashChance: 0
-    silencePhase: 0
-    pressureSpike: 0
-    reduceAudio: 0
-    hasShrine: 1
-    allowShrines: 1
---- !u!114 &985146262
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 985146255}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c9b3748099f2d1544bb0c78ad41d799d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  tacticalLevel: 0
+  initialFormation: 1
+  verbose: 1
 --- !u!1 &1013622540
 GameObject:
   m_ObjectHideFlags: 0

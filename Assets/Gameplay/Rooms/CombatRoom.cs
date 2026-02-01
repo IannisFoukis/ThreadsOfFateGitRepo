@@ -39,6 +39,7 @@ public class CombatRoom : RoomController
 
         if (total <= 0 && applyFallbackIfZeroCounts)
         {
+            Debug.LogWarning("[CombatRoom] Contract had zero enemies. Applying fallback.");
             contract.offenders = 3;
             contract.defenders = 1;
             contract.rangers = 1;
@@ -48,11 +49,13 @@ public class CombatRoom : RoomController
         Debug.Log("[CombatRoom] Combat started");
     }
 
+    // ───────────────────────────────
+
     void SpawnFromContract()
     {
-        if (enemyPrefab == null || enemySpawnPoints.Length == 0)
+        if (enemyPrefab == null || enemySpawnPoints == null || enemySpawnPoints.Length == 0)
         {
-            Debug.LogError("[CombatRoom] Missing prefab or spawn points.");
+            Debug.LogError("[CombatRoom] Missing enemyPrefab or enemySpawnPoints.");
             return;
         }
 
@@ -108,6 +111,8 @@ public class CombatRoom : RoomController
             CompleteRoom();
         }
     }
+
+    // ───────────────────────────────
 
     private class EnemyDeathRelay : MonoBehaviour
     {

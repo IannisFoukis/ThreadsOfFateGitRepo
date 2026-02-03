@@ -9,7 +9,7 @@ public class RoomConfigController : MonoBehaviour
     public FormationType initialFormation = FormationType.Swarm;
 
     [Header("PRESSURE PROFILE")]
-    public PressureProfile pressureProfile = PressureProfile.Medium;
+    public PressureProfileType pressureProfile = PressureProfileType.Medium;
 
     [Header("ROLE PERMISSIONS (INTENT ONLY)")]
     public bool allowOffenders = true;
@@ -47,7 +47,7 @@ public class RoomConfigController : MonoBehaviour
             case 1: // Coast
                 tacticalLevel = TacticalLevel.Instinct;
                 initialFormation = FormationType.Swarm;
-                pressureProfile = PressureProfile.Slow;
+                pressureProfile = PressureProfileType.Slow;
 
                 allowOffenders = true;
                 allowDefenders = false;
@@ -57,7 +57,7 @@ public class RoomConfigController : MonoBehaviour
             case 2: // Watch
                 tacticalLevel = TacticalLevel.Coordinated;
                 initialFormation = FormationType.Swarm;
-                pressureProfile = PressureProfile.Medium;
+                pressureProfile = PressureProfileType.Medium;
 
                 allowOffenders = true;
                 allowDefenders = true;
@@ -67,7 +67,7 @@ public class RoomConfigController : MonoBehaviour
             case 3: // Fortress
                 tacticalLevel = TacticalLevel.Coordinated;
                 initialFormation = FormationType.Phalanx;
-                pressureProfile = PressureProfile.Fast;
+                pressureProfile = PressureProfileType.Fast;
 
                 allowOffenders = true;
                 allowDefenders = true;
@@ -77,7 +77,7 @@ public class RoomConfigController : MonoBehaviour
             default: // Late Biome / Shrine War / Fallback
                 tacticalLevel = TacticalLevel.Coordinated;
                 initialFormation = FormationType.Phalanx;
-                pressureProfile = PressureProfile.Adaptive;
+                pressureProfile = PressureProfileType.Adaptive;
 
                 allowOffenders = true;
                 allowDefenders = true;
@@ -134,22 +134,22 @@ public class RoomConfigController : MonoBehaviour
 
         switch (pressureProfile)
         {
-            case PressureProfile.Slow:
+            case PressureProfileType.Slow:
                 encounterCoordinator.holdCompression = 1.1f;
                 encounterCoordinator.encircleCompression = 0.75f;
                 break;
 
-            case PressureProfile.Medium:
+            case PressureProfileType.Medium:
                 encounterCoordinator.holdCompression = 0.7f;
                 encounterCoordinator.encircleCompression = 0.45f;
                 break;
 
-            case PressureProfile.Fast:
+            case PressureProfileType.Fast:
                 encounterCoordinator.holdCompression = 0.45f;
                 encounterCoordinator.encircleCompression = 0.25f;
                 break;
 
-            case PressureProfile.Adaptive:
+            case PressureProfileType.Adaptive:
                 // Reserved for shrine-heavy / reactive rooms
                 break;
         }

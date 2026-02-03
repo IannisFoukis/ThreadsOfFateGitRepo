@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 9041625216094120722}
   - component: {fileID: 3810081758820618805}
-  m_Layer: 7
+  m_Layer: 8
   m_Name: Sprite (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -306,6 +306,7 @@ GameObject:
   - component: {fileID: 3377329554754531898}
   - component: {fileID: 4573836377488695684}
   - component: {fileID: 1757598645635185419}
+  - component: {fileID: 2768854374013518013}
   - component: {fileID: 3182194424012283448}
   - component: {fileID: 1606375910734574110}
   - component: {fileID: 7350746542196925506}
@@ -322,7 +323,6 @@ GameObject:
   - component: {fileID: -5867268857388286375}
   - component: {fileID: -7901735522735537454}
   - component: {fileID: 6423340293739964804}
-  - component: {fileID: 2768854374013518013}
   - component: {fileID: 4416444779031813629}
   - component: {fileID: 3224009665960575784}
   - component: {fileID: -730332515291210627}
@@ -425,6 +425,25 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 0.15207662, y: 0.1336497}
   m_EdgeRadius: 0
+--- !u!114 &2768854374013518013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8686355838142782365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4aab7b4f14cb4eb45b673948a8c5a89d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  coordinator: {fileID: 0}
+  role: 1
+  lane: 0
+  slotArrivalThreshold: 0.5
+  assignedSlot: -1
+  isChaotic: 1
+  hasChaoticImpulse: 0
 --- !u!114 &3182194424012283448
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -455,8 +474,8 @@ MonoBehaviour:
   melee: {fileID: 2909332014248045100}
   ranged: {fileID: 3182194424012283448}
   charger: {fileID: 5515608192190167746}
-  defender: {fileID: 0}
-  activator: {fileID: 0}
+  defender: {fileID: 2768854374013518013}
+  activator: {fileID: 2768854374013518013}
   currentRole: 1
 --- !u!114 &7350746542196925506
 MonoBehaviour:
@@ -561,6 +580,11 @@ MonoBehaviour:
   enemyLayer:
     serializedVersion: 2
     m_Bits: 128
+  obstacleRayDistance: 2
+  obstacleAvoidStrength: 1
+  obstacleMask:
+    serializedVersion: 2
+    m_Bits: 256
 --- !u!114 &2909332014248045100
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -681,24 +705,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   visualRoot: {fileID: 6881615109564475472}
   turnSpeed: 720
---- !u!114 &2768854374013518013
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8686355838142782365}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4aab7b4f14cb4eb45b673948a8c5a89d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  coordinator: {fileID: 0}
-  role: 1
-  slotArrivalThreshold: 0.5
-  assignedSlot: -1
-  isChaotic: 1
-  hasChaoticImpulse: 0
 --- !u!114 &4416444779031813629
 MonoBehaviour:
   m_ObjectHideFlags: 0

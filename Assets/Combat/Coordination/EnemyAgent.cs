@@ -7,6 +7,10 @@ public class EnemyAgent : MonoBehaviour
     [Header("Role")]
     public EnemyRole role;
 
+    [Header("Lane")]
+    [SerializeField] private Lane lane;
+    public Lane Lane => lane;
+
     [Header("Formation / Slot")]
     [SerializeField] private float slotArrivalThreshold = 0.25f;
     public float SlotArrivalThreshold => slotArrivalThreshold;
@@ -77,5 +81,9 @@ public class EnemyAgent : MonoBehaviour
 
         float t = threshold > 0 ? threshold : slotArrivalThreshold;
         return Vector3.Distance(transform.position, GetFormationTarget()) > t;
+    }
+    public void AssignLane(Lane newLane)
+    {
+        lane = newLane;
     }
 }

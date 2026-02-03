@@ -8,6 +8,9 @@ public class EncounterCoordinator : MonoBehaviour
     [SerializeField] private FormationResolver formationResolver;
     [SerializeField] private TacticalAuthority tacticalAuthority;
 
+    [Header("Lane Logic")]
+    [SerializeField] private LaneDirector laneDirector;
+
     // ─────────────────────────────
     // STATE
     // ─────────────────────────────
@@ -60,7 +63,6 @@ public class EncounterCoordinator : MonoBehaviour
     // ─────────────────────────────
     private DoctrineState doctrine;
 
-    // Silence is still queried by ranged/offender logic
     public bool SilenceActive => false;
 
     // ─────────────────────────────
@@ -131,12 +133,6 @@ public class EncounterCoordinator : MonoBehaviour
                 if (stateTimer <= 0f && allowHoldFire)
                     SetState(PhalanxState.HoldFire);
                 break;
-
-            case PhalanxState.BreakChase:
-                break;
-
-            case PhalanxState.Collapse:
-                break;
         }
     }
 
@@ -170,6 +166,13 @@ public class EncounterCoordinator : MonoBehaviour
     {
         if (!agents.Contains(agent))
             agents.Add(agent);
+
+        // 🔒 Assign lane ONCE
+        if (laneDirector != null)
+        {
+            Lane lane = laneDirector.ChooseLaneForRole(agent.role);
+            agent.AssignLane(lane);
+        }
     }
 
     public void Unregister(EnemyAgent agent)
@@ -178,30 +181,6 @@ public class EncounterCoordinator : MonoBehaviour
 
         if (agent == formationLeader)
             leaderDead = true;
-    }
-
-    // ─────────────────────────────
-    // LEGACY / COMPATIBILITY API
-    // ─────────────────────────────
-
-    public List<EnemyAgent> GetEnemies()
-    {
-        return new List<EnemyAgent>(agents);
-    }
-
-    public bool IsLeaderDead()
-    {
-        return leaderDead;
-    }
-
-    public bool IsHammer(EnemyAgent agent)
-    {
-        return agent != null && agent == currentHammer;
-    }
-
-    public void ApplyDoctrine(DoctrineState state)
-    {
-        doctrine = state;
     }
 
     // ─────────────────────────────
@@ -245,6 +224,9 @@ public class EncounterCoordinator : MonoBehaviour
         };
     }
 
+    // ─────────────────────────────
+    // FORMATION RESOLUTION (LANE-AWARE)
+    // ─────────────────────────────
     Vector3 GetMarchPosition(EnemyAgent agent)
     {
         Vector3 avg = GetAverageEnemyPosition();
@@ -256,11 +238,11 @@ public class EncounterCoordinator : MonoBehaviour
 
         int index = agents.IndexOf(agent);
 
-        float depth = agent.role switch
+        float depth = agent.Lane switch
         {
-            EnemyRole.Offender => 1.2f,
-            EnemyRole.Defender => 2.4f,
-            EnemyRole.Ranger => 3.8f,
+            Lane.Front => 1.2f,
+            Lane.Flank => 2.6f,
+            Lane.Rear => 4.0f,
             _ => 2.5f
         };
 
@@ -272,7 +254,16 @@ public class EncounterCoordinator : MonoBehaviour
     {
         int index = agents.IndexOf(agent);
         float angle = (360f / Mathf.Max(1, agents.Count)) * index;
-        return encircleCenter + Quaternion.Euler(0, 0, angle) * Vector3.up * encircleRadius;
+
+        float radius = agent.Lane switch
+        {
+            Lane.Front => encircleRadius * 0.85f,
+            Lane.Flank => encircleRadius,
+            Lane.Rear => encircleRadius * 1.15f,
+            _ => encircleRadius
+        };
+
+        return encircleCenter + Quaternion.Euler(0, 0, angle) * Vector3.up * radius;
     }
 
     Vector3 GetAverageEnemyPosition()
@@ -291,5 +282,28 @@ public class EncounterCoordinator : MonoBehaviour
         var offenders = agents.FindAll(a => a.role == EnemyRole.Offender);
         if (offenders.Count > 0)
             currentHammer = offenders[Random.Range(0, offenders.Count)];
+    }
+    // ─────────────────────────────
+    // LEGACY / COMPATIBILITY API
+    // ─────────────────────────────
+
+    public List<EnemyAgent> GetEnemies()
+    {
+        return new List<EnemyAgent>(agents);
+    }
+
+    public bool IsLeaderDead()
+    {
+        return leaderDead;
+    }
+
+    public bool IsHammer(EnemyAgent agent)
+    {
+        return agent != null && agent == currentHammer;
+    }
+
+    public void ApplyDoctrine(DoctrineState state)
+    {
+        doctrine = state;
     }
 }

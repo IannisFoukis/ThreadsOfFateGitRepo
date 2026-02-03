@@ -3,17 +3,25 @@
 public class RoomController : MonoBehaviour
 {
     protected bool roomCompleted;
-
+    protected RoomContext roomContext;
     protected TacticalAuthority tacticalAuthority;
     protected FormationResolver formationResolver;
 
     protected virtual void Awake()
     {
-        // Cache capabilities
         tacticalAuthority = GetComponent<TacticalAuthority>();
         formationResolver = GetComponent<FormationResolver>();
 
-        // Apply room intent EARLY (before any Start/Update elsewhere)
+        // 🔒 Initialize room identity context (SAFE DEFAULTS)
+        roomContext = new RoomContext
+        {
+            roomIndex = 0,
+            chapterIndex = 0,
+            chapterId = "",
+            roomRole = RoomRole.Combat
+        };
+
+        // Apply room intent EARLY
         var config = GetComponent<RoomConfigController>();
         if (config != null)
             config.Apply();

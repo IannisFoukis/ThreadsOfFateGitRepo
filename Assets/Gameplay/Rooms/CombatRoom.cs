@@ -11,6 +11,11 @@ public class CombatRoom : RoomController
     [Header("Debug / Safety")]
     public bool applyFallbackIfZeroCounts = true;
 
+    [Header("Lane / Pressure")]
+    [SerializeField] private LaneDirector laneDirector;
+
+    private CombatRoomContext combatCtx;
+    private float combatTimer;
     private int aliveEnemies;
     private RoomContract contract;
     private int spawnIndex;
@@ -46,9 +51,55 @@ public class CombatRoom : RoomController
 
         SpawnFromContract();
 
+        // --- Initialize combat context ---
+        combatTimer = 0f;
+
+        combatCtx = new CombatRoomContext
+        {
+            roomContext = this.roomContext, // inherited from RoomController
+            timeInRoom = 0f,
+            enemiesAliveRatio = 1f,
+            formationIntegrity = 1f,   // start cohesive
+            playerPressure = 0f,
+
+            shrinePresent = false,     // can be wired later
+            shrineActive = false,
+            playerLowHealth = false,
+
+            difficultyTier = 0
+        };
+
+        if (laneDirector != null)
+            laneDirector.SetContext(combatCtx);
+
         Debug.Log($"[CombatRoom] Combat started | Alive={aliveEnemies}");
     }
+    void Update()
+    {
+        if (!contract.enableCombat)
+            return;
 
+        combatTimer += Time.deltaTime;
+
+        combatCtx.timeInRoom = combatTimer;
+
+        // Keep this simple for now
+        combatCtx.enemiesAliveRatio =
+            aliveEnemies > 0 ? aliveEnemies / (float)(
+                contract.offenders +
+                contract.defenders +
+                contract.rangers +
+                contract.activators +
+                contract.jokers
+            ) : 0f;
+
+        // TEMP defaults (we will wire these later)
+        combatCtx.playerPressure = 0.5f;
+        combatCtx.formationIntegrity = 1f;
+
+        if (laneDirector != null)
+            laneDirector.SetContext(combatCtx);
+    }
     void SpawnFromContract()
     {
         if (enemyPrefab == null || enemySpawnPoints.Length == 0)

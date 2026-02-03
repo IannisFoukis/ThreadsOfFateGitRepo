@@ -2,24 +2,32 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-
-
-
 public class RunDirector : MonoBehaviour
 {
     private GameStateManager gsm;
-    private List<RoomRole> demoRun;
+
     public DoctrineState ActiveDoctrine { get; private set; }
-    [SerializeField] BiomeConfig biomeConfig;
-    [SerializeField] KeeperPronouncement keeperPronouncement;
+
+    [Header("Configs")]
+    [SerializeField] private BiomeConfig biomeConfig;
+    [SerializeField] private KeeperPronouncement keeperPronouncement;
+    [SerializeField] private RoomConfigController roomConfigController;
 
     private bool keeperTriggeredThisRun = false;
     private bool runStarted = false;
-    private bool advancingRoom = false; // 🔒 HARD GUARD
+    private bool advancingRoom = false;
 
     private List<BiomeConfig.RoomEntry> biomeEntries;
     public bool IsRunActive { get; private set; }
 
+    public int CurrentRoomNumber =>
+        gsm != null && gsm.RunState != null
+            ? gsm.RunState.currentRoomIndex + 1
+            : 0;
+
+    // ─────────────────────────────
+    // UNITY LIFECYCLE
+    // ─────────────────────────────
     private void Awake()
     {
         DontDestroyOnLoad(gameObject);
@@ -36,84 +44,26 @@ public class RunDirector : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        advancingRoom = false; // 🔓 reset ONLY here
+        advancingRoom = false;
     }
 
     private void Start()
     {
-        demoRun = new List<RoomRole>
-        {
-            RoomRole.Entry,
-            RoomRole.Combat,
-            RoomRole.Breather,
-            RoomRole.Combat1,
-            RoomRole.PressureSpike,
-            RoomRole.Combat2,
-            RoomRole.Boss
-        };
-
         if (biomeConfig != null && biomeConfig.entries.Length > 0)
             biomeEntries = new List<BiomeConfig.RoomEntry>(biomeConfig.entries);
 
+        if (roomConfigController == null)
+            roomConfigController = FindAnyObjectByType<RoomConfigController>(FindObjectsInactive.Include);
+
         Debug.Log("RunDirector ready.");
     }
-    public void ApplyDoctrineFromKeeperChoice(KeeperChoice choice)
-    {
-        var doctrine = new DoctrineState();
 
-        switch (choice)
-        {
-            case KeeperChoice.BindSouls:
-                doctrine.canRetreat = false;
-                doctrine.canSacrifice = false;
-                doctrine.formationDiscipline = 1.2f;
-                doctrine.fanatic = false;
-                doctrine.chaotic = false;
-                doctrine.aggressionMultiplier = 0.75f;
-                doctrine.coordinationDelay = 0.8f;
-                break;
-
-            case KeeperChoice.EnforceOrder:
-                doctrine.canRetreat = true;
-                doctrine.canSacrifice = false;
-                doctrine.formationDiscipline = 1.0f;
-                doctrine.fanatic = false;
-                doctrine.chaotic = false;
-                doctrine.aggressionMultiplier = 1.0f;
-                doctrine.coordinationDelay = 1.0f;
-                break;
-
-            case KeeperChoice.AccelerateChaos:
-                doctrine.canRetreat = true;
-                doctrine.canSacrifice = true;
-                doctrine.formationDiscipline = 0.4f;
-                doctrine.fanatic = false;
-                doctrine.chaotic = true;
-                doctrine.aggressionMultiplier = 1.4f;
-                doctrine.coordinationDelay = 1.3f;
-                break;
-        }
-
-        ActiveDoctrine = doctrine;
-
-        Debug.Log(
-            $"[RunDirector] Doctrine applied from KeeperChoice: {choice} " +
-            $"(Discipline={doctrine.formationDiscipline}, Chaos={doctrine.chaotic})"
-        );
-    }
-    public void ApplyRoomTension(int amount)
-    {
-        if (amount == 0 || gsm == null)
-            return;
-
-        gsm.RunState.runTension += amount;
-        Debug.Log($"[RunDirector] Room contract tension applied: +{amount} (Total={gsm.RunState.runTension})");
-    }
-
+    // ─────────────────────────────
+    // RUN FLOW
+    // ─────────────────────────────
     public void BeginRun()
     {
-        if (runStarted)
-            return;
+        if (runStarted) return;
 
         runStarted = true;
         IsRunActive = true;
@@ -125,12 +75,6 @@ public class RunDirector : MonoBehaviour
         if (gsm == null)
             gsm = FindAnyObjectByType<GameStateManager>();
 
-        if (gsm == null)
-        {
-            Debug.LogError("RunDirector: GameStateManager missing.");
-            return;
-        }
-
         gsm.StartNewRun();
         GameEvents.RaiseRunStart();
 
@@ -139,61 +83,37 @@ public class RunDirector : MonoBehaviour
 
     public void EnterNextRoom()
     {
-        if (advancingRoom)
-        {
-            Debug.LogWarning("[RunDirector] EnterNextRoom blocked (already advancing)");
-            return;
-        }
-
+        if (advancingRoom) return;
         advancingRoom = true;
 
-        if (gsm == null)
+        if (biomeEntries == null || biomeEntries.Count == 0)
         {
-            Debug.LogError("RunDirector: GameStateManager missing");
+            gsm.EndRun(RunEndReason.BiomeCompleted);
             return;
         }
 
         RunState run = gsm.RunState;
 
-        if (biomeEntries != null)
+        if (run.currentRoomIndex >= biomeEntries.Count)
         {
-            while (run.currentRoomIndex < biomeEntries.Count)
-            {
-                var entry = biomeEntries[run.currentRoomIndex];
-                var chosenRole = entry.role;
-
-                if (chosenRole == RoomRole.Entry)
-                {
-                    run.currentRoomIndex++;
-                    continue;
-                }
-
-                Debug.Log($"Loading biome room {run.currentRoomIndex}: {chosenRole}");
-                ApplyTension(chosenRole);
-                run.currentRoomIndex++;
-
-                SceneManager.LoadScene(GetSceneName(chosenRole));
-                return;
-            }
-
-            SceneManager.LoadScene(GetSceneName(RoomRole.Keeper));
+            gsm.EndRun(RunEndReason.BiomeCompleted);
             return;
         }
 
-        gsm.EndRun(RunEndReason.BiomeCompleted);
-    }
+        int roomNumber = run.currentRoomIndex + 1;
 
-    public void OnRoomCompleted()
-    {
-        if (keeperTriggeredThisRun)
-            return;
+        // ✅ APPLY BIOME 1 CHAPTER RULES
+        if (roomConfigController != null)
+            roomConfigController.ApplyBiome1ChapterRules(roomNumber);
 
-        EnterNextRoom();
+        var entry = biomeEntries[run.currentRoomIndex];
+        run.currentRoomIndex++;
+
+        SceneManager.LoadScene(GetSceneName(entry.role));
     }
 
     public void OnCombatRoomCleared()
     {
-        Debug.Log("[RunDirector] Combat room cleared");
         StartCoroutine(AdvanceAfterCombat());
     }
 
@@ -203,32 +123,18 @@ public class RunDirector : MonoBehaviour
         EnterNextRoom();
     }
 
-    private string GetSceneName(RoomRole role)
+    // ─────────────────────────────
+    // 🔴 RESTORED API (REQUIRED)
+    // ─────────────────────────────
+
+    // Used by RoomDirector
+    public void OnRoomCompleted()
     {
-        return role switch
-        {
-            RoomRole.Entry => "Room_Entry",
-            RoomRole.Combat => "Room_Combat",
-            RoomRole.Combat1 => "Room_Combat1",
-            RoomRole.Combat2 => "Room_Combat2",
-            RoomRole.Breather => "Room_Breather",
-            RoomRole.PressureSpike => "Room_PressureSpike",
-            RoomRole.Boss => "Room_Boss",
-            RoomRole.Keeper => "Room_Keeper",
-            _ => "Room_Entry"
-        };
+        if (keeperTriggeredThisRun) return;
+        EnterNextRoom();
     }
 
-    private void ApplyTension(RoomRole role)
-    {
-        if (role == RoomRole.Combat || role == RoomRole.Combat1)
-            gsm.RunState.runTension += 5;
-
-        if (role == RoomRole.PressureSpike)
-            gsm.RunState.runTension += 3;
-
-        Debug.Log("Run tension: " + gsm.RunState.runTension);
-    }
+    // Used by GameStateManager
     public void ResetRun()
     {
         Debug.Log("[RunDirector] ResetRun");
@@ -238,16 +144,13 @@ public class RunDirector : MonoBehaviour
         keeperTriggeredThisRun = false;
         advancingRoom = false;
 
-        // Always unpause (safety)
         Time.timeScale = 1f;
 
-        // Clear Keeper UI if present
         if (keeperPronouncement == null)
             keeperPronouncement = FindAnyObjectByType<KeeperPronouncement>(FindObjectsInactive.Include);
 
         keeperPronouncement?.Clear();
 
-        // Reset per-run memory safely
         var mem = RunContext.Instance?.memory;
         if (mem != null)
         {
@@ -258,9 +161,10 @@ public class RunDirector : MonoBehaviour
             mem.jokerKilled = false;
         }
 
-        // Return to Entry
         SceneManager.LoadScene(GetSceneName(RoomRole.Entry));
     }
+
+    // Used by BreatherEffectApplier
     public void ApplyRoomNPC(RoomNPC npc)
     {
         if (npc == null)
@@ -294,6 +198,26 @@ public class RunDirector : MonoBehaviour
                 break;
         }
     }
+
+    // ─────────────────────────────
+    // HELPERS
+    // ─────────────────────────────
+    private string GetSceneName(RoomRole role)
+    {
+        return role switch
+        {
+            RoomRole.Entry => "Room_Entry",
+            RoomRole.Combat => "Room_Combat",
+            RoomRole.Combat1 => "Room_Combat1",
+            RoomRole.Combat2 => "Room_Combat2",
+            RoomRole.Breather => "Room_Breather",
+            RoomRole.PressureSpike => "Room_PressureSpike",
+            RoomRole.Boss => "Room_Boss",
+            RoomRole.Keeper => "Room_Keeper",
+            _ => "Room_Entry"
+        };
+    }
+
     private void ApplyCorruption(int amount)
     {
         var god = GodDirector.Instance != null
@@ -308,5 +232,4 @@ public class RunDirector : MonoBehaviour
 
         god.OnCorruptionAccepted(amount);
     }
-
 }

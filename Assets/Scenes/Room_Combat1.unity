@@ -670,10 +670,14 @@ MonoBehaviour:
   playerTransform: {fileID: 4619573443503270045, guid: 05c8ed09963ef08489c5807b5ae1b09d, type: 3}
   formationResolver: {fileID: 985146266}
   tacticalAuthority: {fileID: 985146268}
-  globalFormationLerp: 6
   phalanxState: 0
-  holdCompression: 0.6
-  encircleCompression: 0.3
+  allowMarch: 1
+  allowHoldFire: 1
+  allowEncircle: 0
+  allowBreakChase: 0
+  allowCollapse: 0
+  holdCompression: 0.7
+  encircleCompression: 0.4
   encircleRadius: 6
   encircleDuration: 3.5
 --- !u!114 &985146261
@@ -691,7 +695,7 @@ MonoBehaviour:
   contract:
     corruptionBias: 0
     contractName: Unnamed Contract
-    roomRole: 0
+    roomRole: 3
     enableCombat: 1
     useCoordinator: 1
     enforceHonestCombat: 0
@@ -703,7 +707,7 @@ MonoBehaviour:
     allowElites: 1
     eliteChance: 0.1
     allowHammer: 1
-    allowEncircle: 1
+    allowEncircle: 0
     hammerAggression: 1
     encircleSpeedMultiplier: 1
     fakeOutChance: 0
@@ -843,9 +847,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b801507ba2db134e8be4b3be1fb5bf0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  tacticalLevel: 0
-  initialFormation: 1
-  verbose: 1
+  tacticalLevel: 1
+  initialFormation: 0
+  pressureProfile: 1
+  allowOffenders: 1
+  allowDefenders: 0
+  allowRangers: 0
 --- !u!1 &1013622540
 GameObject:
   m_ObjectHideFlags: 0

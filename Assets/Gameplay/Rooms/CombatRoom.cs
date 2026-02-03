@@ -14,7 +14,7 @@ public class CombatRoom : RoomController
     private int aliveEnemies;
     private RoomContract contract;
     private int spawnIndex;
-    private bool shuttingDown;
+    private bool roomCompletionTriggered;
 
     protected override void Start()
     {
@@ -39,23 +39,21 @@ public class CombatRoom : RoomController
 
         if (total <= 0 && applyFallbackIfZeroCounts)
         {
-            Debug.LogWarning("[CombatRoom] Contract had zero enemies. Applying fallback.");
             contract.offenders = 3;
             contract.defenders = 1;
             contract.rangers = 1;
         }
 
         SpawnFromContract();
-        Debug.Log("[CombatRoom] Combat started");
-    }
 
-    // ───────────────────────────────
+        Debug.Log($"[CombatRoom] Combat started | Alive={aliveEnemies}");
+    }
 
     void SpawnFromContract()
     {
-        if (enemyPrefab == null || enemySpawnPoints == null || enemySpawnPoints.Length == 0)
+        if (enemyPrefab == null || enemySpawnPoints.Length == 0)
         {
-            Debug.LogError("[CombatRoom] Missing enemyPrefab or enemySpawnPoints.");
+            Debug.LogError("[CombatRoom] Missing prefab or spawn points.");
             return;
         }
 
@@ -68,7 +66,7 @@ public class CombatRoom : RoomController
         SpawnMany(EnemyRole.Activator, contract.activators);
         SpawnMany(EnemyRole.Joker, contract.jokers);
 
-        Debug.Log($"[CombatRoom] Enemies spawned: {aliveEnemies}");
+        Debug.Log($"[CombatRoom] Enemies spawned (active combatants): {aliveEnemies}");
     }
 
     void SpawnMany(EnemyRole role, int count)
@@ -83,8 +81,14 @@ public class CombatRoom : RoomController
 
     void SpawnEnemy(EnemyRole role, Transform sp)
     {
+        // 🔒 ROLE FILTERING HAPPENS HERE
+        if (!RolePermissionBus.IsRoleAllowed(role))
+        {
+            Debug.Log($"[CombatRoom] Skipping spawn of {role} (not allowed in this room)");
+            return;
+        }
+
         var go = Instantiate(enemyPrefab, sp.position, Quaternion.identity);
-        aliveEnemies++;
 
         var roleCtrl = go.GetComponent<EnemyRoleController>();
         if (roleCtrl != null)
@@ -94,25 +98,35 @@ public class CombatRoom : RoomController
         if (agent != null)
             agent.role = role;
 
+        // ✅ COUNT ONLY REAL COMBATANTS
+        aliveEnemies++;
+
         var relay = go.AddComponent<EnemyDeathRelay>();
         relay.OnEnemyDestroyed = OnEnemyDestroyed;
     }
+    public void NotifyEnemyRejected()
+    {
+        aliveEnemies--;
+        Debug.Log($"[CombatRoom] Enemy rejected. Remaining: {aliveEnemies}");
 
+        if (aliveEnemies <= 0)
+            CompleteRoom();
+    }
     void OnEnemyDestroyed()
     {
-        if (shuttingDown)
+        if (roomCompletionTriggered)
             return;
 
         aliveEnemies--;
 
+        Debug.Log($"[CombatRoom] Enemy destroyed. Remaining: {aliveEnemies}");
+
         if (aliveEnemies <= 0)
         {
-            shuttingDown = true;
+            roomCompletionTriggered = true;
             CompleteRoom();
         }
     }
-
-    // ───────────────────────────────
 
     private class EnemyDeathRelay : MonoBehaviour
     {

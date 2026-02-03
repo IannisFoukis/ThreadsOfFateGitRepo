@@ -4,18 +4,13 @@ using System.Collections.Generic;
 public class EncounterCoordinator : MonoBehaviour
 {
     public Transform playerTransform;
+
     [SerializeField] private FormationResolver formationResolver;
     [SerializeField] private TacticalAuthority tacticalAuthority;
-    private DoctrineState doctrine;
 
-    public float globalFormationLerp = 6f;
-    public bool SilenceActive => false;
-
-    private readonly List<EnemyAgent> agents = new();
-    private EnemyAgent formationLeader;
-    private EnemyAgent currentHammer;
-    private bool leaderDead;
-
+    // ─────────────────────────────
+    // STATE
+    // ─────────────────────────────
     public enum PhalanxState
     {
         March,
@@ -28,9 +23,22 @@ public class EncounterCoordinator : MonoBehaviour
     public PhalanxState phalanxState = PhalanxState.March;
     private PhalanxState lastState;
 
-    [Header("Phase L – Formation Compression Thresholds")]
-    public float holdCompression = 0.6f;
-    public float encircleCompression = 0.3f;
+    // ─────────────────────────────
+    // STATE PERMISSIONS (SET BY ROOM CONFIG)
+    // ─────────────────────────────
+    [Header("Allowed Phalanx Transitions")]
+    public bool allowMarch = true;
+    public bool allowHoldFire = true;
+    public bool allowEncircle = true;
+    public bool allowBreakChase = false;
+    public bool allowCollapse = false;
+
+    // ─────────────────────────────
+    // COMPRESSION / PRESSURE
+    // ─────────────────────────────
+    [Header("Compression Thresholds")]
+    public float holdCompression = 0.7f;
+    public float encircleCompression = 0.45f;
 
     [Header("Encircle")]
     public float encircleRadius = 4f;
@@ -39,11 +47,32 @@ public class EncounterCoordinator : MonoBehaviour
     private float stateTimer;
     private Vector3 encircleCenter;
 
-    // Debug throttle
+    // ─────────────────────────────
+    // AGENTS
+    // ─────────────────────────────
+    private readonly List<EnemyAgent> agents = new();
+    private EnemyAgent formationLeader;
+    private EnemyAgent currentHammer;
+    private bool leaderDead;
+
+    // ─────────────────────────────
+    // DOCTRINE / LEGACY FLAGS
+    // ─────────────────────────────
+    private DoctrineState doctrine;
+
+    // Silence is still queried by ranged/offender logic
+    public bool SilenceActive => false;
+
+    // ─────────────────────────────
+    // DEBUG
+    // ─────────────────────────────
     private float nextDebugTime;
     private const float DEBUG_INTERVAL = 0.25f;
 
-    private void Awake()
+    // ─────────────────────────────
+    // UNITY
+    // ─────────────────────────────
+    void Awake()
     {
         if (formationResolver == null)
             formationResolver = GetComponent<FormationResolver>();
@@ -65,85 +94,55 @@ public class EncounterCoordinator : MonoBehaviour
 
         ResolveLeader();
 
-        // doctrine-driven collapse (optional hook)
-        if (doctrine != null && doctrine.chaotic && doctrine.IsFormationBreaking())
-        {
-            if (phalanxState != PhalanxState.Collapse)
-                EnterCollapse();
-            return;
-        }
-
         if (stateTimer > 0f)
             stateTimer -= Time.deltaTime;
 
         float compression = GetFormationCompression();
 
-        // ───── Debug (semantic, throttled) ─────
         if (Time.time >= nextDebugTime)
         {
-            string formation = formationResolver != null
-                ? formationResolver.Current.ToString()
-                : "None";
-
-            string tal = tacticalAuthority != null
-                ? tacticalAuthority.CurrentLevel.ToString()
-                : "None";
-
             Debug.Log(
-                $"[FORMATION:{formation}] " +
+                $"[FORMATION:{formationResolver.Current}] " +
                 $"motion={phalanxState} | " +
                 $"compression={compression:F2} | " +
                 $"agents={agents.Count} | " +
-                $"TAL={tal}"
+                $"TAL={tacticalAuthority.CurrentLevel}"
             );
-
             nextDebugTime = Time.time + DEBUG_INTERVAL;
         }
 
         switch (phalanxState)
         {
             case PhalanxState.March:
-                if (compression <= encircleCompression &&
-                    tacticalAuthority.Allows(TacticalLevel.Positional))
-                {
+                if (allowEncircle && compression <= encircleCompression)
                     EnterEncircle();
-                }
-                else if (compression <= holdCompression &&
-                         tacticalAuthority.Allows(TacticalLevel.Positional))
-                {
+                else if (allowHoldFire && compression <= holdCompression)
                     SetState(PhalanxState.HoldFire);
-                }
                 break;
 
             case PhalanxState.HoldFire:
-                if (compression <= encircleCompression &&
-                    tacticalAuthority.Allows(TacticalLevel.Positional))
-                {
+                if (allowEncircle && compression <= encircleCompression)
                     EnterEncircle();
-                }
-                else if (compression > holdCompression * 1.25f)
-                {
+                else if (allowMarch && compression > holdCompression * 1.25f)
                     SetState(PhalanxState.March);
-                }
                 break;
 
             case PhalanxState.Encircle:
-                if (stateTimer <= 0f)
+                if (stateTimer <= 0f && allowHoldFire)
                     SetState(PhalanxState.HoldFire);
                 break;
 
             case PhalanxState.BreakChase:
-                // Phase M: reserved
                 break;
 
             case PhalanxState.Collapse:
-                // Chaos
                 break;
         }
     }
 
-    // ───────── Phase M — State + Speech ─────────
-
+    // ─────────────────────────────
+    // STATE CONTROL
+    // ─────────────────────────────
     void SetState(PhalanxState next)
     {
         if (phalanxState == next)
@@ -151,74 +150,22 @@ public class EncounterCoordinator : MonoBehaviour
 
         lastState = phalanxState;
         phalanxState = next;
-
-        EmitFormationSpeech(lastState, next);
-    }
-
-    void EmitFormationSpeech(PhalanxState from, PhalanxState to)
-    {
-        if (doctrine == null)
-            return;
-
-        if (from == PhalanxState.March && to == PhalanxState.HoldFire)
-            SpeechBus.Emit(EnemySpeechEvent.Advance);
-
-        switch (to)
-        {
-            case PhalanxState.HoldFire:
-                SpeechBus.Emit(EnemySpeechEvent.HoldLine);
-                break;
-
-            case PhalanxState.Encircle:
-                SpeechBus.Emit(EnemySpeechEvent.EncircleCall);
-                break;
-
-            case PhalanxState.Collapse:
-                SpeechBus.Emit(
-                    doctrine.fanatic
-                        ? EnemySpeechEvent.FanaticLock
-                        : EnemySpeechEvent.FormationBreak
-                );
-                break;
-
-            case PhalanxState.BreakChase:
-                if (doctrine.canRetreat &&
-                    tacticalAuthority.Allows(TacticalLevel.Formation))
-                {
-                    SpeechBus.Emit(EnemySpeechEvent.RetreatCall);
-                }
-                break;
-        }
     }
 
     void EnterEncircle()
     {
+        if (!allowEncircle)
+            return;
+
         SetState(PhalanxState.Encircle);
         encircleCenter = playerTransform.position;
         stateTimer = encircleDuration;
-
-        if (tacticalAuthority.Allows(TacticalLevel.Coordinated))
-            PickHammer();
+        PickHammer();
     }
 
-    void EnterCollapse()
-    {
-        SetState(PhalanxState.Collapse);
-    }
-
-    // ───────── Doctrine Injection ─────────
-    public void ApplyDoctrine(DoctrineState state)
-    {
-        doctrine = state;
-
-        Debug.Log(
-            $"[EncounterCoordinator] Doctrine applied | " +
-            $"Retreat={state.canRetreat} Chaos={state.chaotic} " +
-            $"Discipline={state.formationDiscipline:0.00}"
-        );
-    }
-
-    // ───────── Registration ─────────
+    // ─────────────────────────────
+    // REGISTRATION
+    // ─────────────────────────────
     public void Register(EnemyAgent agent)
     {
         if (!agents.Contains(agent))
@@ -230,18 +177,36 @@ public class EncounterCoordinator : MonoBehaviour
         agents.Remove(agent);
 
         if (agent == formationLeader)
-        {
             leaderDead = true;
-
-            if (doctrine != null &&
-                doctrine.canRetreat &&
-                tacticalAuthority.Allows(TacticalLevel.Formation))
-            {
-                SetState(PhalanxState.BreakChase);
-            }
-        }
     }
 
+    // ─────────────────────────────
+    // LEGACY / COMPATIBILITY API
+    // ─────────────────────────────
+
+    public List<EnemyAgent> GetEnemies()
+    {
+        return new List<EnemyAgent>(agents);
+    }
+
+    public bool IsLeaderDead()
+    {
+        return leaderDead;
+    }
+
+    public bool IsHammer(EnemyAgent agent)
+    {
+        return agent != null && agent == currentHammer;
+    }
+
+    public void ApplyDoctrine(DoctrineState state)
+    {
+        doctrine = state;
+    }
+
+    // ─────────────────────────────
+    // HELPERS
+    // ─────────────────────────────
     void ResolveLeader()
     {
         if (formationLeader != null || leaderDead)
@@ -252,7 +217,6 @@ public class EncounterCoordinator : MonoBehaviour
             formationLeader = agents[0];
     }
 
-    // ───────── Compression ─────────
     float GetFormationCompression()
     {
         float sum = 0f;
@@ -271,12 +235,8 @@ public class EncounterCoordinator : MonoBehaviour
             playerTransform = go.transform;
     }
 
-    // ───────── Position API ─────────
     public Vector3 GetWorldPositionFor(EnemyAgent agent)
     {
-        if (!tacticalAuthority.Allows(TacticalLevel.Positional))
-            return agent.transform.position;
-
         return phalanxState switch
         {
             PhalanxState.March => GetMarchPosition(agent),
@@ -325,11 +285,6 @@ public class EncounterCoordinator : MonoBehaviour
         }
         return sum / Mathf.Max(1, agents.Count);
     }
-
-    // ───────── Legacy API ─────────
-    public bool IsLeaderDead() => leaderDead;
-    public bool IsHammer(EnemyAgent agent) => agent == currentHammer;
-    public List<EnemyAgent> GetEnemies() => new List<EnemyAgent>(agents);
 
     void PickHammer()
     {

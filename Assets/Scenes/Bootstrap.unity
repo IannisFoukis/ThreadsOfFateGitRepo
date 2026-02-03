@@ -129,6 +129,7 @@ GameObject:
   m_Component:
   - component: {fileID: 59144643}
   - component: {fileID: 59144644}
+  - component: {fileID: 59144645}
   m_Layer: 0
   m_Name: RunDirector
   m_TagString: Untagged
@@ -165,6 +166,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   biomeConfig: {fileID: 11400000, guid: 930e68551f217624d850fdbee0472a50, type: 2}
   keeperPronouncement: {fileID: 1441955344}
+  roomConfigController: {fileID: 59144645}
+--- !u!114 &59144645
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 59144642}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b801507ba2db134e8be4b3be1fb5bf0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  tacticalLevel: 0
+  initialFormation: 1
+  pressureProfile: 1
+  allowOffenders: 1
+  allowDefenders: 0
+  allowRangers: 0
 --- !u!1 &122534266
 GameObject:
   m_ObjectHideFlags: 0

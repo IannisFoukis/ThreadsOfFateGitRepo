@@ -34,7 +34,7 @@ public class RunDirector : MonoBehaviour
         gsm = FindAnyObjectByType<GameStateManager>();
         SceneManager.sceneLoaded += OnSceneLoaded;
 
-        Debug.Log("RunDirector persistent.");
+        Debug.Log("[RunDirector] Persistent.");
     }
 
     private void OnDestroy()
@@ -44,18 +44,21 @@ public class RunDirector : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        // Only reset guard AFTER a scene is loaded
         advancingRoom = false;
     }
 
     private void Start()
     {
-        if (biomeConfig != null && biomeConfig.entries.Length > 0)
+        if (biomeConfig != null && biomeConfig.entries != null && biomeConfig.entries.Length > 0)
             biomeEntries = new List<BiomeConfig.RoomEntry>(biomeConfig.entries);
+        else
+            Debug.LogWarning("[RunDirector] BiomeConfig has no entries.");
 
         if (roomConfigController == null)
             roomConfigController = FindAnyObjectByType<RoomConfigController>(FindObjectsInactive.Include);
 
-        Debug.Log("RunDirector ready.");
+        Debug.Log("[RunDirector] Ready.");
     }
 
     // ─────────────────────────────
@@ -75,6 +78,12 @@ public class RunDirector : MonoBehaviour
         if (gsm == null)
             gsm = FindAnyObjectByType<GameStateManager>();
 
+        if (gsm == null)
+        {
+            Debug.LogError("[RunDirector] GameStateManager missing.");
+            return;
+        }
+
         gsm.StartNewRun();
         GameEvents.RaiseRunStart();
 
@@ -86,8 +95,16 @@ public class RunDirector : MonoBehaviour
         if (advancingRoom) return;
         advancingRoom = true;
 
+        if (gsm == null || gsm.RunState == null)
+        {
+            Debug.LogError("[RunDirector] RunState missing.");
+            advancingRoom = false;
+            return;
+        }
+
         if (biomeEntries == null || biomeEntries.Count == 0)
         {
+            Debug.LogWarning("[RunDirector] No biome entries. Ending run.");
             gsm.EndRun(RunEndReason.BiomeCompleted);
             return;
         }
@@ -96,19 +113,45 @@ public class RunDirector : MonoBehaviour
 
         if (run.currentRoomIndex >= biomeEntries.Count)
         {
+            Debug.Log("[RunDirector] Biome completed.");
             gsm.EndRun(RunEndReason.BiomeCompleted);
             return;
         }
 
-        int roomNumber = run.currentRoomIndex + 1;
-
-        // ✅ APPLY BIOME 1 CHAPTER RULES
-        if (roomConfigController != null)
-            roomConfigController.ApplyBiome1ChapterRules(roomNumber);
-
+        int roomIndex = run.currentRoomIndex + 1;
         var entry = biomeEntries[run.currentRoomIndex];
-        run.currentRoomIndex++;
 
+        // ── BUILD ROOM CONTEXT ───────────────────
+        RoomContext context = new RoomContext
+        {
+            roomIndex = roomIndex,
+            roomRole = entry.role,
+            chapterIndex = 0,
+            chapterId = "Unknown"
+        };
+
+        if (biomeConfig != null && biomeConfig.progressionProfile != null)
+        {
+            if (biomeConfig.progressionProfile.TryGetChapter(roomIndex, out var chapter))
+            {
+                context.chapterIndex = chapter.chapterIndex;
+                context.chapterId = chapter.chapterId;
+            }
+        }
+
+        // ── APPLY ROOM RULES ─────────────────────
+        if (roomConfigController != null)
+            roomConfigController.ApplyRoomContext(context);
+        else
+            Debug.LogWarning("[RunDirector] RoomConfigController missing.");
+
+        Debug.Log(
+            $"[RunDirector] Loading Room {context.roomIndex} " +
+            $"(Chapter {context.chapterIndex} – {context.chapterId}) " +
+            $"Role={context.roomRole}"
+        );
+
+        run.currentRoomIndex++;
         SceneManager.LoadScene(GetSceneName(entry.role));
     }
 
@@ -124,17 +167,14 @@ public class RunDirector : MonoBehaviour
     }
 
     // ─────────────────────────────
-    // 🔴 RESTORED API (REQUIRED)
+    // REQUIRED PUBLIC API
     // ─────────────────────────────
-
-    // Used by RoomDirector
     public void OnRoomCompleted()
     {
         if (keeperTriggeredThisRun) return;
         EnterNextRoom();
     }
 
-    // Used by GameStateManager
     public void ResetRun()
     {
         Debug.Log("[RunDirector] ResetRun");
@@ -164,7 +204,6 @@ public class RunDirector : MonoBehaviour
         SceneManager.LoadScene(GetSceneName(RoomRole.Entry));
     }
 
-    // Used by BreatherEffectApplier
     public void ApplyRoomNPC(RoomNPC npc)
     {
         if (npc == null)
@@ -173,7 +212,7 @@ public class RunDirector : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[RunDirector] ApplyRoomNPC called with {npc.displayName}");
+        Debug.Log($"[RunDirector] ApplyRoomNPC → {npc.displayName}");
 
         switch (npc.effect)
         {
@@ -184,7 +223,7 @@ public class RunDirector : MonoBehaviour
             case RoomNPC.EffectType.EnvironmentalInstability:
                 if (RunContext.Instance?.rules == null)
                 {
-                    Debug.LogError("[RunDirector] RunRules missing; cannot apply Environmental Instability");
+                    Debug.LogError("[RunDirector] RunRules missing.");
                     return;
                 }
 
@@ -192,9 +231,7 @@ public class RunDirector : MonoBehaviour
                 Debug.Log("[RunRules] Environmental Instability ENABLED");
                 break;
 
-            case RoomNPC.EffectType.None:
             default:
-                Debug.Log("[RunDirector] No effect applied");
                 break;
         }
     }

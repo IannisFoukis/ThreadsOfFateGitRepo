@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 [CreateAssetMenu(menuName = "Game/Biome Config")]
@@ -27,15 +27,30 @@ public class BiomeConfig : ScriptableObject
         public bool allowElites = false;
     }
 
-
+    // ─────────────────────────────
+    // BIOME STRUCTURE
+    // ─────────────────────────────
+    [Header("Biome Rooms")]
     public RoomEntry[] entries;
 
+    // ─────────────────────────────
+    // BIOME PROGRESSION (NEW)
+    // ─────────────────────────────
+    [Header("Biome Progression")]
+    [Tooltip("Defines chapter ranges and semantic progression for this biome")]
+    public BiomeProgressionProfile progressionProfile;
+
+    // ─────────────────────────────
+    // HELPERS
+    // ─────────────────────────────
     public List<RoomRole> GetRoles()
     {
         var list = new List<RoomRole>();
         if (entries == null) return list;
+
         foreach (var e in entries)
             list.Add(e.role);
+
         return list;
     }
 }

@@ -20,77 +20,91 @@ public class RoomConfigController : MonoBehaviour
     private FormationResolver formationResolver;
     private EncounterCoordinator encounterCoordinator;
 
-    void Awake()
+    // ─────────────────────────────
+    // UNITY LIFECYCLE
+    // ─────────────────────────────
+    private void Awake()
     {
         ResolveDependencies();
         ApplyConfig();
     }
 
+    // Manual re-apply hook (used by RunDirector)
     public void Apply()
     {
         ResolveDependencies();
         ApplyConfig();
     }
 
-    // ✅ BIOME 1 AUTHORITY
-    public void ApplyBiome1ChapterRules(int roomNumber)
+    // ─────────────────────────────
+    // AUTHORITATIVE ENTRY POINT
+    // ─────────────────────────────
+    public void ApplyRoomContext(RoomContext context)
     {
-        if (roomNumber <= 10)
+        // Chapter-based interpretation (Biome-driven)
+        switch (context.chapterIndex)
         {
-            // Chapter I — Coast
-            tacticalLevel = TacticalLevel.Instinct;
-            initialFormation = FormationType.Swarm;
-            pressureProfile = PressureProfile.Slow;
+            case 1: // Coast
+                tacticalLevel = TacticalLevel.Instinct;
+                initialFormation = FormationType.Swarm;
+                pressureProfile = PressureProfile.Slow;
 
-            allowOffenders = true;
-            allowDefenders = false;
-            allowRangers = false;
-        }
-        else if (roomNumber <= 20)
-        {
-            // Chapter II — Watch
-            tacticalLevel = TacticalLevel.Coordinated;
-            initialFormation = FormationType.Swarm;
-            pressureProfile = PressureProfile.Medium;
+                allowOffenders = true;
+                allowDefenders = false;
+                allowRangers = false;
+                break;
 
-            allowOffenders = true;
-            allowDefenders = true;
-            allowRangers = true;
-        }
-        else if (roomNumber <= 30)
-        {
-            // Chapter III — Fortress
-            tacticalLevel = TacticalLevel.Coordinated;
-            initialFormation = FormationType.Phalanx;
-            pressureProfile = PressureProfile.Fast;
+            case 2: // Watch
+                tacticalLevel = TacticalLevel.Coordinated;
+                initialFormation = FormationType.Swarm;
+                pressureProfile = PressureProfile.Medium;
 
-            allowOffenders = true;
-            allowDefenders = true;
-            allowRangers = true;
-        }
-        else
-        {
-            // Chapter IV — Shrine War
-            tacticalLevel = TacticalLevel.Coordinated;
-            initialFormation = FormationType.Phalanx;
-            pressureProfile = PressureProfile.Adaptive;
+                allowOffenders = true;
+                allowDefenders = true;
+                allowRangers = true;
+                break;
 
-            allowOffenders = true;
-            allowDefenders = true;
-            allowRangers = true;
+            case 3: // Fortress
+                tacticalLevel = TacticalLevel.Coordinated;
+                initialFormation = FormationType.Phalanx;
+                pressureProfile = PressureProfile.Fast;
+
+                allowOffenders = true;
+                allowDefenders = true;
+                allowRangers = true;
+                break;
+
+            default: // Late Biome / Shrine War / Fallback
+                tacticalLevel = TacticalLevel.Coordinated;
+                initialFormation = FormationType.Phalanx;
+                pressureProfile = PressureProfile.Adaptive;
+
+                allowOffenders = true;
+                allowDefenders = true;
+                allowRangers = true;
+                break;
         }
+
+        Debug.Log(
+            $"[RoomConfig] Context Applied → " +
+            $"Room={context.roomIndex}, Chapter={context.chapterIndex} ({context.chapterId}), " +
+            $"Role={context.roomRole}"
+        );
 
         Apply();
     }
 
-    void ResolveDependencies()
+    // ─────────────────────────────
+    // INTERNAL WIRING
+    // ─────────────────────────────
+    private void ResolveDependencies()
     {
         tacticalAuthority = FindFirstObjectByType<TacticalAuthority>();
         formationResolver = FindFirstObjectByType<FormationResolver>();
         encounterCoordinator = FindFirstObjectByType<EncounterCoordinator>();
     }
 
-    void ApplyConfig()
+    private void ApplyConfig()
     {
         ApplyTacticalLevel();
         ApplyFormation();
@@ -98,23 +112,23 @@ public class RoomConfigController : MonoBehaviour
         ApplyRolePermissions();
 
         Debug.Log(
-            $"[RoomConfig] Applied → TAL={tacticalLevel}, " +
-            $"Formation={initialFormation}, Pressure={pressureProfile}, " +
+            $"[RoomConfig] Applied → " +
+            $"TAL={tacticalLevel}, Formation={initialFormation}, Pressure={pressureProfile}, " +
             $"Roles(O/D/R)=({allowOffenders}/{allowDefenders}/{allowRangers})"
         );
     }
 
-    void ApplyTacticalLevel()
+    private void ApplyTacticalLevel()
     {
         tacticalAuthority?.SetLevel(tacticalLevel);
     }
 
-    void ApplyFormation()
+    private void ApplyFormation()
     {
         formationResolver?.SetFormation(initialFormation);
     }
 
-    void ApplyPressureProfile()
+    private void ApplyPressureProfile()
     {
         if (encounterCoordinator == null) return;
 
@@ -136,12 +150,12 @@ public class RoomConfigController : MonoBehaviour
                 break;
 
             case PressureProfile.Adaptive:
-                // Reserved for shrine-heavy rooms
+                // Reserved for shrine-heavy / reactive rooms
                 break;
         }
     }
 
-    void ApplyRolePermissions()
+    private void ApplyRolePermissions()
     {
         RolePermissionBus.SetPermissions(
             allowOffenders,

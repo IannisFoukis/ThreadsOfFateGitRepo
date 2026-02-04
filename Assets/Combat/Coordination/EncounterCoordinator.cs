@@ -37,6 +37,20 @@ public class EncounterCoordinator : MonoBehaviour
     public bool allowCollapse = false;
 
     // ─────────────────────────────
+    // FORMATION FREEZE (Phase A)
+    // ─────────────────────────────
+    [Header("Phase A - Formation Freeze")]
+    [Tooltip("When any agent gets within this distance to player, we freeze the formation reference so slots stop sliding.")]
+    public float freezeDistanceToPlayer = 1.6f;
+
+    [Tooltip("Unfreeze when all agents are farther than this distance from player.")]
+    public float unfreezeDistanceToPlayer = 2.3f;
+
+    private bool formationFrozen;
+    private Vector3 frozenAvg;
+    private Vector3 frozenToPlayerDir; // normalized
+
+    // ─────────────────────────────
     // COMPRESSION / PRESSURE
     // ─────────────────────────────
     [Header("Compression Thresholds")]
@@ -96,6 +110,36 @@ public class EncounterCoordinator : MonoBehaviour
 
         ResolveLeader();
 
+        // ───────── Freeze / Unfreeze evaluation ─────────
+        float minDist = float.MaxValue;
+        float maxDist = 0f;
+
+        for (int i = 0; i < agents.Count; i++)
+        {
+            var a = agents[i];
+            if (a == null) continue;
+
+            float d = Vector2.Distance(a.transform.position, playerTransform.position);
+            if (d < minDist) minDist = d;
+            if (d > maxDist) maxDist = d;
+        }
+
+        // Freeze: once close, lock the FORMATION REFERENCE (avg + direction)
+        if (!formationFrozen && minDist < freezeDistanceToPlayer)
+        {
+            formationFrozen = true;
+            frozenAvg = GetAverageEnemyPosition(); // already ignores Rangers per Phase A rule
+
+            Vector3 dir = (playerTransform.position - frozenAvg);
+            frozenToPlayerDir = dir.sqrMagnitude > 0.0001f ? dir.normalized : Vector3.up;
+        }
+
+        // Unfreeze: when everyone backs off enough (prevents permanent lock)
+        if (formationFrozen && maxDist > unfreezeDistanceToPlayer)
+        {
+            formationFrozen = false;
+        }
+
         if (stateTimer > 0f)
             stateTimer -= Time.deltaTime;
 
@@ -108,7 +152,8 @@ public class EncounterCoordinator : MonoBehaviour
                 $"motion={phalanxState} | " +
                 $"compression={compression:F2} | " +
                 $"agents={agents.Count} | " +
-                $"TAL={tacticalAuthority.CurrentLevel}"
+                $"TAL={tacticalAuthority.CurrentLevel} | " +
+                $"frozen={formationFrozen}"
             );
             nextDebugTime = Time.time + DEBUG_INTERVAL;
         }
@@ -146,6 +191,9 @@ public class EncounterCoordinator : MonoBehaviour
 
         lastState = phalanxState;
         phalanxState = next;
+
+        // state change invalidates the freeze reference
+        formationFrozen = false;
     }
 
     void EnterEncircle()
@@ -196,6 +244,20 @@ public class EncounterCoordinator : MonoBehaviour
             formationLeader = agents[0];
     }
 
+    public bool AnyRoleChangingFormation(EnemyRole role, float threshold = -1f)
+    {
+        for (int i = 0; i < agents.Count; i++)
+        {
+            var a = agents[i];
+            if (a == null) continue;
+            if (a.role != role) continue;
+
+            if (a.IsChangingFormation(threshold))
+                return true;
+        }
+        return false;
+    }
+
     float GetFormationCompression()
     {
         float sum = 0f;
@@ -216,6 +278,9 @@ public class EncounterCoordinator : MonoBehaviour
 
     public Vector3 GetWorldPositionFor(EnemyAgent agent)
     {
+        if (agent.attackPositionLocked || agent.attackLock)
+            return agent.transform.position;
+
         return phalanxState switch
         {
             PhalanxState.March => GetMarchPosition(agent),
@@ -229,8 +294,16 @@ public class EncounterCoordinator : MonoBehaviour
     // ─────────────────────────────
     Vector3 GetMarchPosition(EnemyAgent agent)
     {
+        // Normal: compute avg and direction live
         Vector3 avg = GetAverageEnemyPosition();
         Vector3 toPlayer = (playerTransform.position - avg).normalized;
+
+        // Freeze: use cached avg + direction so anchor stops sliding
+        if (formationFrozen)
+        {
+            avg = frozenAvg;
+            toPlayer = frozenToPlayerDir;
+        }
 
         Vector3 anchor = playerTransform.position - toPlayer * 2.5f;
         Vector3 forward = (playerTransform.position - anchor).normalized;
@@ -238,15 +311,17 @@ public class EncounterCoordinator : MonoBehaviour
 
         int index = agents.IndexOf(agent);
 
-        float depth = agent.Lane switch
+        // 🔒 PHASE A ROLE DEPTH AUTHORITY
+        float depth = agent.role switch
         {
-            Lane.Front => 1.2f,
-            Lane.Flank => 2.6f,
-            Lane.Rear => 4.0f,
-            _ => 2.5f
+            EnemyRole.Offender => 1.2f, // always front
+            EnemyRole.Defender => 2.4f, // mid / guard
+            EnemyRole.Ranger => 4.2f,   // ALWAYS rear
+            _ => 2.8f
         };
 
         float lateral = ((index % 3) - 1) * 0.8f;
+
         return anchor - forward * depth + right * lateral;
     }
 
@@ -269,12 +344,31 @@ public class EncounterCoordinator : MonoBehaviour
     Vector3 GetAverageEnemyPosition()
     {
         Vector3 sum = Vector3.zero;
+        int count = 0;
+
+        // Phase A rule:
+        // Rangers are formation followers, not formation drivers
         foreach (var a in agents)
         {
             if (a == null) continue;
+            if (a.role == EnemyRole.Ranger) continue;
+
             sum += a.transform.position;
+            count++;
         }
-        return sum / Mathf.Max(1, agents.Count);
+
+        // Fallback: if only rangers exist, use everyone
+        if (count == 0)
+        {
+            foreach (var a in agents)
+            {
+                if (a == null) continue;
+                sum += a.transform.position;
+                count++;
+            }
+        }
+
+        return count > 0 ? sum / count : transform.position;
     }
 
     void PickHammer()
@@ -283,10 +377,10 @@ public class EncounterCoordinator : MonoBehaviour
         if (offenders.Count > 0)
             currentHammer = offenders[Random.Range(0, offenders.Count)];
     }
+
     // ─────────────────────────────
     // LEGACY / COMPATIBILITY API
     // ─────────────────────────────
-
     public List<EnemyAgent> GetEnemies()
     {
         return new List<EnemyAgent>(agents);

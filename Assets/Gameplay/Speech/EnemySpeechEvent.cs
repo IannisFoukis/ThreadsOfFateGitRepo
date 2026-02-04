@@ -1,10 +1,16 @@
 ﻿public enum EnemySpeechEvent
 {
-    DoctrineEngaged,     // room start
-    Advance,             // March → HoldFire
-    HoldLine,            // HoldFire stable
-    EncircleCall,        // HoldFire → Encircle
-    FormationBreak,      // Chaos fracture
-    FanaticLock,         // Fanatic refusal to break
-    RetreatCall          // Optional (canRetreat)
+    // existing…
+    DoctrineEngaged,
+    Advance,
+    HoldLine,
+    EncircleCall,
+    FormationBreak,
+    FanaticLock,
+    RetreatCall,
+
+    // ───────── Phase A — Offender Intent ─────────
+    OffenderHold,
+    OffenderCommit,
+    OffenderPunish
 }

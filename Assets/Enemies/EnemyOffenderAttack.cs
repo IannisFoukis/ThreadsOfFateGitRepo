@@ -3,6 +3,20 @@ using System.Collections;
 
 public class EnemyOffenderAttack : MonoBehaviour
 {
+    private PlayerBehaviorTracker playerBehavior;
+    private PlayerController playerController;
+
+    [Header("Deadlock Breaker")]
+    public float forceCommitDistance = 1.8f;
+
+    [Header("Phase A - Commit Gate")]
+    public bool enableCommitGate = true;
+    public float commitDelayMin = 0.15f;
+    public float commitDelayMax = 0.35f;
+
+    private bool isCommitDelaying;
+    private float commitAtTime = -1f;
+
     [Header("Offender Intent")]
     public float offenderIntentDuration = 1.0f;
     private float offenderIntentUntil = -1f;
@@ -45,6 +59,9 @@ public class EnemyOffenderAttack : MonoBehaviour
 
     void Awake()
     {
+        playerBehavior = FindFirstObjectByType<PlayerBehaviorTracker>();
+        playerController = FindFirstObjectByType<PlayerController>();
+
         agent = GetComponent<EnemyAgent>();
 
         var p = GameObject.FindGameObjectWithTag("Player");
@@ -72,6 +89,7 @@ public class EnemyOffenderAttack : MonoBehaviour
 
     void Update()
     {
+       
         if (agent == null || player == null)
             return;
 
@@ -98,13 +116,25 @@ public class EnemyOffenderAttack : MonoBehaviour
         Vector3 slotPos3 = agent.GetFormationTarget();
         Vector2 slotPos = new Vector2(slotPos3.x, slotPos3.y);
 
+        float playerDist = Vector2.Distance(transform.position, player.position);
+
         float slotDist = Vector2.Distance(transform.position, slotPos);
         float slotThreshold = agent.SlotArrivalThreshold * slotTriggerMultiplier;
 
-        if (!isWindingUp && slotDist <= slotThreshold)
+        // ✅ START WINDUP (this was missing)
+        // Deadlock breaker: close-range commit authority
+        if (!isWindingUp && playerDist <= forceCommitDistance)
+        {
             StartWindUp();
+        }
+        // Normal formation-based trigger
+        else if (!isWindingUp && slotDist <= slotThreshold)
+        {
+            StartWindUp();
+        }
 
-        if (isWindingUp && slotDist > slotThreshold * 1.2f)
+        // ✅ CANCEL WINDUP ONLY IF NOT IN CLOSE-RANGE COMMIT
+        if (isWindingUp && slotDist > slotThreshold * 1.2f && playerDist > forceCommitDistance)
         {
             CancelWindUp();
             return;
@@ -128,8 +158,61 @@ public class EnemyOffenderAttack : MonoBehaviour
         if (windUpTimer >= windUpTime)
         {
             hasFaked = false;
+
+            // 🔴 PHASE A — PUNISH OVERRIDE
+            if (PlayerIsPunishable())
+            {
+                isCommitDelaying = false;
+                commitAtTime = Time.time;
+
+                SpeechBus.Emit(EnemySpeechEvent.OffenderPunish);
+                BeginAttack();
+                return;
+            }
+
+            if (enableCommitGate)
+            {
+                if (!isCommitDelaying && SquadNotReadyToCommit())
+                {
+                    BeginCommitDelay();
+                    SpeechBus.Emit(EnemySpeechEvent.OffenderHold);
+                    return;
+                }
+
+                if (isCommitDelaying)
+                {
+                    if (Time.time < commitAtTime)
+                        return;
+
+                    isCommitDelaying = false;
+                    SpeechBus.Emit(EnemySpeechEvent.OffenderCommit);
+                }
+            }
+
             BeginAttack();
         }
+    }
+
+    bool PlayerIsPunishable()
+    {
+        if (playerBehavior == null)
+            return false;
+
+        // Primary: dash spam = predictable
+        if (playerBehavior.IsDashSpamming(1.0f))
+            return true;
+
+        // Secondary: tactical lock + low movement
+        if (playerController != null)
+        {
+            bool tactical = Input.GetKey(KeyCode.LeftShift);
+            bool lowMove = playerController.MoveInput.sqrMagnitude < 0.1f;
+
+            if (tactical && lowMove)
+                return true;
+        }
+
+        return false;
     }
 
     void RestartWindUp()
@@ -142,12 +225,18 @@ public class EnemyOffenderAttack : MonoBehaviour
     {
         isWindingUp = true;
         windUpTimer = 0f;
+        agent.movementLocked = true;   // 🔒 LOCK MOVEMENT
+        isCommitDelaying = false;
+        commitAtTime = -1f;
         ShowCircle();
     }
 
     void CancelWindUp()
     {
         isWindingUp = false;
+        isCommitDelaying = false;
+        agent.movementLocked = false;  // 🔓 RELEASE MOVEMENT
+        commitAtTime = -1f;
         HideCircle();
     }
 
@@ -190,6 +279,7 @@ public class EnemyOffenderAttack : MonoBehaviour
         agent.attackLock = false;
         isRecovering = false;
         attackRoutine = null;
+        agent.SetAttackPositionLocked(false);
     }
 
     IEnumerator Dash(Vector2 dir, float speed, float duration)
@@ -220,13 +310,36 @@ public class EnemyOffenderAttack : MonoBehaviour
 
     void UpdateCircleVisual()
     {
+        if (windUpCircle == null) return;
+
         float t = Mathf.Clamp01(windUpTimer / Mathf.Max(0.0001f, windUpTime));
         float scale = Mathf.Lerp(windUpCircleMaxScale, 0.1f, t);
         windUpCircle.transform.localScale = Vector3.one * scale;
     }
 
-    void ShowCircle() => windUpCircle.SetActive(true);
-    void HideCircle() { if (windUpCircle != null) windUpCircle.SetActive(false); }
+    void ShowCircle()
+    {
+        if (windUpCircle != null) windUpCircle.SetActive(true);
+    }
+
+    void HideCircle()
+    {
+        if (windUpCircle != null) windUpCircle.SetActive(false);
+    }
+
+    bool SquadNotReadyToCommit()
+    {
+        if (agent == null || agent.coordinator == null) return false;
+
+        // Phase A: wait for defenders to finish repositioning / formation change
+        return agent.coordinator.AnyRoleChangingFormation(EnemyRole.Defender);
+    }
+
+    void BeginCommitDelay()
+    {
+        isCommitDelaying = true;
+        commitAtTime = Time.time + Random.Range(commitDelayMin, commitDelayMax);
+    }
 
     Sprite GenerateCircleSprite()
     {

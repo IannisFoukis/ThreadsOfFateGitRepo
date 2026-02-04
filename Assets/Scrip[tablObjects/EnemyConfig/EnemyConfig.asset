@@ -68,7 +68,7 @@ MonoBehaviour:
     defaultBehaviorTier: 0
     damageMultiplier: 4
   - role: 1
-    enableMelee: 0
+    enableMelee: 1
     enableRanged: 0
     enableCharger: 0
     enableChase: 0

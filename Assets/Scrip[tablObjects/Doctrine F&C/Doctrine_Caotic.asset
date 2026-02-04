@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   attackCooldownMult: 1
   windupDurationMult: 1
-  attackCancelChance: 0
-  targetPersistence: 1
+  attackCancelChance: 0.167
+  targetPersistence: 0.341
   formationStickinessMult: 1
   slotPatienceMult: 1
-  retreatChance: 0
+  retreatChance: 0.564
   repositionDelayMult: 1
   stressGainMult: 1
   stressBreakThresholdMult: 1

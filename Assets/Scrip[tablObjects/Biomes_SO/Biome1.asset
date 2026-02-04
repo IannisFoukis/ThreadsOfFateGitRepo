@@ -21,8 +21,129 @@ MonoBehaviour:
     shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
     silencePhase: 0
     pressureSpike: 0
+    allowHammer: 0
+    allowEncircle: 0
+    allowElites: 0
+  - role: 1
+    encounterType: 0
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 0
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 0
+    allowEncircle: 0
+    allowElites: 1
+  - role: 2
+    encounterType: 0
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 0
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: 09cd1f166cda4b444bff96edb5bec9a3, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 0
+    allowEncircle: 0
+    allowElites: 0
+  - role: 1
+    encounterType: 0
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 0
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: 94e65932aadb5a84b972849cfe84b320, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 0
+    allowEncircle: 0
+    allowElites: 1
+  - role: 3
+    encounterType: 0
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 0
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: 09cd1f166cda4b444bff96edb5bec9a3, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
     allowHammer: 1
-    allowEncircle: 1
+    allowEncircle: 0
+    allowElites: 1
+  - role: 2
+    encounterType: 0
+    enemyPrefab: {fileID: 0}
+    hasShrine: 0
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 0}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 0
+    allowEncircle: 0
+    allowElites: 0
+  - role: 3
+    encounterType: 0
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 0
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: 94e65932aadb5a84b972849cfe84b320, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 1
+    allowEncircle: 0
+    allowElites: 1
+  - role: 4
+    encounterType: 0
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 1
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: 94e65932aadb5a84b972849cfe84b320, type: 2}
+    silencePhase: 0
+    pressureSpike: 1
+    allowHammer: 1
+    allowEncircle: 0
+    allowElites: 0
+  - role: 2
+    encounterType: 0
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 0
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: 94e65932aadb5a84b972849cfe84b320, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 0
+    allowEncircle: 0
+    allowElites: 0
+  - role: 7
+    encounterType: 1
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 0
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 0
+    allowEncircle: 0
+    allowElites: 0
+  - role: 1
+    encounterType: 0
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 0
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 0
+    allowEncircle: 0
+    allowElites: 1
+  - role: 2
+    encounterType: 0
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 0
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 0
+    allowEncircle: 0
     allowElites: 0
   - role: 3
     encounterType: 0
@@ -33,80 +154,289 @@ MonoBehaviour:
     silencePhase: 0
     pressureSpike: 0
     allowHammer: 1
-    allowEncircle: 1
-    allowElites: 0
-  - role: 5
+    allowEncircle: 0
+    allowElites: 1
+  - role: 3
     encounterType: 0
     enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
-    hasShrine: 0
-    shrineDestroyable: 0
-    shrineOverride: {fileID: 11400000, guid: 09cd1f166cda4b444bff96edb5bec9a3, type: 2}
+    hasShrine: 1
+    shrineDestroyable: 1
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
     silencePhase: 0
     pressureSpike: 0
     allowHammer: 1
-    allowEncircle: 1
-    allowElites: 0
+    allowEncircle: 0
+    allowElites: 1
   - role: 4
     encounterType: 0
     enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
-    hasShrine: 0
+    hasShrine: 1
     shrineDestroyable: 0
-    shrineOverride: {fileID: 11400000, guid: 94e65932aadb5a84b972849cfe84b320, type: 2}
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
     silencePhase: 0
     pressureSpike: 1
     allowHammer: 1
     allowEncircle: 1
-    allowElites: 0
+    allowElites: 1
   - role: 2
     encounterType: 1
     enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
     hasShrine: 0
     shrineDestroyable: 0
-    shrineOverride: {fileID: 11400000, guid: 09cd1f166cda4b444bff96edb5bec9a3, type: 2}
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
     silencePhase: 0
     pressureSpike: 0
-    allowHammer: 1
-    allowEncircle: 1
+    allowHammer: 0
+    allowEncircle: 0
     allowElites: 0
   - role: 5
-    encounterType: 2
-    enemyPrefab: {fileID: 0}
-    hasShrine: 0
-    shrineDestroyable: 0
-    shrineOverride: {fileID: 0}
+    encounterType: 0
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 1
+    shrineDestroyable: 1
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
     silencePhase: 0
     pressureSpike: 0
     allowHammer: 1
     allowEncircle: 1
-    allowElites: 0
+    allowElites: 1
   - role: 3
     encounterType: 0
     enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
-    hasShrine: 0
-    shrineDestroyable: 0
-    shrineOverride: {fileID: 11400000, guid: 94e65932aadb5a84b972849cfe84b320, type: 2}
+    hasShrine: 1
+    shrineDestroyable: 1
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
     silencePhase: 0
     pressureSpike: 0
     allowHammer: 1
-    allowEncircle: 1
-    allowElites: 0
-  - role: 6
-    encounterType: 0
+    allowEncircle: 0
+    allowElites: 1
+  - role: 2
+    encounterType: 1
     enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
     hasShrine: 0
     shrineDestroyable: 0
-    shrineOverride: {fileID: 11400000, guid: 94e65932aadb5a84b972849cfe84b320, type: 2}
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
     silencePhase: 0
     pressureSpike: 0
-    allowHammer: 1
-    allowEncircle: 1
+    allowHammer: 0
+    allowEncircle: 0
     allowElites: 0
   - role: 7
+    encounterType: 1
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 0
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 0
+    allowEncircle: 0
+    allowElites: 0
+  - role: 5
     encounterType: 0
     enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
     hasShrine: 0
     shrineDestroyable: 0
-    shrineOverride: {fileID: 11400000, guid: 94e65932aadb5a84b972849cfe84b320, type: 2}
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 1
+    allowEncircle: 1
+    allowElites: 1
+  - role: 5
+    encounterType: 0
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 0
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 1
+    allowEncircle: 1
+    allowElites: 1
+  - role: 4
+    encounterType: 0
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 1
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 1
+    allowHammer: 1
+    allowEncircle: 1
+    allowElites: 1
+  - role: 2
+    encounterType: 1
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 0
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 0
+    allowEncircle: 0
+    allowElites: 0
+  - role: 5
+    encounterType: 0
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 1
+    shrineDestroyable: 1
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 1
+    allowEncircle: 1
+    allowElites: 1
+  - role: 4
+    encounterType: 0
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 1
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 1
+    allowHammer: 1
+    allowEncircle: 1
+    allowElites: 1
+  - role: 2
+    encounterType: 1
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 0
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 0
+    allowEncircle: 1
+    allowElites: 0
+  - role: 5
+    encounterType: 0
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 1
+    shrineDestroyable: 1
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 1
+    allowEncircle: 1
+    allowElites: 1
+  - role: 2
+    encounterType: 1
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 0
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 0
+    allowEncircle: 0
+    allowElites: 0
+  - role: 7
+    encounterType: 1
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 0
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 0
+    allowEncircle: 0
+    allowElites: 0
+  - role: 5
+    encounterType: 0
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 0
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 1
+    pressureSpike: 0
+    allowHammer: 1
+    allowEncircle: 1
+    allowElites: 1
+  - role: 5
+    encounterType: 0
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 0
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 1
+    allowEncircle: 1
+    allowElites: 1
+  - role: 2
+    encounterType: 1
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 0
+    shrineDestroyable: 0
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 0
+    allowEncircle: 0
+    allowElites: 0
+  - role: 1
+    encounterType: 1
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 1
+    shrineDestroyable: 1
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 1
+    allowEncircle: 1
+    allowElites: 0
+  - role: 1
+    encounterType: 1
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 1
+    shrineDestroyable: 1
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 1
+    allowEncircle: 1
+    allowElites: 0
+  - role: 1
+    encounterType: 1
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 1
+    shrineDestroyable: 1
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 1
+    allowEncircle: 1
+    allowElites: 0
+  - role: 1
+    encounterType: 1
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 1
+    shrineDestroyable: 1
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 1
+    allowEncircle: 1
+    allowElites: 0
+  - role: 1
+    encounterType: 1
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 1
+    shrineDestroyable: 1
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
+    silencePhase: 0
+    pressureSpike: 0
+    allowHammer: 1
+    allowEncircle: 1
+    allowElites: 0
+  - role: 1
+    encounterType: 1
+    enemyPrefab: {fileID: 8686355838142782365, guid: 13ec8e57b18b81946985bebe565ae7a3, type: 3}
+    hasShrine: 1
+    shrineDestroyable: 1
+    shrineOverride: {fileID: 11400000, guid: d28195a432ae9c94e8d2694fc781ad4d, type: 2}
     silencePhase: 0
     pressureSpike: 0
     allowHammer: 1

@@ -74,7 +74,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: -1491808207
-  m_SortingLayer: 2
+  m_SortingLayer: 1
   m_SortingOrder: 1
   m_Sprite: {fileID: 21300000, guid: 56ac1e9fc83201b4899a757e978c8483, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -324,9 +324,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   externalForceActive: 0
-  moveSpeed: 8
-  dashDrag: 5
-  defaultDashForce: 20
+  moveSpeed: 10
+  dashDrag: 8
+  defaultDashForce: 30
   visualRoot: {fileID: 7688332900140463162}
   tacticalSpeedMultiplier: 0.65
 --- !u!114 &3155631983609150054
@@ -341,8 +341,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 494b0c36641c17541861a8e561a8aed0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 10000
-  currentHealth: 10000
+  maxHealth: 10
+  currentHealth: 10
 --- !u!114 &6955786362661629952
 MonoBehaviour:
   m_ObjectHideFlags: 0

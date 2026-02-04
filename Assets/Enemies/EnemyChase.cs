@@ -5,7 +5,14 @@ public class EnemyChase : MonoBehaviour
 {
     [Header("Movement")]
     public float moveSpeed = 4f;
+
+    [Header("Arrival")]
     public float arriveDistance = 0.15f;
+    public float rangerArriveDistance = 0.6f;
+    public float offenderArriveDistance = 0.45f;
+
+    [Tooltip("Within this distance, speed eases down to prevent orbit/overshoot.")]
+    public float slowRadius = 1.25f;
 
     [Header("Separation")]
     public float separationRadius = 1.6f;
@@ -13,41 +20,29 @@ public class EnemyChase : MonoBehaviour
     public float separationStrength = 1.5f;
     public LayerMask enemyLayer;
 
-    [Header("Separation Priority (Phase N3)")]
+    [Header("Separation Priority")]
     [SerializeField] private float defenderMass = 2.0f;
     [SerializeField] private float rangerMass = 0.7f;
     [SerializeField] private float offenderMass = 1.0f;
 
-    [Header("Lane Priority (Phase N4)")]
+    [Header("Lane Priority")]
     [SerializeField] private float frontLanePriority = 1.5f;
-    [SerializeField] private float midLanePriority = 1.0f;
     [SerializeField] private float backLanePriority = 0.6f;
-    [Header("Overlap Resolution (Phase N5)")]
+
+    [Header("Overlap Resolution")]
     [SerializeField] private float overlapResolveStrength = 0.5f;
     [SerializeField] private float overlapMinDistance = 0.01f;
-    [Header("Obstacle Avoidance (Phase N1)")]
+
+    [Header("Obstacle Avoidance")]
     [SerializeField] private float obstacleRayDistance = 0.5f;
     [SerializeField] private float obstacleAvoidStrength = 0.35f;
     [SerializeField] private LayerMask obstacleMask;
 
-    [Header("Obstacle Avoidance Bias (Phase N2)")]
-    [SerializeField] private float nearSlotDistance = 0.9f;
-    [SerializeField] private float nearSlotBiasMin = 0.25f;
-    [SerializeField] private float rangerBias = 1.35f;
-    [SerializeField] private float defenderBias = 0.65f;
-    [SerializeField] private float offenderBias = 1.0f;
-
     private EnemyAgent agent;
     private Rigidbody2D rb;
-
     private Transform cachedPlayer;
+
     private float speedMultiplier = 1f;
-
-    private float stunUntilTime = -1f;
-    private float forceAggroUntilTime = -1f;
-
-    private Vector2 currentDir = Vector2.right;
-    public Vector2 CurrentDir => currentDir;
 
     void Awake()
     {
@@ -63,43 +58,126 @@ public class EnemyChase : MonoBehaviour
     void FixedUpdate()
     {
         if (agent == null) return;
-
-        if (Time.time < stunUntilTime)
+        // 🔒 ABSOLUTE STOP — engagement owns movement
+        if (agent.attackPositionLocked || agent.attackLock)
         {
             rb.linearVelocity = Vector2.zero;
             return;
         }
+        ResolvePlayerOnce();
 
-        Vector3 target = agent.GetFormationTarget();
-
-        if (!IsFinite(target))
+        Vector3 target3 = agent.GetFormationTarget();
+        if (!IsFinite(target3))
         {
-            if (agent.coordinator != null && agent.coordinator.IsLeaderDead())
+            if (cachedPlayer == null)
             {
                 rb.linearVelocity = Vector2.zero;
                 return;
             }
-
-            ResolvePlayerOnce();
-            if (cachedPlayer == null) return;
-            target = cachedPlayer.position;
+            target3 = cachedPlayer.position;
         }
 
-        Vector2 toTarget = (Vector2)(target - transform.position);
+        Vector2 target = (Vector2)target3;
+        Vector2 toTarget = target - rb.position;
 
-        if (toTarget.sqrMagnitude <= arriveDistance * arriveDistance)
+        float formationTolerance = agent.SlotArrivalThreshold * 3f;
+        float distToSlot = toTarget.magnitude;
+        float distToPlayer = cachedPlayer != null
+            ? Vector2.Distance(rb.position, cachedPlayer.position)
+            : float.MaxValue;
+
+        float engageDistance = GetAttackEngageDistance();
+
+        // ─────────────────────────────────────────────
+        // 🔒 ATTACK POSITION LOCK (MUST HAPPEN FIRST)
+        // ─────────────────────────────────────────────
+        if (!agent.attackPositionLocked &&
+            distToSlot <= formationTolerance &&
+            distToPlayer <= engageDistance)
+        {
+            agent.SetAttackPositionLocked(true);
+            rb.linearVelocity = Vector2.zero;
+
+            // DEBUG (throttled)
+            if (Time.frameCount % 20 == 0)
+            {
+                Debug.Log(
+                    $"[LOCKED:{name}] role={agent.role} " +
+                    $"distSlot={distToSlot:F2}/{formationTolerance:F2} " +
+                    $"distPlayer={distToPlayer:F2}/{engageDistance:F2}"
+                );
+            }
+
+            return;
+        }
+
+        // 🔒 HARD STOP IF LOCKED
+        if (agent.attackPositionLocked)
         {
             rb.linearVelocity = Vector2.zero;
             return;
         }
 
-        Vector2 desiredDir = toTarget.normalized;
+        // 🔒 HARD STOP IF MOVEMENT LOCKED
+        if (agent.movementLocked)
+        {
+            rb.linearVelocity = Vector2.zero;
+            return;
+        }
 
-        Vector2 sep = GetSeparationForce();
+        // ─────────────────────────────────────────────
+        // ROLE-SPECIFIC FREEZES (AFTER LOCK CHECK)
+        // ─────────────────────────────────────────────
+
+        // Rangers: freeze while aiming
+        if (agent.role == EnemyRole.Ranger)
+        {
+            var lr = GetComponent<LineRenderer>();
+            if (lr != null && lr.enabled)
+            {
+                rb.linearVelocity = Vector2.zero;
+                return;
+            }
+        }
+
+        // Offenders: close-range commit stop (movement only, lock handled above)
+        if (agent.role == EnemyRole.Offender && cachedPlayer != null)
+        {
+            var off = GetComponent<EnemyOffenderAttack>();
+            if (off != null)
+            {
+                float dToPlayer = Vector2.Distance(rb.position, cachedPlayer.position);
+                if (dToPlayer <= off.forceCommitDistance * 1.05f)
+                {
+                    rb.linearVelocity = Vector2.zero;
+                    return;
+                }
+            }
+        }
+
+        // ─────────────────────────────────────────────
+        // ARRIVAL (navigation only)
+        // ─────────────────────────────────────────────
+
+        float arrive = arriveDistance;
+        if (agent.role == EnemyRole.Ranger) arrive = rangerArriveDistance;
+        else if (agent.role == EnemyRole.Offender) arrive = offenderArriveDistance;
+
+        if (toTarget.sqrMagnitude <= arrive * arrive)
+        {
+            rb.linearVelocity = Vector2.zero;
+            return;
+        }
+
+        // ─────────────────────────────────────────────
+        // STEERING
+        // ─────────────────────────────────────────────
+
+        Vector2 desiredDir = toTarget.normalized;
+        Vector2 sep = GetSeparationForce(target);
         Vector2 avoid = ComputeObstacleAvoidance(desiredDir);
 
         Vector2 finalDir = desiredDir + sep + avoid;
-
         if (finalDir.sqrMagnitude < 0.0001f)
         {
             rb.linearVelocity = Vector2.zero;
@@ -107,71 +185,26 @@ public class EnemyChase : MonoBehaviour
         }
 
         finalDir.Normalize();
-        currentDir = finalDir;
 
-        rb.linearVelocity = finalDir * (moveSpeed * speedMultiplier);
+        float dist = toTarget.magnitude;
+        float ease = Mathf.Clamp01(dist / Mathf.Max(0.01f, slowRadius));
+        float finalSpeed = (moveSpeed * speedMultiplier) * Mathf.Lerp(0.35f, 1f, ease);
+
+        rb.linearVelocity = finalDir * finalSpeed;
 
         ResolveOverlaps();
     }
+    // ─────────────────────────────────────────────
+    // Separation
+    // ─────────────────────────────────────────────
 
-    // ───────── Phase N2 ─────────
-
-    private Vector2 ComputeObstacleAvoidance(Vector2 moveDir)
+    private Vector2 GetSeparationForce(Vector2 slotTarget)
     {
-        if (moveDir.sqrMagnitude < 0.001f)
+        // Disable separation very close to the slot target to prevent tangential orbit
+        float distToSlot = Vector2.Distance(rb.position, slotTarget);
+        if (distToSlot < 0.6f)
             return Vector2.zero;
 
-        Vector2 origin = rb.position;
-        Vector2 dir = moveDir.normalized;
-
-        RaycastHit2D hit = Physics2D.Raycast(origin, dir, obstacleRayDistance, obstacleMask);
-        if (!hit) return Vector2.zero;
-
-        Vector2 side = Vector2.Perpendicular(dir);
-
-        bool leftBlocked = Physics2D.Raycast(origin, side, obstacleRayDistance * 0.75f, obstacleMask);
-        bool rightBlocked = Physics2D.Raycast(origin, -side, obstacleRayDistance * 0.75f, obstacleMask);
-
-        if (leftBlocked && rightBlocked)
-            return Vector2.zero;
-
-        if (leftBlocked && !rightBlocked)
-            side = -side;
-
-        float bias = 1f;
-
-        Vector3 slotTarget = agent.GetFormationTarget();
-        if (IsFinite(slotTarget))
-        {
-            float dist = Vector2.Distance(rb.position, (Vector2)slotTarget);
-            if (dist < nearSlotDistance)
-            {
-                float t = Mathf.InverseLerp(0f, nearSlotDistance, dist);
-                bias *= Mathf.Lerp(nearSlotBiasMin, 1f, t);
-            }
-        }
-
-        bias *= GetRoleAvoidBias();
-
-        return side.normalized * obstacleAvoidStrength * bias;
-    }
-
-    private float GetRoleAvoidBias()
-    {
-        if (agent == null) return offenderBias;
-
-        switch (agent.role)
-        {
-            case EnemyRole.Defender: return defenderBias;
-            case EnemyRole.Ranger: return rangerBias;
-            default: return offenderBias;
-        }
-    }
-
-    // ───────── Phase N3 + N4 ─────────
-
-    private Vector2 GetSeparationForce()
-    {
         Collider2D[] nearby = Physics2D.OverlapCircleAll(
             transform.position,
             separationRadius,
@@ -181,23 +214,23 @@ public class EnemyChase : MonoBehaviour
         Vector2 force = Vector2.zero;
         int count = 0;
 
-        float myMass = GetRoleMass(agent != null ? agent.role : EnemyRole.Offender);
-        float myLane = agent != null ? GetLanePriority(agent.Lane) : backLanePriority;
+        float myMass = GetRoleMass(agent.role);
+        float myLane = GetLanePriority(agent.Lane);
 
-        foreach (var col in nearby)
+        foreach (var c in nearby)
         {
-            if (col == null || col.gameObject == gameObject) continue;
+            if (c == null || c.gameObject == gameObject) continue;
 
-            var otherAgent = col.GetComponent<EnemyAgent>();
-            if (otherAgent == null) continue;
+            var other = c.GetComponent<EnemyAgent>();
+            if (other == null) continue;
 
-            float dist = Vector2.Distance(transform.position, col.transform.position);
-            if (dist > separationPushRadius || dist < 0.0001f) continue;
+            float d = Vector2.Distance(transform.position, c.transform.position);
+            if (d > separationPushRadius || d < 0.0001f) continue;
 
-            Vector2 away = ((Vector2)transform.position - (Vector2)col.transform.position).normalized;
+            Vector2 away = ((Vector2)transform.position - (Vector2)c.transform.position).normalized;
 
-            float otherMass = GetRoleMass(otherAgent.role);
-            float otherLane = GetLanePriority(otherAgent.Lane);
+            float otherMass = GetRoleMass(other.role);
+            float otherLane = GetLanePriority(other.Lane);
 
             float massPriority = Mathf.Clamp(otherMass / myMass, 0.35f, 2.5f);
             float lanePriority = Mathf.Clamp(otherLane / myLane, 0.35f, 2.5f);
@@ -210,6 +243,10 @@ public class EnemyChase : MonoBehaviour
         return force * separationStrength;
     }
 
+    // ─────────────────────────────────────────────
+    // Overlaps
+    // ─────────────────────────────────────────────
+
     private void ResolveOverlaps()
     {
         Collider2D myCol = GetComponent<Collider2D>();
@@ -221,84 +258,73 @@ public class EnemyChase : MonoBehaviour
             enemyLayer
         );
 
-        float myMass = GetRoleMass(agent != null ? agent.role : EnemyRole.Offender);
+        float myMass = GetRoleMass(agent.role);
 
-        foreach (var col in nearby)
+        foreach (var c in nearby)
         {
-            if (col == null || col.gameObject == gameObject) continue;
+            if (c == null || c.gameObject == gameObject) continue;
 
-            var otherAgent = col.GetComponent<EnemyAgent>();
-            if (otherAgent == null) continue;
+            var other = c.GetComponent<EnemyAgent>();
+            if (other == null) continue;
 
-            Collider2D otherCol = col;
+            Collider2D otherCol = c;
             if (!myCol.bounds.Intersects(otherCol.bounds)) continue;
 
-            Vector2 myPos = rb.position;
             Vector2 otherPos = otherCol.attachedRigidbody != null
                 ? otherCol.attachedRigidbody.position
                 : (Vector2)otherCol.transform.position;
 
-            Vector2 delta = myPos - otherPos;
+            Vector2 delta = rb.position - otherPos;
             float dist = delta.magnitude;
 
             if (dist < overlapMinDistance)
                 delta = Random.insideUnitCircle.normalized;
 
-            float otherMass = GetRoleMass(otherAgent.role);
-            float totalMass = myMass + otherMass;
+            float otherMass = GetRoleMass(other.role);
+            float total = myMass + otherMass;
 
-            float myShare = otherMass / totalMass;
+            float myShare = otherMass / total;
 
-            Vector2 correction = delta.normalized * overlapResolveStrength * myShare;
-
-            rb.position += correction;
+            rb.position += delta.normalized * overlapResolveStrength * myShare;
         }
     }
+
+    // ─────────────────────────────────────────────
+    // Obstacle Avoidance (simple)
+    // ─────────────────────────────────────────────
+
+    private Vector2 ComputeObstacleAvoidance(Vector2 moveDir)
+    {
+        if (moveDir.sqrMagnitude < 0.001f)
+            return Vector2.zero;
+
+        RaycastHit2D hit = Physics2D.Raycast(rb.position, moveDir, obstacleRayDistance, obstacleMask);
+        if (!hit) return Vector2.zero;
+
+        Vector2 side = Vector2.Perpendicular(moveDir).normalized;
+        return side * obstacleAvoidStrength;
+    }
+
+    // ─────────────────────────────────────────────
+    // Helpers
+    // ─────────────────────────────────────────────
+
     private float GetRoleMass(EnemyRole role)
     {
-        switch (role)
+        return role switch
         {
-            case EnemyRole.Defender: return defenderMass;
-            case EnemyRole.Ranger: return rangerMass;
-            default: return offenderMass;
-        }
+            EnemyRole.Defender => defenderMass,
+            EnemyRole.Ranger => rangerMass,
+            _ => offenderMass
+        };
     }
 
     private float GetLanePriority(Lane lane)
     {
-        // Front lane always has priority
-        if (lane.ToString() == "Front")
-            return frontLanePriority;
-
-        // Any non-front lane yields
-        return backLanePriority;
+        return lane.ToString() == "Front"
+            ? frontLanePriority
+            : backLanePriority;
     }
-
-    // ───────── Public API ─────────
-
-    public void Stun(float duration)
-    {
-        stunUntilTime = Mathf.Max(stunUntilTime, Time.time + Mathf.Max(0f, duration));
-        rb.linearVelocity = Vector2.zero;
-    }
-
-    public void ForceAggro(float duration)
-    {
-        forceAggroUntilTime = Mathf.Max(forceAggroUntilTime, Time.time + Mathf.Max(0f, duration));
-        ResolvePlayerOnce();
-    }
-
-    public void SetSpeedMultiplier(float multiplier)
-    {
-        speedMultiplier = Mathf.Clamp(multiplier, 0.05f, 10f);
-    }
-
-    public void ResetSpeed()
-    {
-        speedMultiplier = 1f;
-    }
-
-    // ───────── Helpers ─────────
 
     private void ResolvePlayerOnce()
     {
@@ -309,7 +335,17 @@ public class EnemyChase : MonoBehaviour
 
     private bool IsFinite(Vector3 v)
     {
-        return !(float.IsNaN(v.x) || float.IsNaN(v.y) ||
-                 float.IsInfinity(v.x) || float.IsInfinity(v.y));
+        return !(float.IsNaN(v.x) || float.IsInfinity(v.x) ||
+                 float.IsNaN(v.y) || float.IsInfinity(v.y));
+    }
+    float GetAttackEngageDistance()
+    {
+        return agent.role switch
+        {
+            EnemyRole.Offender => 1.8f,
+            EnemyRole.Ranger => 6.5f,
+            EnemyRole.Defender => 1.5f,
+            _ => 2.0f
+        };
     }
 }

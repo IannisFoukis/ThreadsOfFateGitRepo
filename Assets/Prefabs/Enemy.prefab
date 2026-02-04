@@ -327,6 +327,7 @@ GameObject:
   - component: {fileID: 3224009665960575784}
   - component: {fileID: -730332515291210627}
   - component: {fileID: 5253263128070963683}
+  - component: {fileID: 2601272014151612069}
   m_Layer: 7
   m_Name: Enemy
   m_TagString: Untagged
@@ -438,12 +439,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   coordinator: {fileID: 0}
-  role: 1
+  role: 0
   lane: 0
   slotArrivalThreshold: 0.5
+  attackPositionLocked: 0
   assignedSlot: -1
   isChaotic: 1
   hasChaoticImpulse: 0
+  movementLocked: 0
 --- !u!114 &3182194424012283448
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -501,8 +504,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 494b0c36641c17541861a8e561a8aed0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 1
-  currentHealth: 1
+  maxHealth: 100
+  currentHealth: 100
 --- !u!114 &351958192507417716
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -574,12 +577,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 4
   arriveDistance: 0.15
+  rangerArriveDistance: 0.6
+  offenderArriveDistance: 0.45
+  slowRadius: 1.25
   separationRadius: 1.2
   separationPushRadius: 0.8
   separationStrength: 1.5
   enemyLayer:
     serializedVersion: 2
     m_Bits: 128
+  defenderMass: 2
+  rangerMass: 0.7
+  offenderMass: 1
+  frontLanePriority: 1.5
+  backLanePriority: 0.6
+  overlapResolveStrength: 0.5
+  overlapMinDistance: 0.01
   obstacleRayDistance: 2
   obstacleAvoidStrength: 1
   obstacleMask:
@@ -608,7 +621,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8686355838142782365}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3d878b3151a3abd4696c2d701ac4fb5f, type: 3}
   m_Name: 
@@ -627,7 +640,8 @@ MonoBehaviour:
     wobbleFrequency: 0
     delayedExplode: 0
     explodeDelay: 0
-  aimTime: 0.6
+  losGraceDuration: 0.25
+  aimTime: 0.45
   aimLineWidth: 0.05
   aimColor: {r: 0.990566, g: 0, b: 0, a: 0.78431374}
   fleeDistance: 2.5
@@ -636,6 +650,19 @@ MonoBehaviour:
   repositionDuration: 0.25
   pressureBonusCooldown: 0.6
   silenceCooldownMultiplier: 1.5
+  enablePhaseA: 1
+  dashSpamThresholdPerSecond: 1
+  dashDenyLeadDistance: 1.6
+  tacticalPunishAimMult: 0.75
+  offenderDisciplineRange: 6
+  formationLockTolerance: 2
+  losMask:
+    serializedVersion: 2
+    m_Bits: 64
+  allyMask:
+    serializedVersion: 2
+    m_Bits: 128
+  allyBlockRadius: 0.15
 --- !u!114 &5515608192190167746
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -648,7 +675,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bab5cd40f26a95345b3218871da675b1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  chargeForce: 20
+  chargeForce: 40
   chargeCooldown: 2
 --- !u!114 &8394341910229455449
 MonoBehaviour:
@@ -749,6 +776,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c2c3f5e893d87ba46bfab6a3422da8c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  forceCommitDistance: 1.8
+  enableCommitGate: 1
+  commitDelayMin: 0.15
+  commitDelayMax: 0.35
   offenderIntentDuration: 2
   canFakeOut: 0
   fakeCancelAt: 0.7
@@ -778,3 +809,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   role: 2
   textPrefab: {fileID: 267297060001915325, guid: 197cdb17357ce43418d73779f4716e6d, type: 3}
+--- !u!114 &2601272014151612069
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8686355838142782365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba08b5d7e10f83540b458ad5b8bbfe3c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  draw: 1
+  offenderEngage: 3
+  rangerEngage: 6
+  formationToleranceMult: 3
+  slotColor: {r: 0.2, g: 1, b: 1, a: 0.9}
+  engageColor: {r: 1, g: 0.6, b: 0.1, a: 0.7}
+  tolColor: {r: 0.3, g: 1, b: 0.3, a: 0.5}
+  lockColor: {r: 1, g: 0.1, b: 0.1, a: 1}

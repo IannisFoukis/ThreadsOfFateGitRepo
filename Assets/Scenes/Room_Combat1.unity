@@ -628,6 +628,7 @@ MonoBehaviour:
   - {fileID: 1621558813}
   - {fileID: 145448317}
   applyFallbackIfZeroCounts: 1
+  laneDirector: {fileID: 0}
 --- !u!4 &985146257
 Transform:
   m_ObjectHideFlags: 0
@@ -670,11 +671,12 @@ MonoBehaviour:
   playerTransform: {fileID: 4619573443503270045, guid: 05c8ed09963ef08489c5807b5ae1b09d, type: 3}
   formationResolver: {fileID: 985146266}
   tacticalAuthority: {fileID: 985146268}
-  phalanxState: 0
+  laneDirector: {fileID: 0}
+  phalanxState: 1
   allowMarch: 1
   allowHoldFire: 1
   allowEncircle: 0
-  allowBreakChase: 0
+  allowBreakChase: 1
   allowCollapse: 0
   holdCompression: 0.7
   encircleCompression: 0.4
@@ -1292,79 +1294,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!1 &1957218179
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1957218181}
-  - component: {fileID: 1957218180}
-  m_Layer: 0
-  m_Name: TackticDirector
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1957218180
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1957218179}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 949287ba7576cfc4d92e62628706f333, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  keeperFormationMult: 1
-  keeperCooldownMult: 1
-  keeperFlankBiasMult: 1
-  keeperFrontBiasMult: 1
-  keeperCommitDelayMult: 1
-  tacticCooldown: 3
-  flankCooldown: 2
-  flankDistance: 2.5
-  frontDistance: 1.2
-  baseSlotCooldown: 1.5
-  baseFormationPersistence: 1
-  baseInitialCommitDelay: 0.5
-  baseFlankWeight: 1
-  baseFrontWeight: 1
-  formationPersistenceMult: 1
-  slotCooldownMult: 1
-  flankBiasMult: 1
-  frontPriorityMult: 1
-  initialCommitDelayMult: 1
-  formationDisrupted: 0
-  disruptionTimer: 0
-  slotScrambleActive: 0
-  scrambleTimer: 0
-  scrambleInterval: 0.8
-  scrambleTickTimer: 0
-  tier3Active: 0
-  tier3Timer: 0
-  scrambleBreaksPerTick: 1
-  tacticalLockout: 0
---- !u!4 &1957218181
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1957218179}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -12.059208, y: 7.604914, z: 2.1265883}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2119851529
 GameObject:
   m_ObjectHideFlags: 0
@@ -1454,7 +1383,6 @@ SceneRoots:
   - {fileID: 31570022}
   - {fileID: 1020291931}
   - {fileID: 101259765}
-  - {fileID: 1957218181}
   - {fileID: 1296359845}
   - {fileID: 231717701}
   - {fileID: 1621558813}

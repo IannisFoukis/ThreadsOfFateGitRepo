@@ -183,8 +183,8 @@ MonoBehaviour:
   initialFormation: 1
   pressureProfile: 1
   allowOffenders: 1
-  allowDefenders: 0
-  allowRangers: 0
+  allowDefenders: 1
+  allowRangers: 1
 --- !u!1 &122534266
 GameObject:
   m_ObjectHideFlags: 0
@@ -448,7 +448,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 12.23
+  orthographic size: 10
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2

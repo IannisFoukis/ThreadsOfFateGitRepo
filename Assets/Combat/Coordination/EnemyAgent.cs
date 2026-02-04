@@ -12,8 +12,11 @@ public class EnemyAgent : MonoBehaviour
     public Lane Lane => lane;
 
     [Header("Formation / Slot")]
-    [SerializeField] private float slotArrivalThreshold = 0.25f;
+    [SerializeField] private float slotArrivalThreshold = 0.35f;
     public float SlotArrivalThreshold => slotArrivalThreshold;
+
+    // 🔒 Phase A — Attack Position Authority
+    [HideInInspector] public bool attackPositionLocked;
 
     // Legacy / compatibility
     public bool attackLock { get; set; }
@@ -27,9 +30,22 @@ public class EnemyAgent : MonoBehaviour
     public bool IsChaotic => isChaotic;
     public bool HasChaoticImpulse => hasChaoticImpulse;
 
+    // Movement authority (used by EnemyChase)
+    [HideInInspector] public bool movementLocked;
+
     public void SetChaotic(bool value) => isChaotic = value;
     public void TriggerChaoticImpulse() => hasChaoticImpulse = true;
     public void ClearChaoticImpulse() => hasChaoticImpulse = false;
+
+    // 🔍 DEBUG / AUTHORITY SETTER (IMPORTANT)
+    public void SetAttackPositionLocked(bool value)
+    {
+        if (attackPositionLocked == value)
+            return;
+
+        attackPositionLocked = value;
+        Debug.Log($"[AttackPosLock] {name} role={role} -> {value}");
+    }
 
     void Start()
     {
@@ -37,7 +53,6 @@ public class EnemyAgent : MonoBehaviour
         {
             Debug.Log($"[EnemyAgent] {name} role {role} not allowed in this room. Removing.");
 
-            // Notify combat room BEFORE destroying
             var combatRoom = FindFirstObjectByType<CombatRoom>();
             if (combatRoom != null)
                 combatRoom.NotifyEnemyRejected();
@@ -82,6 +97,7 @@ public class EnemyAgent : MonoBehaviour
         float t = threshold > 0 ? threshold : slotArrivalThreshold;
         return Vector3.Distance(transform.position, GetFormationTarget()) > t;
     }
+
     public void AssignLane(Lane newLane)
     {
         lane = newLane;

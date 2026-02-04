@@ -370,7 +370,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!58 &196113171
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -615,7 +615,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &282490179
 Transform:
   m_ObjectHideFlags: 0
@@ -676,7 +676,7 @@ SpriteRenderer:
   m_SortingLayer: 1
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: ba78c957ff87333418411a885a590a3d, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.8301887, g: 0.8301887, b: 0.8301887, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -703,7 +703,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!58 &355056378
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -1048,7 +1048,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!58 &696883521
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -1600,14 +1600,14 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 985146257}
+  - component: {fileID: 985146268}
+  - component: {fileID: 985146267}
   - component: {fileID: 985146261}
   - component: {fileID: 985146269}
   - component: {fileID: 985146256}
   - component: {fileID: 985146270}
   - component: {fileID: 985146258}
   - component: {fileID: 985146259}
-  - component: {fileID: 985146268}
-  - component: {fileID: 985146267}
   - component: {fileID: 985146266}
   - component: {fileID: 985146263}
   - component: {fileID: 985146264}
@@ -1692,15 +1692,15 @@ MonoBehaviour:
   keeperFlankBiasMult: 1
   keeperFrontBiasMult: 1
   keeperCommitDelayMult: 1
-  tacticCooldown: 3
-  flankCooldown: 2
-  flankDistance: 3
-  frontDistance: 2.5
+  tacticCooldown: 4
+  flankCooldown: 3
+  flankDistance: 5
+  frontDistance: 3.5
   baseSlotCooldown: 1.5
   baseFormationPersistence: 1
-  baseInitialCommitDelay: 0.5
+  baseInitialCommitDelay: 0.7
   baseFlankWeight: 1
-  baseFrontWeight: 1
+  baseFrontWeight: 1.4
   formationPersistenceMult: 1
   slotCooldownMult: 1
   flankBiasMult: 1
@@ -1732,15 +1732,17 @@ MonoBehaviour:
   formationResolver: {fileID: 985146267}
   tacticalAuthority: {fileID: 985146268}
   laneDirector: {fileID: 985146270}
-  phalanxState: 2
+  phalanxState: 0
   allowMarch: 1
-  allowHoldFire: 1
-  allowEncircle: 1
+  allowHoldFire: 0
+  allowEncircle: 0
   allowBreakChase: 0
   allowCollapse: 0
+  freezeDistanceToPlayer: 1.6
+  unfreezeDistanceToPlayer: 2.3
   holdCompression: 3
   encircleCompression: 1.5
-  encircleRadius: 3
+  encircleRadius: 4.5
   encircleDuration: 3
 --- !u!114 &985146262
 MonoBehaviour:
@@ -1772,18 +1774,18 @@ MonoBehaviour:
     roomRole: 1
     enableCombat: 1
     useCoordinator: 1
-    enforceHonestCombat: 0
-    offenders: 4
-    defenders: 3
-    rangers: 4
-    activators: 1
-    jokers: 1
-    allowElites: 1
-    eliteChance: 0.776
-    allowHammer: 1
-    allowEncircle: 1
-    hammerAggression: 1.787
-    encircleSpeedMultiplier: 1
+    enforceHonestCombat: 1
+    offenders: 2
+    defenders: 0
+    rangers: 2
+    activators: 0
+    jokers: 0
+    allowElites: 0
+    eliteChance: 0
+    allowHammer: 0
+    allowEncircle: 0
+    hammerAggression: 0
+    encircleSpeedMultiplier: 0.22
     fakeOutChance: 0
     delayedDashChance: 0
     silencePhase: 0
@@ -1868,9 +1870,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b801507ba2db134e8be4b3be1fb5bf0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  tacticalLevel: 3
+  tacticalLevel: 2
   initialFormation: 2
-  pressureProfile: 2
+  pressureProfile: 1
   allowOffenders: 1
   allowDefenders: 1
   allowRangers: 1
@@ -1888,9 +1890,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profile: {fileID: 11400000, guid: 624cad42ddc5b504d93ca1be4698236b, type: 2}
   minFront: 1
-  minFlank: 1
+  minFlank: 0
   minRear: 1
-  laneSaturationPenalty: 0.65
+  laneSaturationPenalty: 0.6
 --- !u!114 &985146271
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2013,7 +2015,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!58 &1111202245
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -2137,7 +2139,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!58 &1131843248
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -2292,7 +2294,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!58 &1170179167
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -2550,7 +2552,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!58 &1219671486
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -2705,7 +2707,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!58 &1342384178
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -2860,7 +2862,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!58 &1425625027
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -3666,11 +3668,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7446570571475516022, guid: 3f7eca91bd920a94d889e1fcbe257c5e, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -34.5
+      value: -6.3
       objectReference: {fileID: 0}
     - target: {fileID: 7446570571475516022, guid: 3f7eca91bd920a94d889e1fcbe257c5e, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.3
+      value: 17.3
       objectReference: {fileID: 0}
     - target: {fileID: 7446570571475516022, guid: 3f7eca91bd920a94d889e1fcbe257c5e, type: 3}
       propertyPath: m_LocalPosition.z

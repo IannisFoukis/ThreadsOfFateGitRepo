@@ -11,6 +11,10 @@ public class EnemyDefenderBlock : MonoBehaviour
     public float defenderIntentDuration = 0.6f;
     public float slotToleranceMultiplier = 2.5f;
 
+    [Header("Phase A - Commit Reaction")]
+    [Tooltip("Multiplier applied to block range when an Offender is committing nearby")]
+    public float commitCoverRangeMultiplier = 1.4f;
+
     private float defenderIntentUntil = -1f;
 
     private EnemyAgent agent;
@@ -62,9 +66,14 @@ public class EnemyDefenderBlock : MonoBehaviour
         if (slotDist > agent.SlotArrivalThreshold * slotToleranceMultiplier)
             return;
 
-        // 🔒 Player proximity
+        // 🔒 Player proximity (Phase A: extend range during Offender commit)
         float dist = Vector2.Distance(transform.position, player.position);
-        if (dist > blockCheckRange)
+
+        float effectiveRange = blockCheckRange;
+        if (OffenderIsCommittingNearby())
+            effectiveRange *= commitCoverRangeMultiplier;
+
+        if (dist > effectiveRange)
             return;
 
         // 🔒 Facing check
@@ -78,6 +87,32 @@ public class EnemyDefenderBlock : MonoBehaviour
         ApplyBlock();
     }
 
+    // ─────────────────────────────
+    // Phase A: Commit Awareness
+    // ─────────────────────────────
+    bool OffenderIsCommittingNearby(float range = 4f)
+    {
+        if (agent == null || agent.coordinator == null)
+            return false;
+
+        var enemies = agent.coordinator.GetEnemies();
+        for (int i = 0; i < enemies.Count; i++)
+        {
+            var e = enemies[i];
+            if (e == null) continue;
+            if (e.role != EnemyRole.Offender) continue;
+            if (!e.attackLock) continue;
+
+            float d = Vector2.Distance(e.transform.position, transform.position);
+            if (d <= range)
+                return true;
+        }
+        return false;
+    }
+
+    // ─────────────────────────────
+    // Block Execution
+    // ─────────────────────────────
     void ApplyBlock()
     {
         // Deny movement through defender
@@ -90,7 +125,7 @@ public class EnemyDefenderBlock : MonoBehaviour
 
         playerMotor.SetVelocity(vel);
 
-        // 🔵 Visual: darker blue than shove
+        // 🔵 Visual feedback (block)
         var sr = GetComponentInChildren<SpriteRenderer>();
         if (sr != null)
         {

@@ -1,4 +1,4 @@
-using TOF.Core.Corruption;
+﻿using TOF.Core.Corruption;
 using UnityEngine;
 using TMPro;
 
@@ -20,9 +20,25 @@ public class EnemySpeechEmitter : MonoBehaviour
 
     private void HandleSpeech(EnemySpeechEvent evt)
     {
-        // Keep it disciplined: only Defender speaks for now
-        if (role != EnemyRole.Defender)
+        // Phase A discipline:
+        // - Defender speaks doctrine / control
+        // - Offender speaks ONLY intent
+        if (role == EnemyRole.Defender)
+        {
+            // allowed: existing defender events
+        }
+        else if (role == EnemyRole.Offender)
+        {
+            // allowed: offender intent only
+            if (evt != EnemySpeechEvent.OffenderHold &&
+                evt != EnemySpeechEvent.OffenderCommit &&
+                evt != EnemySpeechEvent.OffenderPunish)
+                return;
+        }
+        else
+        {
             return;
+        }
 
         string line = GetLine(evt);
         if (string.IsNullOrEmpty(line))
@@ -42,6 +58,10 @@ public class EnemySpeechEmitter : MonoBehaviour
             case EnemySpeechEvent.FormationBreak: return "Break formation!";
             case EnemySpeechEvent.FanaticLock: return "Stand. Do not move.";
             case EnemySpeechEvent.RetreatCall: return "Fall back!";
+            // ───────── Phase A — Offender Lines ─────────
+            case EnemySpeechEvent.OffenderHold: return "Hold.";
+            case EnemySpeechEvent.OffenderCommit: return "Now.";
+            case EnemySpeechEvent.OffenderPunish: return "There.";
         }
         return null;
     }

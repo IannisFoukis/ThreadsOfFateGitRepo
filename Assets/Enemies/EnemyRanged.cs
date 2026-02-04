@@ -4,6 +4,7 @@ public class EnemyRanged : MonoBehaviour
 {
     // ───────── Doctrine (read-only) ─────────
     DoctrineState doctrine;
+
     [Header("Firing")]
     public Projectile projectilePrefab;
     public float fireCooldown = 1.8f;
@@ -12,7 +13,8 @@ public class EnemyRanged : MonoBehaviour
     public float projectileLifetime = 3f;
     public int damage = 1;
     public ProjectileModifiers modifiers;
-
+    float losClearTime;
+    public float losGraceDuration = 0.25f;
     [Header("Aim Telegraph")]
     public float aimTime = 0.6f;
     public float aimLineWidth = 0.05f;
@@ -22,7 +24,6 @@ public class EnemyRanged : MonoBehaviour
     public float fleeDistance = 2.5f;
     public float repositionCooldown = 2.0f;
 
-    // Soft reposition (transform-driven)
     public float repositionSpeed = 8f;
     public float repositionDuration = 0.25f;
 
@@ -30,8 +31,24 @@ public class EnemyRanged : MonoBehaviour
     public float pressureBonusCooldown = 0.6f;
 
     [Header("Silence Phase")]
-    [Tooltip("Multiplier applied to fire cooldown during Silence Phase")]
     public float silenceCooldownMultiplier = 1.5f;
+
+    // ───────── Phase A – Ranger Intelligence ─────────
+    [Header("Phase A - Ranger Intelligence")]
+    public bool enablePhaseA = true;
+    public float dashSpamThresholdPerSecond = 1.0f;
+    public float dashDenyLeadDistance = 1.6f;
+    public float tacticalPunishAimMult = 0.75f;
+    public float offenderDisciplineRange = 6.0f;
+
+    [Header("Phase A - Lock Conditions")]
+    public float formationLockTolerance = 2.0f;
+
+    // ───────── Line of Sight ─────────
+    [Header("Line of Sight")]
+    public LayerMask losMask;     // Player + Environment
+    public LayerMask allyMask;    // Enemies
+    public float allyBlockRadius = 0.25f;
 
     float lastFireTime;
     float aimTimer;
@@ -45,6 +62,10 @@ public class EnemyRanged : MonoBehaviour
     EnemyAgent agent;
     EncounterCoordinator coordinator;
     Transform player;
+
+    PlayerBehaviorTracker behavior;
+    PlayerController playerController;
+
     LineRenderer aimLine;
 
     void Awake()
@@ -54,7 +75,9 @@ public class EnemyRanged : MonoBehaviour
         var p = GameObject.FindGameObjectWithTag("Player");
         if (p != null) player = p.transform;
 
-        // ===== Aim Line =====
+        behavior = FindFirstObjectByType<PlayerBehaviorTracker>();
+        playerController = FindFirstObjectByType<PlayerController>();
+
         aimLine = gameObject.AddComponent<LineRenderer>();
         aimLine.enabled = false;
         aimLine.positionCount = 2;
@@ -69,163 +92,125 @@ public class EnemyRanged : MonoBehaviour
 
     void OnDisable()
     {
-        CancelAim();
+        if (agent != null)
+        {
+            agent.movementLocked = false;
+            agent.SetAttackPositionLocked(false);
+        }
+        CancelAimVisualOnly();
     }
 
     void Update()
     {
         if (agent == null || player == null)
         {
-            CancelAim();
+            CancelAimVisualOnly();
             return;
         }
-        // 🔥 Collapse: panic or freeze
-        if (coordinator.phalanxState == EncounterCoordinator.PhalanxState.Collapse)
-        {
-            CancelAim();
 
-            // 50% panic fire, 50% freeze
-            if (Random.value < 0.5f && Time.time > lastFireTime + fireCooldown * 0.5f)
-            {
-                Fire();
-            }
-
-            return;
-        }
-        // 🔁 Lazy resolve coordinator
         if (coordinator == null)
             coordinator = agent.coordinator;
 
-        if (coordinator == null)
+        if (coordinator == null || agent.role != EnemyRole.Ranger)
         {
-            CancelAim();
+            CancelAimVisualOnly();
             return;
         }
 
-        // 🔒 Only Rangers act here
-        if (agent.role != EnemyRole.Ranger)
+        // ───── Range + formation eligibility ─────
+        float distToPlayer = Vector2.Distance(transform.position, player.position);
+        if (distToPlayer > fireRange)
         {
-            CancelAim();
+            ReleaseLocksAndAim();
             return;
         }
 
-        // ===== Silence Phase =====
-        bool silence = coordinator.SilenceActive;
-
-        var d = GetDoctrine();
-        // ===== Soft reposition =====
-        if (isRepositioning)
+        float distToSlot = Vector2.Distance(transform.position, agent.GetFormationTarget());
+        if (distToSlot > formationLockTolerance || agent.IsChangingFormation())
         {
-            CancelAim();
-
-            transform.position += (Vector3)(repositionDir * repositionSpeed * Time.deltaTime);
-            repositionTimer += Time.deltaTime;
-
-            if (repositionTimer >= repositionDuration)
-            {
-                isRepositioning = false;
-                repositionTimer = 0f;
-            }
-
+            ReleaseLocksAndAim();
             return;
         }
 
-        // Trigger reposition if player too close
-        float closeDist = Vector2.Distance(transform.position, player.position);
-        if (closeDist < fleeDistance && Time.time > lastRepositionTime + repositionCooldown)
+        if (!agent.attackPositionLocked)
+            agent.SetAttackPositionLocked(true);
+
+        // Cooldown
+        if (Time.time < lastFireTime + fireCooldown)
         {
-            StartReposition();
-            lastRepositionTime = Time.time;
+            HoldAim();
             return;
         }
 
-        // 🔒 Must be stable in formation
-        if (!agent.IsAtSlot(2f) || agent.IsChangingFormation())
-        {
-            CancelAim();
-            return;
-        }
-
-        // ===== Dynamic cooldown =====
-        float dynamicCooldown = fireCooldown;
-
-        // Chaos ruins cadence
-        if (d != null && d.chaotic)
-        {
-            dynamicCooldown += Random.Range(-0.5f, 0.7f);
-            dynamicCooldown = Mathf.Max(0.3f, dynamicCooldown);
-        }
-        if (silence)
-        {
-            dynamicCooldown *= silenceCooldownMultiplier;
-        }
-        else if (coordinator.IsLeaderDead())
-        {
-            dynamicCooldown = Mathf.Max(0.2f, dynamicCooldown - pressureBonusCooldown);
-        }
-
-        if (Time.time < lastFireTime + dynamicCooldown)
-        {
-            CancelAim();
-            return;
-        }
-
-        // 🔒 Range check
-        float dist = Vector2.Distance(transform.position, player.position);
-        if (dist > fireRange)
-        {
-            CancelAim();
-            return;
-        }
-
-        // ===== AIM =====
+        // AIM
         if (!isAiming)
             StartAim();
 
-        float aimSpeed = 1f;
-
-        // Formation breaking = sloppy aim
-        if (d != null && d.IsFormationBreaking())
-            aimSpeed = 1.5f;
-
-        // Chaos = unstable aim
-        if (d != null && d.chaotic && Random.value < 0.01f)
-        {
-            CancelAim();
-            return;
-        }
-
-        aimTimer += Time.deltaTime * aimSpeed;
-
+        aimTimer += Time.deltaTime;
         UpdateAimLine();
 
-        if (aimTimer >= aimTime)
+        // 🔥 FIRE ONLY WITH CLEAR LOS
+        if (HasClearShot())
+        {
+            losClearTime += Time.deltaTime;
+        }
+        else
+        {
+            losClearTime = 0f;
+        }
+
+        if (aimTimer >= aimTime && losClearTime >= losGraceDuration)
+        {
             Fire();
+        }
     }
 
-    // ================= REPOSITION =================
+    // ───────── LINE OF SIGHT ─────────
 
-    void StartReposition()
+    bool HasClearShot()
     {
-        CancelAim();
-        isRepositioning = true;
-        repositionTimer = 0f;
+        Vector2 origin = transform.position;
+        Vector2 target = player.position;
+        Vector2 dir = (target - origin).normalized;
+        float dist = Vector2.Distance(origin, target);
 
-        repositionDir = ((Vector2)transform.position - (Vector2)player.position).normalized;
-        if (repositionDir.sqrMagnitude < 0.0001f)
-            repositionDir = Vector2.right;
+        // Wall / environment check
+        RaycastHit2D hit = Physics2D.Raycast(origin, dir, dist, losMask);
+        if (!hit || !hit.collider.CompareTag("Player"))
+            return false;
+
+        // Ally block check
+        RaycastHit2D allyHit = Physics2D.CircleCast(
+            origin,
+            allyBlockRadius,
+            dir,
+            dist,
+            allyMask
+        );
+
+        if (allyHit && allyHit.collider.CompareTag("Enemy"))
+            return false;
+
+        return true;
     }
 
-    // ================= AIM =================
+    // ───────── AIM CONTROL ─────────
 
     void StartAim()
     {
         isAiming = true;
         aimTimer = 0f;
+        agent.movementLocked = true;
         aimLine.enabled = true;
     }
 
-    void CancelAim()
+    void HoldAim()
+    {
+        agent.movementLocked = true;
+        isAiming = true;
+    }
+
+    void CancelAimVisualOnly()
     {
         isAiming = false;
         aimTimer = 0f;
@@ -233,64 +218,55 @@ public class EnemyRanged : MonoBehaviour
             aimLine.enabled = false;
     }
 
+    void ReleaseLocksAndAim()
+    {
+        isAiming = false;
+        aimTimer = 0f;
+        agent.movementLocked = false;
+        agent.SetAttackPositionLocked(false);
+        if (aimLine != null)
+            aimLine.enabled = false;
+    }
+
     void UpdateAimLine()
     {
         if (!aimLine.enabled) return;
-
         aimLine.SetPosition(0, transform.position);
         aimLine.SetPosition(1, player.position);
     }
 
-    // ================= FIRE =================
+    // ───────── FIRE ─────────
 
     void Fire()
     {
-        CancelAim();
+        CancelAimVisualOnly();
+        agent.movementLocked = false;
         lastFireTime = Time.time;
 
-        if (projectilePrefab == null)
-            return;
-
         Vector2 dir = ((Vector2)player.position - (Vector2)transform.position).normalized;
-
         var proj = Instantiate(projectilePrefab, transform.position, Quaternion.identity);
         proj.Fire(dir, projectileSpeed, projectileLifetime, damage, modifiers);
 
-        // 🔓 Punish window
-        enabled = false;
-        Invoke(nameof(EnableAgain), 0.4f);
-
-        // 🔴 Visual feedback
-        var sr = GetComponentInChildren<SpriteRenderer>();
-        if (sr != null)
-        {
-            sr.color = Color.yellow;
-            Invoke(nameof(ResetColor), 0.15f);
-        }
+        agent.SetAttackPositionLocked(false);
     }
 
-    void EnableAgain()
+    // ───────── DEBUG ─────────
+    void OnDrawGizmosSelected()
     {
-        if (this != null)
-            enabled = true;
+        if (player == null) return;
+        Gizmos.color = HasClearShot() ? Color.green : Color.red;
+        Gizmos.DrawLine(transform.position, player.position);
     }
 
-    void ResetColor()
-    {
-        var sr = GetComponentInChildren<SpriteRenderer>();
-        if (sr != null)
-            sr.color = Color.white;
-    }
     DoctrineState GetDoctrine()
     {
-        if (doctrine != null)
-            return doctrine;
-
-        if (coordinator == null)
-            return null;
+        if (doctrine != null) return doctrine;
+        if (coordinator == null) return null;
 
         doctrine = coordinator.GetType()
-            .GetField("doctrine", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+            .GetField("doctrine",
+                System.Reflection.BindingFlags.NonPublic |
+                System.Reflection.BindingFlags.Instance)
             ?.GetValue(coordinator) as DoctrineState;
 
         return doctrine;

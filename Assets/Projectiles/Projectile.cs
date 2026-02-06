@@ -8,6 +8,8 @@ public class Projectile : MonoBehaviour
     float speed;
     int damage;
     ProjectileModifiers mods;
+
+    [Header("Explosion")]
     [SerializeField] float explodeRadius = 1f;
     [SerializeField] float explodeForce = 2f;
 
@@ -18,6 +20,7 @@ public class Projectile : MonoBehaviour
 
     void Update()
     {
+        // Optional wobble (Phase C tuning safe)
         if (mods.wobble)
         {
             float wobble =
@@ -44,26 +47,23 @@ public class Projectile : MonoBehaviour
         this.damage = damage;
         this.mods = mods;
 
-        float variance =
-            UnityEngine.Random.Range(
-                1f - mods.speedVariance,
-                1f + mods.speedVariance
-            );
+        float variance = Random.Range(
+            1f - mods.speedVariance,
+            1f + mods.speedVariance
+        );
 
         speed = baseSpeed * mods.speedMultiplier * variance;
 
         rb.linearVelocity = direction * speed;
 
         CancelInvoke();
+
         // Normal lifetime disable
         Invoke(nameof(Disable), lifetime);
 
-        // If modifier requests delayed explosion, schedule it separately
+        // Optional delayed explosion
         if (mods.delayedExplode)
-        {
-            // Schedule Explode which will handle return/disable
             Invoke(nameof(Explode), mods.explodeDelay);
-        }
     }
 
     void Disable()
@@ -79,34 +79,38 @@ public class Projectile : MonoBehaviour
 
     void Explode()
     {
-        // Simple explode behaviour for testing: log and disable projectile early.
-        //Debug.Log($"[PROJECTILE] Exploded at {transform.position}");
-
-        // Stop normal lifetime invoke to avoid double-disable
+        // Prevent double disable
         CancelInvoke(nameof(Disable));
 
-        // Spawn explosion damage area: damage nearby Health components
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, explodeRadius);
+        Collider2D[] hits =
+            Physics2D.OverlapCircleAll(transform.position, explodeRadius);
+
         foreach (var c in hits)
         {
             if (c == null) continue;
 
-            // Apply damage if target has Health
+            // Damage
             if (c.TryGetComponent<Health>(out var h))
             {
-                // compute direction from projectile to target
-                Vector2 hitDir = (c.transform.position - transform.position).normalized;
+                Vector2 hitDir =
+                    (c.transform.position - transform.position).normalized;
                 h.TakeDamage(damage, hitDir);
             }
 
-            // Apply knockback if target has Rigidbody2D
+            // Knockback
             if (c.attachedRigidbody != null)
             {
-                c.attachedRigidbody.AddForce((c.transform.position - transform.position).normalized * explodeForce, ForceMode2D.Impulse);
+                Vector2 forceDir =
+                    (c.transform.position - transform.position).normalized;
+
+                c.attachedRigidbody.AddForce(
+                    forceDir * explodeForce,
+                    ForceMode2D.Impulse
+                );
             }
         }
 
-        // TODO: spawn explosion VFX here
+        // TODO: Explosion VFX / SFX hook
         Disable();
     }
 

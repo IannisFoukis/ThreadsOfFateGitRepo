@@ -263,6 +263,37 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 0.15801632, y: 0.14640924}
   m_EdgeRadius: 0
+--- !u!1 &3579733605020186436
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5572887193186688022}
+  m_Layer: 0
+  m_Name: FirePoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 7148428337604731935, guid: 0000000000000000d000000000000000, type: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5572887193186688022
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3579733605020186436}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.003, y: 0.0662, z: -0.0007026762}
+  m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3377329554754531898}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8019618661658894168
 GameObject:
   m_ObjectHideFlags: 0
@@ -351,6 +382,7 @@ Transform:
   - {fileID: 4451284628602080021}
   - {fileID: 6881615109564475472}
   - {fileID: 7966648773841095398}
+  - {fileID: 5572887193186688022}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!50 &4573836377488695684
@@ -414,7 +446,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.0028369948, y: 0.0025220215}
+  m_Offset: {x: -0.0028369948, y: -0.017220978}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -424,7 +456,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.15207662, y: 0.1336497}
+  m_Size: {x: 0.15207662, y: 0.10373608}
   m_EdgeRadius: 0
 --- !u!114 &2768854374013518013
 MonoBehaviour:
@@ -504,8 +536,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 494b0c36641c17541861a8e561a8aed0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 100
-  currentHealth: 100
+  maxHealth: 2
+  currentHealth: 2
 --- !u!114 &351958192507417716
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -580,10 +612,13 @@ MonoBehaviour:
   rangerArriveDistance: 0.6
   offenderArriveDistance: 0.45
   slowRadius: 1.25
-  separationRadius: 1.2
-  separationPushRadius: 0.8
+  separationPushRadius: 1.2
   separationStrength: 1.5
+  separationRadius: 2
   enemyLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  enemyMask:
     serializedVersion: 2
     m_Bits: 128
   defenderMass: 2
@@ -591,7 +626,7 @@ MonoBehaviour:
   offenderMass: 1
   frontLanePriority: 1.5
   backLanePriority: 0.6
-  overlapResolveStrength: 0.5
+  overlapResolveStrength: 0.65
   overlapMinDistance: 0.01
   obstacleRayDistance: 2
   obstacleAvoidStrength: 1
@@ -626,10 +661,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d878b3151a3abd4696c2d701ac4fb5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  firePoint: {fileID: 5572887193186688022}
   projectilePrefab: {fileID: -7159479602090134345, guid: a16b2bb256930fb418670b93f3c9aecf, type: 3}
   fireCooldown: 1.5
-  fireRange: 15
-  projectileSpeed: 7
+  fireRange: 12
+  projectileSpeed: 10
   projectileLifetime: 3
   damage: 1
   modifiers:
@@ -644,17 +680,13 @@ MonoBehaviour:
   aimTime: 0.45
   aimLineWidth: 0.05
   aimColor: {r: 0.990566, g: 0, b: 0, a: 0.78431374}
-  fleeDistance: 2.5
+  firstShotAimMult: 1
+  followUpAimMult: 0.75
+  minDesync: 0.06
+  maxDesync: 0.14
   repositionCooldown: 2
   repositionSpeed: 8
   repositionDuration: 0.25
-  pressureBonusCooldown: 0.6
-  silenceCooldownMultiplier: 1.5
-  enablePhaseA: 1
-  dashSpamThresholdPerSecond: 1
-  dashDenyLeadDistance: 1.6
-  tacticalPunishAimMult: 0.75
-  offenderDisciplineRange: 6
   formationLockTolerance: 2
   losMask:
     serializedVersion: 2
@@ -663,6 +695,12 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 128
   allyBlockRadius: 0.15
+  visionRange: 12
+  visionBlockMask:
+    serializedVersion: 2
+    m_Bits: 256
+  defenderAimBonusMult: 0.7
+  defenderSynergyRange: 6
 --- !u!114 &5515608192190167746
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -8,6 +8,9 @@ public class EnemyCharger : MonoBehaviour
     public float chargeForce = 8f;
     public float chargeCooldown = 2f;
 
+    [Header("Commit Gates")]
+    public float minCommitDistance = 3.5f;   // 🔒 prevents long-range charges
+
     private Rigidbody2D rb;
     private Transform player;
     private EnemyStateController state;
@@ -51,6 +54,23 @@ public class EnemyCharger : MonoBehaviour
             doctrine = GetDoctrineFromCoordinator();
 
         // ─────────────────────────────────────────────
+        // 🔒 FORMATION COMMIT AUTHORITY (CRITICAL)
+        // ─────────────────────────────────────────────
+
+        // Never charge during Assemble or Hold
+        if (coordinator.phalanxState != EncounterCoordinator.PhalanxState.March)
+            return;
+
+        // Do not break formation while still moving to slot
+        if (agent != null && agent.IsChangingFormation())
+            return;
+
+        // Distance gate – no long-range suicide charges
+        float dist = Vector2.Distance(transform.position, player.position);
+        if (dist > minCommitDistance)
+            return;
+
+        // ─────────────────────────────────────────────
         // SACRIFICE GATE (ONE-TIME)
         // ─────────────────────────────────────────────
         if (!sacrificeUsed && ShouldSacrifice())
@@ -85,22 +105,19 @@ public class EnemyCharger : MonoBehaviour
         sacrificeUsed = true;
         canCharge = false;
 
-        Debug.Log($"[DEFENDER] SACRIFICE CHARGE → {name}");
+        Debug.Log($"[OFFENDER] SACRIFICE CHARGE → {name}");
 
-        // Lock state: defender is now committed and uncoordinated
+        // Lock state: offender is now committed and uncoordinated
         state.SetState(EnemyState.Hit);
 
         Vector2 dir = (player.position - transform.position).normalized;
+
         rb.linearVelocity = Vector2.zero;
+
         rb.AddForce(dir * chargeForce, ForceMode2D.Impulse);
 
         // Commitment window
         yield return new WaitForSeconds(0.5f);
-
-        // After sacrifice, defender becomes reckless by BEHAVIOR:
-        // - no retreat
-        // - no further coordination logic
-        // (Update loop will naturally stop triggering anything else)
 
         yield return new WaitForSeconds(chargeCooldown);
     }
@@ -113,7 +130,9 @@ public class EnemyCharger : MonoBehaviour
     {
         return coordinator != null
             ? coordinator.GetType()
-                .GetField("doctrine", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                .GetField("doctrine",
+                    System.Reflection.BindingFlags.NonPublic |
+                    System.Reflection.BindingFlags.Instance)
                 ?.GetValue(coordinator) as DoctrineState
             : null;
     }

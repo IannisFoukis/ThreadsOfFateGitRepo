@@ -4,25 +4,33 @@ public class EnemyAgent : MonoBehaviour
 {
     [HideInInspector] public EncounterCoordinator coordinator;
 
+    // ───────── Role ─────────
     [Header("Role")]
     public EnemyRole role;
 
-    [Header("Lane")]
-    [SerializeField] private Lane lane;
+    // ───────── Lane (LEGACY — C3 FROZEN) ─────────
+    [Header("Lane (Legacy / Frozen)")]
+    [SerializeField] private Lane lane = Lane.Front;
+
+    /// <summary>
+    /// Legacy compatibility only.
+    /// Lane has NO spatial authority in Phase C3.
+    /// </summary>
     public Lane Lane => lane;
 
+    // ───────── Formation / Slot ─────────
     [Header("Formation / Slot")]
     [SerializeField] private float slotArrivalThreshold = 0.35f;
     public float SlotArrivalThreshold => slotArrivalThreshold;
 
-    // 🔒 Phase A — Attack Position Authority
+    // 🔒 Phase A+ — Attack Position Authority
     [HideInInspector] public bool attackPositionLocked;
 
-    // Legacy / compatibility
+    // Legacy / compatibility (do not use for new logic)
     public bool attackLock { get; set; }
     public int assignedSlot = -1;
 
-    // Chaos (Phase H)
+    // ───────── Chaos (Phase H) ─────────
     [Header("Chaos State")]
     [SerializeField] private bool isChaotic;
     [SerializeField] private bool hasChaoticImpulse;
@@ -30,14 +38,14 @@ public class EnemyAgent : MonoBehaviour
     public bool IsChaotic => isChaotic;
     public bool HasChaoticImpulse => hasChaoticImpulse;
 
-    // Movement authority (used by EnemyChase)
+    // ───────── Movement Authority ─────────
     [HideInInspector] public bool movementLocked;
 
     public void SetChaotic(bool value) => isChaotic = value;
     public void TriggerChaoticImpulse() => hasChaoticImpulse = true;
     public void ClearChaoticImpulse() => hasChaoticImpulse = false;
 
-    // 🔍 DEBUG / AUTHORITY SETTER (IMPORTANT)
+    // ───────── Attack Position Lock (Authoritative) ─────────
     public void SetAttackPositionLocked(bool value)
     {
         if (attackPositionLocked == value)
@@ -47,8 +55,10 @@ public class EnemyAgent : MonoBehaviour
         Debug.Log($"[AttackPosLock] {name} role={role} -> {value}");
     }
 
+    // ───────── Lifecycle ─────────
     void Start()
     {
+        // Role gating (room authority)
         if (!RolePermissionBus.IsRoleAllowed(role))
         {
             Debug.Log($"[EnemyAgent] {name} role {role} not allowed in this room. Removing.");
@@ -98,8 +108,20 @@ public class EnemyAgent : MonoBehaviour
         return Vector3.Distance(transform.position, GetFormationTarget()) > t;
     }
 
+    // ───────── Lane Assignment (DISABLED) ─────────
+    /// <summary>
+    /// Legacy stub. Lane assignment is disabled in Phase C3.
+    /// This exists only to avoid breaking older callers.
+    /// </summary>
     public void AssignLane(Lane newLane)
     {
-        lane = newLane;
+        // Intentionally ignored
+        // Lane has no authority in Phase C3
     }
+
+    public float DistanceToSlot()
+    {
+        return Vector3.Distance(transform.position, GetFormationTarget());
+    }
+
 }

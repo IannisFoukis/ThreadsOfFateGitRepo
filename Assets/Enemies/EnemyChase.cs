@@ -7,31 +7,37 @@ public class EnemyChase : MonoBehaviour
     public float moveSpeed = 4f;
 
     [Header("Arrival")]
-    public float arriveDistance = 0.15f;
-    public float rangerArriveDistance = 0.6f;
-    public float offenderArriveDistance = 0.45f;
+    public float arriveDistance = 0.3f;
+    public float rangerArriveDistance = 1f;
+    public float offenderArriveDistance = 0.8f;
 
     [Tooltip("Within this distance, speed eases down to prevent orbit/overshoot.")]
-    public float slowRadius = 1.25f;
+    public float slowRadius = 2f;
+
+    [Header("Chase Bias (Phase G1)")]
+    [Tooltip("How much enemies bias movement toward the player while in formation")]
+    public float chaseBiasStrength = 0.65f;
+
+    [Tooltip("Prevents stutter when formationReady flickers.")]
+    public float formationReadyGrace = 0.20f;
 
     [Header("Separation")]
-    public float separationRadius = 1.6f;
-    public float separationPushRadius = 1.1f;
-    public float separationStrength = 1.5f;
+    public float separationPushRadius = 1.8f;
+    public float separationStrength = 0.9f;
+    public float separationRadius = 2.2f;
+
+    [Header("Enemy Layers")]
     public LayerMask enemyLayer;
+    public LayerMask enemyMask;
 
     [Header("Separation Priority")]
-    [SerializeField] private float defenderMass = 2.0f;
+    [SerializeField] private float defenderMass = 4f;
     [SerializeField] private float rangerMass = 0.7f;
     [SerializeField] private float offenderMass = 1.0f;
 
     [Header("Lane Priority")]
     [SerializeField] private float frontLanePriority = 1.5f;
     [SerializeField] private float backLanePriority = 0.6f;
-
-    [Header("Overlap Resolution")]
-    [SerializeField] private float overlapResolveStrength = 0.5f;
-    [SerializeField] private float overlapMinDistance = 0.01f;
 
     [Header("Obstacle Avoidance")]
     [SerializeField] private float obstacleRayDistance = 0.5f;
@@ -42,7 +48,9 @@ public class EnemyChase : MonoBehaviour
     private Rigidbody2D rb;
     private Transform cachedPlayer;
 
-    private float speedMultiplier = 1f;
+    private float lastFormationReadyTime = -999f;
+
+    LayerMask EnemyMaskResolved => enemyLayer.value != 0 ? enemyLayer : enemyMask;
 
     void Awake()
     {
@@ -58,123 +66,103 @@ public class EnemyChase : MonoBehaviour
     void FixedUpdate()
     {
         if (agent == null) return;
-        // 🔒 ABSOLUTE STOP — engagement owns movement
-        if (agent.attackPositionLocked || agent.attackLock)
-        {
-            rb.linearVelocity = Vector2.zero;
-            return;
-        }
-        ResolvePlayerOnce();
 
-        Vector3 target3 = agent.GetFormationTarget();
-        if (!IsFinite(target3))
-        {
-            if (cachedPlayer == null)
-            {
-                rb.linearVelocity = Vector2.zero;
-                return;
-            }
-            target3 = cachedPlayer.position;
-        }
-
-        Vector2 target = (Vector2)target3;
-        Vector2 toTarget = target - rb.position;
-
-        float formationTolerance = agent.SlotArrivalThreshold * 3f;
-        float distToSlot = toTarget.magnitude;
-        float distToPlayer = cachedPlayer != null
-            ? Vector2.Distance(rb.position, cachedPlayer.position)
-            : float.MaxValue;
-
-        float engageDistance = GetAttackEngageDistance();
-
-        // ─────────────────────────────────────────────
-        // 🔒 ATTACK POSITION LOCK (MUST HAPPEN FIRST)
-        // ─────────────────────────────────────────────
-        if (!agent.attackPositionLocked &&
-            distToSlot <= formationTolerance &&
-            distToPlayer <= engageDistance)
-        {
-            agent.SetAttackPositionLocked(true);
-            rb.linearVelocity = Vector2.zero;
-
-            // DEBUG (throttled)
-            if (Time.frameCount % 20 == 0)
-            {
-                Debug.Log(
-                    $"[LOCKED:{name}] role={agent.role} " +
-                    $"distSlot={distToSlot:F2}/{formationTolerance:F2} " +
-                    $"distPlayer={distToPlayer:F2}/{engageDistance:F2}"
-                );
-            }
-
-            return;
-        }
-
-        // 🔒 HARD STOP IF LOCKED
-        if (agent.attackPositionLocked)
-        {
-            rb.linearVelocity = Vector2.zero;
-            return;
-        }
-
-        // 🔒 HARD STOP IF MOVEMENT LOCKED
+        // Absolute movement ownership
         if (agent.movementLocked)
         {
             rb.linearVelocity = Vector2.zero;
             return;
         }
 
-        // ─────────────────────────────────────────────
-        // ROLE-SPECIFIC FREEZES (AFTER LOCK CHECK)
-        // ─────────────────────────────────────────────
+        ResolvePlayerOnce();
 
-        // Rangers: freeze while aiming
-        if (agent.role == EnemyRole.Ranger)
-        {
-            var lr = GetComponent<LineRenderer>();
-            if (lr != null && lr.enabled)
-            {
-                rb.linearVelocity = Vector2.zero;
-                return;
-            }
-        }
-
-        // Offenders: close-range commit stop (movement only, lock handled above)
-        if (agent.role == EnemyRole.Offender && cachedPlayer != null)
-        {
-            var off = GetComponent<EnemyOffenderAttack>();
-            if (off != null)
-            {
-                float dToPlayer = Vector2.Distance(rb.position, cachedPlayer.position);
-                if (dToPlayer <= off.forceCommitDistance * 1.05f)
-                {
-                    rb.linearVelocity = Vector2.zero;
-                    return;
-                }
-            }
-        }
-
-        // ─────────────────────────────────────────────
-        // ARRIVAL (navigation only)
-        // ─────────────────────────────────────────────
-
-        float arrive = arriveDistance;
-        if (agent.role == EnemyRole.Ranger) arrive = rangerArriveDistance;
-        else if (agent.role == EnemyRole.Offender) arrive = offenderArriveDistance;
-
-        if (toTarget.sqrMagnitude <= arrive * arrive)
+        Vector3 slot3 = agent.GetFormationTarget();
+        if (!IsFinite(slot3))
         {
             rb.linearVelocity = Vector2.zero;
             return;
         }
 
-        // ─────────────────────────────────────────────
-        // STEERING
-        // ─────────────────────────────────────────────
+        Vector2 slot = (Vector2)slot3;
+        Vector2 toSlot = slot - rb.position;
 
-        Vector2 desiredDir = toTarget.normalized;
-        Vector2 sep = GetSeparationForce(target);
+        // -----------------------------
+        // FORMATION READY (with grace)
+        // -----------------------------
+        bool formationReadyRaw =
+            agent.coordinator == null ||
+            OffendersAreEngaged() || // once frontline is fighting, stop forcing perfection
+            !agent.coordinator.AnyRoleChangingFormation(
+                EnemyRole.Ranger, // rangers can be moving while others still advance
+                agent.SlotArrivalThreshold * 1.1f
+            );
+
+        if (formationReadyRaw) lastFormationReadyTime = Time.time;
+
+        bool formationReady =
+            formationReadyRaw ||
+            (Time.time - lastFormationReadyTime) <= formationReadyGrace;
+
+        // Hard stop if locked in attack position
+        if (agent.attackPositionLocked)
+        {
+            rb.linearVelocity = Vector2.zero;
+            return;
+        }
+
+        float arrive = arriveDistance;
+        if (agent.role == EnemyRole.Ranger) arrive = rangerArriveDistance;
+        else if (agent.role == EnemyRole.Offender) arrive = offenderArriveDistance;
+
+        float distToSlot = toSlot.magnitude;
+
+        float distToPlayer = float.MaxValue;
+        if (cachedPlayer != null)
+            distToPlayer = Vector2.Distance(rb.position, cachedPlayer.position);
+
+        // -----------------------------
+        // MOVEMENT DIRECTION
+        // -----------------------------
+        Vector2 desiredDir = (distToSlot > 0.001f) ? toSlot.normalized : Vector2.zero;
+
+        // Add a forward bias to keep the whole group advancing (prevents “slot hover” hesitation)
+        if (formationReady && cachedPlayer != null)
+        {
+            Vector2 chaseBias = ComputeChaseBias();
+            Vector2 combined = desiredDir + chaseBias;
+
+            if (combined.sqrMagnitude > 0.0001f)
+                desiredDir = combined.normalized;
+        }
+
+        // -----------------------------
+        // ARRIVAL / STOP CONDITIONS
+        // -----------------------------
+        // If very close to slot, don't instantly stop if we're still far from player.
+        // (This is the classic "they reach slot but group doesn't chase".)
+        bool atSlot = distToSlot <= arrive;
+
+        if (atSlot)
+        {
+            // Let them keep creeping forward unless already near the player
+            // (rangers are allowed to “sit” more, offenders least).
+            float keepPressureDist = agent.role switch
+            {
+                EnemyRole.Offender => 2.4f,
+                EnemyRole.Defender => 2.8f,
+                EnemyRole.Ranger => 4.8f,
+                _ => 3.0f
+            };
+
+            if (cachedPlayer == null || distToPlayer <= keepPressureDist)
+            {
+                rb.linearVelocity = Vector2.zero;
+                return;
+            }
+            // else: continue moving using chase-bias combined direction
+        }
+
+        Vector2 sep = GetSeparationForce(slot);
         Vector2 avoid = ComputeObstacleAvoidance(desiredDir);
 
         Vector2 finalDir = desiredDir + sep + avoid;
@@ -186,21 +174,62 @@ public class EnemyChase : MonoBehaviour
 
         finalDir.Normalize();
 
-        float dist = toTarget.magnitude;
-        float ease = Mathf.Clamp01(dist / Mathf.Max(0.01f, slowRadius));
-        float finalSpeed = (moveSpeed * speedMultiplier) * Mathf.Lerp(0.35f, 1f, ease);
+        float ease = Mathf.Clamp01(distToSlot / Mathf.Max(0.01f, slowRadius));
+        float speed = moveSpeed * Mathf.Lerp(0.35f, 1f, ease);
 
-        rb.linearVelocity = finalDir * finalSpeed;
-
-        ResolveOverlaps();
+        rb.linearVelocity = finalDir * speed;
     }
-    // ─────────────────────────────────────────────
-    // Separation
-    // ─────────────────────────────────────────────
 
-    private Vector2 GetSeparationForce(Vector2 slotTarget)
+    // ─────────────────────────────
+    // Chase Bias
+    // ─────────────────────────────
+    Vector2 ComputeChaseBias()
     {
-        // Disable separation very close to the slot target to prevent tangential orbit
+        if (cachedPlayer == null) return Vector2.zero;
+
+        Vector2 toPlayer = ((Vector2)cachedPlayer.position - rb.position);
+        if (toPlayer.sqrMagnitude < 0.001f)
+            return Vector2.zero;
+
+        float roleWeight = agent.role switch
+        {
+            EnemyRole.Offender => 1.0f,
+            EnemyRole.Defender => 0.65f,
+            EnemyRole.Ranger => 0.35f, // raise this later if you want rangers to drift forward more
+            _ => 0.5f
+        };
+
+        return toPlayer.normalized * (chaseBiasStrength * roleWeight);
+    }
+
+    // “Frontline engaged” = stop over-gating formation perfection.
+    bool OffendersAreEngaged()
+    {
+        if (agent == null || agent.coordinator == null || cachedPlayer == null)
+            return false;
+
+        var enemies = agent.coordinator.GetEnemies();
+        float engageDist = 2.2f;
+
+        for (int i = 0; i < enemies.Count; i++)
+        {
+            var e = enemies[i];
+            if (e == null) continue;
+            if (e.role != EnemyRole.Offender) continue;
+
+            float d = Vector2.Distance(e.transform.position, cachedPlayer.position);
+            if (d <= engageDist)
+                return true;
+        }
+
+        return false;
+    }
+
+    // ─────────────────────────────
+    // Separation / Avoidance
+    // ─────────────────────────────
+    Vector2 GetSeparationForce(Vector2 slotTarget)
+    {
         float distToSlot = Vector2.Distance(rb.position, slotTarget);
         if (distToSlot < 0.6f)
             return Vector2.zero;
@@ -208,7 +237,7 @@ public class EnemyChase : MonoBehaviour
         Collider2D[] nearby = Physics2D.OverlapCircleAll(
             transform.position,
             separationRadius,
-            enemyLayer
+            EnemyMaskResolved
         );
 
         Vector2 force = Vector2.zero;
@@ -243,109 +272,39 @@ public class EnemyChase : MonoBehaviour
         return force * separationStrength;
     }
 
-    // ─────────────────────────────────────────────
-    // Overlaps
-    // ─────────────────────────────────────────────
-
-    private void ResolveOverlaps()
+    Vector2 ComputeObstacleAvoidance(Vector2 moveDir)
     {
-        Collider2D myCol = GetComponent<Collider2D>();
-        if (myCol == null) return;
-
-        Collider2D[] nearby = Physics2D.OverlapCircleAll(
-            myCol.bounds.center,
-            separationPushRadius,
-            enemyLayer
-        );
-
-        float myMass = GetRoleMass(agent.role);
-
-        foreach (var c in nearby)
-        {
-            if (c == null || c.gameObject == gameObject) continue;
-
-            var other = c.GetComponent<EnemyAgent>();
-            if (other == null) continue;
-
-            Collider2D otherCol = c;
-            if (!myCol.bounds.Intersects(otherCol.bounds)) continue;
-
-            Vector2 otherPos = otherCol.attachedRigidbody != null
-                ? otherCol.attachedRigidbody.position
-                : (Vector2)otherCol.transform.position;
-
-            Vector2 delta = rb.position - otherPos;
-            float dist = delta.magnitude;
-
-            if (dist < overlapMinDistance)
-                delta = Random.insideUnitCircle.normalized;
-
-            float otherMass = GetRoleMass(other.role);
-            float total = myMass + otherMass;
-
-            float myShare = otherMass / total;
-
-            rb.position += delta.normalized * overlapResolveStrength * myShare;
-        }
-    }
-
-    // ─────────────────────────────────────────────
-    // Obstacle Avoidance (simple)
-    // ─────────────────────────────────────────────
-
-    private Vector2 ComputeObstacleAvoidance(Vector2 moveDir)
-    {
-        if (moveDir.sqrMagnitude < 0.001f)
-            return Vector2.zero;
-
         RaycastHit2D hit = Physics2D.Raycast(rb.position, moveDir, obstacleRayDistance, obstacleMask);
         if (!hit) return Vector2.zero;
 
-        Vector2 side = Vector2.Perpendicular(moveDir).normalized;
-        return side * obstacleAvoidStrength;
+        return Vector2.Perpendicular(moveDir).normalized * obstacleAvoidStrength;
     }
 
-    // ─────────────────────────────────────────────
-    // Helpers
-    // ─────────────────────────────────────────────
-
-    private float GetRoleMass(EnemyRole role)
-    {
-        return role switch
+    float GetRoleMass(EnemyRole role) =>
+        role switch
         {
             EnemyRole.Defender => defenderMass,
             EnemyRole.Ranger => rangerMass,
             _ => offenderMass
         };
-    }
 
-    private float GetLanePriority(Lane lane)
-    {
-        return lane.ToString() == "Front"
-            ? frontLanePriority
-            : backLanePriority;
-    }
+    float GetLanePriority(Lane lane) =>
+        lane == Lane.Front ? frontLanePriority : backLanePriority;
 
-    private void ResolvePlayerOnce()
+    void ResolvePlayerOnce()
     {
         if (cachedPlayer != null) return;
         var go = GameObject.FindGameObjectWithTag("Player");
         if (go != null) cachedPlayer = go.transform;
     }
 
-    private bool IsFinite(Vector3 v)
+    bool IsFinite(Vector3 v) =>
+        !(float.IsNaN(v.x) || float.IsInfinity(v.x) ||
+          float.IsNaN(v.y) || float.IsInfinity(v.y));
+
+    void OnDrawGizmosSelected()
     {
-        return !(float.IsNaN(v.x) || float.IsInfinity(v.x) ||
-                 float.IsNaN(v.y) || float.IsInfinity(v.y));
-    }
-    float GetAttackEngageDistance()
-    {
-        return agent.role switch
-        {
-            EnemyRole.Offender => 1.8f,
-            EnemyRole.Ranger => 6.5f,
-            EnemyRole.Defender => 1.5f,
-            _ => 2.0f
-        };
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, separationRadius);
     }
 }

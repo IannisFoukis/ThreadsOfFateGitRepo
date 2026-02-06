@@ -1,82 +1,67 @@
 ﻿using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody2D))]
 public class EnemyRanged : MonoBehaviour
 {
-    // ───────── Doctrine (read-only) ─────────
-    DoctrineState doctrine;
+    Rigidbody2D rb;
+    EnemyAgent agent;
+    Transform player;
+
+    [Header("Fire Origin")]
+    public Transform firePoint;
+    Vector2 FireOrigin => firePoint != null ? (Vector2)firePoint.position : rb.position;
 
     [Header("Firing")]
     public Projectile projectilePrefab;
-    public float fireCooldown = 1.8f;
+    public float fireCooldown = 1.6f;
     public float fireRange = 9f;
     public float projectileSpeed = 7f;
     public float projectileLifetime = 3f;
     public int damage = 1;
     public ProjectileModifiers modifiers;
+
+    float lastFireTime;
     float losClearTime;
-    public float losGraceDuration = 0.25f;
+    public float losGraceDuration = 0.22f;
+
     [Header("Aim Telegraph")]
-    public float aimTime = 0.6f;
+    public float aimTime = 0.55f;
     public float aimLineWidth = 0.05f;
     public Color aimColor = new Color(1f, 0.8f, 0.2f, 0.8f);
 
-    [Header("Reposition")]
-    public float fleeDistance = 2.5f;
-    public float repositionCooldown = 2.0f;
+    LineRenderer aimLine;
+    float aimTimer;
+    bool isAiming;
 
+    [Header("Reposition")]
+    public float repositionCooldown = 2.0f;
     public float repositionSpeed = 8f;
     public float repositionDuration = 0.25f;
 
-    [Header("Cadence")]
-    public float pressureBonusCooldown = 0.6f;
-
-    [Header("Silence Phase")]
-    public float silenceCooldownMultiplier = 1.5f;
-
-    // ───────── Phase A – Ranger Intelligence ─────────
-    [Header("Phase A - Ranger Intelligence")]
-    public bool enablePhaseA = true;
-    public float dashSpamThresholdPerSecond = 1.0f;
-    public float dashDenyLeadDistance = 1.6f;
-    public float tacticalPunishAimMult = 0.75f;
-    public float offenderDisciplineRange = 6.0f;
-
-    [Header("Phase A - Lock Conditions")]
-    public float formationLockTolerance = 2.0f;
-
-    // ───────── Line of Sight ─────────
-    [Header("Line of Sight")]
-    public LayerMask losMask;     // Player + Environment
-    public LayerMask allyMask;    // Enemies
-    public float allyBlockRadius = 0.25f;
-
-    float lastFireTime;
-    float aimTimer;
-    bool isAiming;
     float lastRepositionTime;
-
     bool isRepositioning;
     float repositionTimer;
     Vector2 repositionDir;
 
-    EnemyAgent agent;
-    EncounterCoordinator coordinator;
-    Transform player;
+    [Header("Formation Lock")]
+    public float formationLockTolerance = 2.0f;
 
-    PlayerBehaviorTracker behavior;
-    PlayerController playerController;
+    [Header("Fire LOS")]
+    public LayerMask losMask;
+    public LayerMask allyMask;
+    public float allyBlockRadius = 0.18f;
 
-    LineRenderer aimLine;
+    [Header("Vision")]
+    public float visionRange = 11f;
+    public LayerMask visionBlockMask;
 
     void Awake()
     {
         agent = GetComponent<EnemyAgent>();
+        rb = GetComponent<Rigidbody2D>();
 
         var p = GameObject.FindGameObjectWithTag("Player");
         if (p != null) player = p.transform;
-
-        behavior = FindFirstObjectByType<PlayerBehaviorTracker>();
-        playerController = FindFirstObjectByType<PlayerController>();
 
         aimLine = gameObject.AddComponent<LineRenderer>();
         aimLine.enabled = false;
@@ -90,111 +75,87 @@ public class EnemyRanged : MonoBehaviour
         aimLine.sortingOrder = 0;
     }
 
-    void OnDisable()
-    {
-        if (agent != null)
-        {
-            agent.movementLocked = false;
-            agent.SetAttackPositionLocked(false);
-        }
-        CancelAimVisualOnly();
-    }
-
     void Update()
     {
         if (agent == null || player == null)
+            return;
+
+        // Never aim during Assemble
+        if (agent.coordinator != null &&
+            agent.coordinator.phalanxState == EncounterCoordinator.PhalanxState.Assemble)
         {
-            CancelAimVisualOnly();
+            HardResetAim();
             return;
         }
 
-        if (coordinator == null)
-            coordinator = agent.coordinator;
+        if (agent.role != EnemyRole.Ranger)
+            return;
 
-        if (coordinator == null || agent.role != EnemyRole.Ranger)
+        // 🔓 LOOSENED formation gate
+        bool formationReady =
+            agent.coordinator == null ||
+            agent.coordinator.phalanxState != EncounterCoordinator.PhalanxState.Assemble;
+
+        if (!formationReady)
         {
-            CancelAimVisualOnly();
+            HardResetAim();
+            TryReposition();
             return;
         }
 
-        // ───── Range + formation eligibility ─────
-        float distToPlayer = Vector2.Distance(transform.position, player.position);
-        if (distToPlayer > fireRange)
+        if (!CanSeePlayer())
         {
-            ReleaseLocksAndAim();
+            HardResetAim();
+            TryReposition();
             return;
         }
 
-        float distToSlot = Vector2.Distance(transform.position, agent.GetFormationTarget());
-        if (distToSlot > formationLockTolerance || agent.IsChangingFormation())
+        float drift = Vector2.Distance(rb.position, agent.GetFormationTarget());
+        if (drift > formationLockTolerance)
         {
-            ReleaseLocksAndAim();
+            HardResetAim();
             return;
         }
 
         if (!agent.attackPositionLocked)
             agent.SetAttackPositionLocked(true);
 
-        // Cooldown
         if (Time.time < lastFireTime + fireCooldown)
         {
             HoldAim();
             return;
         }
 
-        // AIM
         if (!isAiming)
             StartAim();
 
         aimTimer += Time.deltaTime;
-        UpdateAimLine();
 
-        // 🔥 FIRE ONLY WITH CLEAR LOS
-        if (HasClearShot())
+        if (HasClearShotFrom(FireOrigin))
         {
+            UpdateAimLine();
             losClearTime += Time.deltaTime;
         }
         else
         {
+            aimLine.enabled = false;
             losClearTime = 0f;
         }
 
         if (aimTimer >= aimTime && losClearTime >= losGraceDuration)
-        {
             Fire();
-        }
     }
 
-    // ───────── LINE OF SIGHT ─────────
+    // ─────────────────────────────
+    // AIM / FIRE
+    // ─────────────────────────────
 
-    bool HasClearShot()
+    void UpdateAimLine()
     {
-        Vector2 origin = transform.position;
-        Vector2 target = player.position;
-        Vector2 dir = (target - origin).normalized;
-        float dist = Vector2.Distance(origin, target);
-
-        // Wall / environment check
-        RaycastHit2D hit = Physics2D.Raycast(origin, dir, dist, losMask);
-        if (!hit || !hit.collider.CompareTag("Player"))
-            return false;
-
-        // Ally block check
-        RaycastHit2D allyHit = Physics2D.CircleCast(
-            origin,
-            allyBlockRadius,
-            dir,
-            dist,
-            allyMask
-        );
-
-        if (allyHit && allyHit.collider.CompareTag("Enemy"))
-            return false;
-
-        return true;
+        aimLine.enabled = true;
+        aimLine.SetPosition(0, FireOrigin);
+        aimLine.SetPosition(1, player.position);
     }
-
-    // ───────── AIM CONTROL ─────────
 
     void StartAim()
     {
@@ -210,65 +171,91 @@ public class EnemyRanged : MonoBehaviour
         isAiming = true;
     }
 
-    void CancelAimVisualOnly()
+    void HardResetAim()
     {
         isAiming = false;
         aimTimer = 0f;
-        if (aimLine != null)
-            aimLine.enabled = false;
-    }
-
-    void ReleaseLocksAndAim()
-    {
-        isAiming = false;
-        aimTimer = 0f;
+        losClearTime = 0f;
         agent.movementLocked = false;
         agent.SetAttackPositionLocked(false);
-        if (aimLine != null)
-            aimLine.enabled = false;
+        aimLine.enabled = false;
     }
-
-    void UpdateAimLine()
-    {
-        if (!aimLine.enabled) return;
-        aimLine.SetPosition(0, transform.position);
-        aimLine.SetPosition(1, player.position);
-    }
-
-    // ───────── FIRE ─────────
 
     void Fire()
     {
-        CancelAimVisualOnly();
+        aimLine.enabled = false;
         agent.movementLocked = false;
         lastFireTime = Time.time;
 
-        Vector2 dir = ((Vector2)player.position - (Vector2)transform.position).normalized;
-        var proj = Instantiate(projectilePrefab, transform.position, Quaternion.identity);
-        proj.Fire(dir, projectileSpeed, projectileLifetime, damage, modifiers);
+        Vector2 dir = ((Vector2)player.position - FireOrigin).normalized;
+
+        Instantiate(projectilePrefab, FireOrigin, Quaternion.identity)
+            .Fire(dir, projectileSpeed, projectileLifetime, damage, modifiers);
 
         agent.SetAttackPositionLocked(false);
     }
 
-    // ───────── DEBUG ─────────
-    void OnDrawGizmosSelected()
+    // ─────────────────────────────
+    // LOS / VISION
+    // ─────────────────────────────
+
+    bool CanSeePlayer()
     {
-        if (player == null) return;
-        Gizmos.color = HasClearShot() ? Color.green : Color.red;
-        Gizmos.DrawLine(transform.position, player.position);
+        Vector2 origin = FireOrigin;
+        Vector2 toPlayer = (Vector2)player.position - origin;
+
+        if (toPlayer.magnitude > visionRange)
+            return false;
+
+        return !Physics2D.Raycast(
+            origin,
+            toPlayer.normalized,
+            toPlayer.magnitude,
+            visionBlockMask
+        );
     }
 
-    DoctrineState GetDoctrine()
+    bool HasClearShotFrom(Vector2 origin)
     {
-        if (doctrine != null) return doctrine;
-        if (coordinator == null) return null;
+        Vector2 dir = ((Vector2)player.position - origin).normalized;
+        float dist = Vector2.Distance(origin, player.position);
 
-        doctrine = coordinator.GetType()
-            .GetField("doctrine",
-                System.Reflection.BindingFlags.NonPublic |
-                System.Reflection.BindingFlags.Instance)
-            ?.GetValue(coordinator) as DoctrineState;
+        RaycastHit2D hit = Physics2D.Raycast(origin, dir, dist, losMask);
+        if (!hit || !hit.collider.CompareTag("Player"))
+            return false;
 
-        return doctrine;
+        RaycastHit2D allyHit =
+            Physics2D.CircleCast(origin, allyBlockRadius, dir, dist, allyMask);
+        if (allyHit && allyHit.collider.CompareTag("Enemy"))
+            return false;
+
+        return true;
+    }
+
+    // ─────────────────────────────
+    // REPOSITION
+    // ─────────────────────────────
+
+    void TryReposition()
+    {
+        if (Time.time < lastRepositionTime + repositionCooldown)
+            return;
+
+        lastRepositionTime = Time.time;
+        Vector2 toPlayer = ((Vector2)player.position - rb.position).normalized;
+        repositionDir = Vector2.Perpendicular(toPlayer) * (Random.value < 0.5f ? -1 : 1);
+        repositionTimer = repositionDuration;
+        isRepositioning = true;
+    }
+
+    void FixedUpdate()
+    {
+        if (!isRepositioning || isAiming) return;
+
+        repositionTimer -= Time.fixedDeltaTime;
+        rb.MovePosition(rb.position + repositionDir * repositionSpeed * Time.fixedDeltaTime);
+
+        if (repositionTimer <= 0f)
+            isRepositioning = false;
     }
 }

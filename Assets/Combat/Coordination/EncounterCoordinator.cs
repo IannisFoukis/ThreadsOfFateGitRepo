@@ -1,6 +1,6 @@
-﻿using UnityEngine;
-using System.Collections.Generic;
-using Unity.VisualScripting;
+﻿using System.Collections.Generic;
+using UnityEngine;
+using TOF.EnemyAI.Groups;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -10,14 +10,17 @@ public class EncounterCoordinator : MonoBehaviour
 {
     public Transform playerTransform;
 
-    [SerializeField] private FormationResolver formationResolver;
-    [SerializeField] private TacticalAuthority tacticalAuthority;
-
     // ─────────────────────────────
-    // GROUPS (Phase G1)
+    // G1 GROUPS (EnemyGroup is source of truth)
     // ─────────────────────────────
     [Header("Groups (Phase G1)")]
-    [SerializeField] private int maxGroupSize = 6;
+    [SerializeField] private int defaultGroups = 2;
+    [SerializeField] private int maxGroupSize = 6; // legacy knob (ok unused in G1)
+
+    private readonly List<EnemyGroup> _groups = new List<EnemyGroup>();
+    private int _nextGroupId = 1;
+
+    public IReadOnlyList<EnemyGroup> Groups => _groups;
 
     [Header("Group Anchor Stability")]
     [SerializeField] private bool smoothGroupAnchors = true;
@@ -30,42 +33,36 @@ public class EncounterCoordinator : MonoBehaviour
     [Tooltip("Extra forward push applied to group anchors during March.")]
     [SerializeField] private float groupAnchorForwardOffset = 2.8f;
 
+    private class GroupAnchorState
+    {
+        public Vector3 anchor;
+        public Vector3 rawAnchor;
+        public bool initialized;
+    }
+
+    private readonly Dictionary<int, GroupAnchorState> _anchorByGroupId = new Dictionary<int, GroupAnchorState>();
+
+    private class SquadRallyState
+    {
+        public Vector3 rallyAvg;
+        public Vector3 rallyToPlayerDir;
+        public bool initialized;
+    }
+
+    private readonly Dictionary<int, SquadRallyState> _rallyByGroupId = new Dictionary<int, SquadRallyState>();
+
     // ─────────────────────────────
-    // ROOM CONFIG / LEGACY COMPATIBILITY
-    // (Required by RoomConfigController)
+    // DEPENDENCIES
     // ─────────────────────────────
+    [SerializeField] private FormationResolver formationResolver;
+    [SerializeField] private TacticalAuthority tacticalAuthority;
+
     [Header("Room Config (Legacy / Phase M)")]
     public float holdCompression = 0.7f;
     public float encircleCompression = 0.45f;
 
-    // ─────────────────────────────
-    // DEBUG / VISUALIZATION
-    // ─────────────────────────────
     [Header("Debug")]
     public bool drawGizmos = true;
-
-    public enum GroupIntent
-    {
-        None,
-        Push,
-        Hold,
-        Flank,
-        Screen
-    }
-
-    private class FormationGroup
-    {
-        public int id;
-        public readonly List<EnemyAgent> members = new();
-
-        public Vector3 anchor;      // smoothed anchor
-        public Vector3 rawAnchor;   // debug / target
-        public bool anchorInitialized;
-
-        public GroupIntent intent = GroupIntent.None;
-    }
-
-    private readonly List<FormationGroup> groups = new();
 
     // ─────────────────────────────
     // PHALANX STATE
@@ -112,7 +109,7 @@ public class EncounterCoordinator : MonoBehaviour
     [SerializeField] private float rallyAnchorForwardOffset = 2.5f;
 
     // ─────────────────────────────
-    // FREEZE (kept, but not used to stall chase)
+    // FREEZE
     // ─────────────────────────────
     [Header("Freeze")]
     public float freezeDistanceToPlayer = 1.6f;
@@ -133,7 +130,7 @@ public class EncounterCoordinator : MonoBehaviour
     private Vector3 encircleCenter;
 
     // ─────────────────────────────
-    // COMPRESSION (Group Aware)
+    // COMPRESSION
     // ─────────────────────────────
     public enum GroupCompressionMode { Average, Max }
 
@@ -144,15 +141,15 @@ public class EncounterCoordinator : MonoBehaviour
     // ─────────────────────────────
     // AGENTS
     // ─────────────────────────────
-    private readonly List<EnemyAgent> agents = new();
-    private readonly List<EnemyAgent> ordered = new();
+    private readonly List<EnemyAgent> agents = new List<EnemyAgent>();
+    private readonly List<EnemyAgent> ordered = new List<EnemyAgent>();
 
     private EnemyAgent formationLeader;
     private EnemyAgent currentHammer;
     private bool leaderDead;
 
     // ─────────────────────────────
-    // RALLY
+    // RALLY (global fallback)
     // ─────────────────────────────
     private bool rallyInitialized;
     private Vector3 rallyAvg;
@@ -162,10 +159,8 @@ public class EncounterCoordinator : MonoBehaviour
     // LEGACY
     // ─────────────────────────────
     private DoctrineState doctrine;
+    private FormationType currentFormation = FormationType.Swarm;
 
-    // ─────────────────────────────
-    // UNITY
-    // ─────────────────────────────
     void Awake()
     {
         if (formationResolver == null)
@@ -186,7 +181,13 @@ public class EncounterCoordinator : MonoBehaviour
 
     void Update()
     {
-        if (agents.Count == 0 || playerTransform == null)
+        if (playerTransform == null)
+        {
+            ResolvePlayer();
+            if (playerTransform == null) return;
+        }
+
+        if (GetActiveAgentsCount() == 0)
             return;
 
         ResolveLeader();
@@ -196,14 +197,10 @@ public class EncounterCoordinator : MonoBehaviour
         if (stateTimer > 0f)
             stateTimer -= Time.deltaTime;
 
-        // Important: march anchor should update even if groups aren't perfect yet,
-        // but we still keep assemble gating for state transition discipline.
         if (phalanxState == PhalanxState.March)
             UpdateMarchAnchor();
 
-        // Group anchors are intent-driven off marchAnchor (THIS is the chase).
-        UpdateGroupsAnchors();
-
+        UpdateGroupAnchors();
         HandleAssembleGate();
 
         switch (phalanxState)
@@ -214,10 +211,6 @@ public class EncounterCoordinator : MonoBehaviour
                     assembled = true;
                     SetState(PhalanxState.March);
                 }
-                break;
-
-            case PhalanxState.March:
-                // Later: hold/encircle transitions.
                 break;
 
             case PhalanxState.Encircle:
@@ -239,12 +232,8 @@ public class EncounterCoordinator : MonoBehaviour
     public void Register(EnemyAgent agent)
     {
         if (agent == null) return;
-
         if (!agents.Contains(agent))
             agents.Add(agent);
-
-        AssignToGroup(agent);
-        AssignDefaultIntents();
 
         rallyInitialized = false;
     }
@@ -252,7 +241,11 @@ public class EncounterCoordinator : MonoBehaviour
     public void Unregister(EnemyAgent agent)
     {
         agents.Remove(agent);
-        RemoveFromGroup(agent);
+
+        if (agent != null && agent.Group != null)
+        {
+            agent.Group.RemoveMember(agent);
+        }
 
         if (agent == formationLeader)
             leaderDead = true;
@@ -260,62 +253,156 @@ public class EncounterCoordinator : MonoBehaviour
         rallyInitialized = false;
     }
 
-    // ─────────────────────────────
-    // GROUP LOGIC
-    // ─────────────────────────────
-    void AssignToGroup(EnemyAgent agent)
+    int GetActiveAgentsCount()
     {
-        FormationGroup g = null;
+        int c = 0;
+        for (int i = 0; i < agents.Count; i++)
+            if (agents[i] != null && agents[i].CombatEngaged) c++;
+        return c;
+    }
 
-        if (groups.Count > 0 && groups[^1].members.Count < maxGroupSize)
-            g = groups[^1];
+    // ─────────────────────────────
+    // GROUP CREATION
+    // ─────────────────────────────
+    private EnemyGroup CreateGroup(FormationType formation, DoctrineState doctrineState)
+    {
+        var g = new EnemyGroup(_nextGroupId++, formation, doctrineState);
+        _groups.Add(g);
+        _anchorByGroupId[g.GroupId] = new GroupAnchorState { initialized = false };
+        _rallyByGroupId[g.GroupId] = new SquadRallyState { initialized = false };
+        return g;
+    }
 
-        if (g == null)
+    // ─────────────────────────────
+    // ROOM-LEVEL BUILD (clears & rebuilds)
+    // ─────────────────────────────
+    public void BuildGroupsFromEnemies(List<EnemyAgent> spawned, FormationType roomFormation, DoctrineState doctrineState)
+    {
+        if (playerTransform == null) ResolvePlayer();
+
+        _groups.Clear();
+        _anchorByGroupId.Clear();
+        _rallyByGroupId.Clear();
+        _nextGroupId = 1;
+
+        currentFormation = roomFormation;
+        doctrine = doctrineState;
+
+        int count = Mathf.Max(1, defaultGroups);
+        for (int i = 0; i < count; i++)
         {
-            g = new FormationGroup { id = groups.Count };
-            groups.Add(g);
+            var form = (i == 0) ? roomFormation : FormationType.Swarm;
+            CreateGroup(form, doctrineState);
         }
 
-        g.members.Add(agent);
-        g.anchorInitialized = false;
-    }
-
-    void RemoveFromGroup(EnemyAgent agent)
-    {
-        foreach (var g in groups)
+        int gi = 0;
+        for (int i = 0; i < spawned.Count; i++)
         {
-            if (g.members.Remove(agent))
-                break;
+            var a = spawned[i];
+            if (a == null) continue;
+
+            _groups[gi].AddMember(a);
+            gi = (gi + 1) % _groups.Count;
         }
+
+        // Seed rally per group so Assemble doesn’t clump
+        SeedRallyForAllGroups();
+
+        // ✅ PHASE G1: authoritative activation happens HERE
+        ActivateAgents(spawned);
+
+        rallyInitialized = false;
+        SetState(PhalanxState.Assemble);
     }
 
-    void AssignDefaultIntents()
+    // ─────────────────────────────
+    // SQUAD INJECTION (adds groups; does NOT clear existing)
+    // ─────────────────────────────
+    public void SpawnSquadGroupsFromEnemies(
+        List<EnemyAgent> squadAgents,
+        int groupsForSquad,
+        FormationType squadFormation,
+        DoctrineState doctrineState,
+        Vector3 squadCenterHint
+    )
     {
-        for (int i = 0; i < groups.Count; i++)
-            groups[i].intent = (i == 0) ? GroupIntent.Push : GroupIntent.Hold;
-    }
-
-    void UpdateGroupsAnchors()
-    {
-        if (playerTransform == null)
+        if (squadAgents == null || squadAgents.Count == 0)
             return;
 
-        // Use the march direction for group layout as well.
+        if (playerTransform == null) ResolvePlayer();
+
+        currentFormation = squadFormation;
+        doctrine = doctrineState;
+
+        int startIndex = _groups.Count;
+        int gcount = Mathf.Max(1, groupsForSquad);
+
+        for (int i = 0; i < gcount; i++)
+        {
+            var form = (i == 0) ? squadFormation : FormationType.Swarm;
+            CreateGroup(form, doctrineState);
+        }
+
+        int gi = 0;
+        for (int i = 0; i < squadAgents.Count; i++)
+        {
+            var a = squadAgents[i];
+            if (a == null) continue;
+
+            var g = _groups[startIndex + gi];
+            g.AddMember(a);
+
+            gi = (gi + 1) % gcount;
+        }
+
+        SeedRallyForGroups(startIndex, gcount, squadCenterHint);
+
+        // ✅ PHASE G1: authoritative activation happens HERE too
+        ActivateAgents(squadAgents);
+
+        rallyInitialized = false;
+        SetState(PhalanxState.Assemble);
+    }
+
+    void ActivateAgents(List<EnemyAgent> list)
+    {
+        if (list == null) return;
+
+        for (int i = 0; i < list.Count; i++)
+        {
+            var a = list[i];
+            if (a == null) continue;
+
+            a.ActivateForCombat();
+        }
+    }
+
+    // ─────────────────────────────
+    // GROUP ANCHORS
+    // ─────────────────────────────
+    void UpdateGroupAnchors()
+    {
+        if (playerTransform == null) return;
+        if (_groups.Count == 0) return;
+
         Vector3 forward = marchToPlayerDir;
         if (forward.sqrMagnitude < 0.0001f)
             forward = (playerTransform.position - marchAnchor).normalized;
 
         Vector3 right = new Vector3(-forward.y, forward.x, 0f);
+        float center = (_groups.Count - 1) * 0.5f;
 
-        // Center groups around 0 (e.g., 2 groups => -0.5,+0.5 ; 3 groups => -1,0,+1)
-        float center = (groups.Count - 1) * 0.5f;
-
-        for (int i = 0; i < groups.Count; i++)
+        for (int i = 0; i < _groups.Count; i++)
         {
-            var g = groups[i];
+            var g = _groups[i];
+            if (g == null) continue;
 
-            // Intent-driven anchor target:
-            // base on marchAnchor so the whole formation advances.
+            if (!_anchorByGroupId.TryGetValue(g.GroupId, out var st))
+            {
+                st = new GroupAnchorState();
+                _anchorByGroupId[g.GroupId] = st;
+            }
+
             float lateralIndex = (i - center);
 
             Vector3 target =
@@ -323,33 +410,36 @@ public class EncounterCoordinator : MonoBehaviour
                 + right * (lateralIndex * groupLateralSpacing)
                 + forward * groupAnchorForwardOffset;
 
-            g.rawAnchor = target;
+            st.rawAnchor = target;
 
             if (!smoothGroupAnchors)
             {
-                g.anchor = g.rawAnchor;
-                g.anchorInitialized = true;
+                st.anchor = st.rawAnchor;
+                st.initialized = true;
                 continue;
             }
 
-            if (!g.anchorInitialized)
+            if (!st.initialized)
             {
-                g.anchor = g.rawAnchor;
-                g.anchorInitialized = true;
+                st.anchor = st.rawAnchor;
+                st.initialized = true;
                 continue;
             }
 
             float t = 1f - Mathf.Exp(-groupAnchorLerp * Time.deltaTime);
-            g.anchor = Vector3.Lerp(g.anchor, g.rawAnchor, t);
+            st.anchor = Vector3.Lerp(st.anchor, st.rawAnchor, t);
         }
     }
 
-    FormationGroup GetGroupOf(EnemyAgent agent)
+    private Vector3 GetAnchorForAgent(EnemyAgent agent)
     {
-        foreach (var g in groups)
-            if (g.members.Contains(agent))
-                return g;
-        return null;
+        if (agent == null) return marchAnchor;
+
+        var g = agent.Group;
+        if (g != null && _anchorByGroupId.TryGetValue(g.GroupId, out var st) && st.initialized)
+            return st.anchor;
+
+        return marchAnchor;
     }
 
     // ─────────────────────────────
@@ -358,19 +448,29 @@ public class EncounterCoordinator : MonoBehaviour
     public Vector3 GetWorldPositionFor(EnemyAgent agent)
     {
         if (agent == null) return transform.position;
+
+        // Phase G1: dormant agents do not get moved
+        if (!agent.CombatEngaged)
+            return agent.transform.position;
+
         if (agent.attackPositionLocked || agent.attackLock)
             return agent.transform.position;
 
         if (phalanxState == PhalanxState.Assemble)
         {
-            Vector3 assembleAnchor = rallyAvg + rallyToPlayerDir * rallyAnchorForwardOffset;
-            return GetSlot(agent, assembleAnchor, rallyToPlayerDir);
+            if (agent.Group != null && _rallyByGroupId.TryGetValue(agent.Group.GroupId, out var rs) && rs.initialized)
+            {
+                Vector3 assembleAnchor = rs.rallyAvg + rs.rallyToPlayerDir * rallyAnchorForwardOffset;
+                return GetSlot(agent, assembleAnchor, rs.rallyToPlayerDir);
+            }
+
+            Vector3 fallback = rallyAvg + rallyToPlayerDir * rallyAnchorForwardOffset;
+            return GetSlot(agent, fallback, rallyToPlayerDir);
         }
 
         if (phalanxState == PhalanxState.March)
         {
-            var g = GetGroupOf(agent);
-            Vector3 anchor = (g != null) ? g.anchor : marchAnchor;
+            Vector3 anchor = GetAnchorForAgent(agent);
             return GetSlot(agent, anchor, marchToPlayerDir);
         }
 
@@ -399,7 +499,6 @@ public class EncounterCoordinator : MonoBehaviour
 
         float lateral = ((index % 3) - 1) * 0.9f;
 
-        // Slots sit BEHIND the anchor relative to player
         return anchor - toPlayerDir * depth + right * lateral;
     }
 
@@ -415,7 +514,9 @@ public class EncounterCoordinator : MonoBehaviour
     void ResolveLeader()
     {
         if (formationLeader != null || leaderDead) return;
-        formationLeader = agents.Find(a => a != null && a.role == EnemyRole.Offender);
+
+        // Phase G1: leader must be engaged
+        formationLeader = agents.Find(a => a != null && a.CombatEngaged && a.role == EnemyRole.Offender);
     }
 
     void EnsureRallyInitialized()
@@ -426,28 +527,100 @@ public class EncounterCoordinator : MonoBehaviour
         Vector3 d = playerTransform.position - rallyAvg;
         rallyToPlayerDir = d.sqrMagnitude > 0.0001f ? d.normalized : Vector3.up;
 
-        // Initialize march anchor near the group first; it will “snap to chase” quickly.
         marchToPlayerDir = rallyToPlayerDir;
         marchAnchor = rallyAvg;
 
         assembled = false;
         assembledStableTimer = 0f;
         rallyInitialized = true;
+
+        foreach (var kv in _anchorByGroupId)
+            kv.Value.initialized = false;
+    }
+
+    void SeedRallyForAllGroups()
+    {
+        for (int i = 0; i < _groups.Count; i++)
+        {
+            var g = _groups[i];
+            if (g == null) continue;
+
+            Vector3 avg = AverageOfGroup(g);
+            SeedRallyForGroupId(g.GroupId, avg);
+        }
+    }
+
+    void SeedRallyForGroups(int startIndex, int count, Vector3 centerHint)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            var g = _groups[startIndex + i];
+            if (g == null) continue;
+
+            Vector3 avg = AverageOfGroup(g);
+            if ((avg - transform.position).sqrMagnitude < 0.0001f)
+                avg = centerHint;
+
+            SeedRallyForGroupId(g.GroupId, avg);
+        }
+    }
+
+    void SeedRallyForGroupId(int groupId, Vector3 rallyCenter)
+    {
+        if (!_rallyByGroupId.TryGetValue(groupId, out var rs))
+        {
+            rs = new SquadRallyState();
+            _rallyByGroupId[groupId] = rs;
+        }
+
+        rs.rallyAvg = rallyCenter;
+
+        Vector3 d = playerTransform != null ? (playerTransform.position - rallyCenter) : Vector3.up;
+        rs.rallyToPlayerDir = d.sqrMagnitude > 0.0001f ? d.normalized : Vector3.up;
+
+        rs.initialized = true;
+    }
+
+    Vector3 AverageOfGroup(EnemyGroup g)
+    {
+        if (g == null) return transform.position;
+
+        Vector3 sum = Vector3.zero;
+        int c = 0;
+
+        var members = g.Members;
+        for (int i = 0; i < members.Count; i++)
+        {
+            var a = members[i];
+            if (a == null) continue;
+
+            // only engaged members matter for rally
+            if (!a.CombatEngaged) continue;
+
+            sum += a.transform.position;
+            c++;
+        }
+
+        return c > 0 ? sum / c : transform.position;
     }
 
     void UpdateFreezeLogic()
     {
-        // Keeping your freeze system intact; not used to stop anchor chasing.
         float min = float.MaxValue;
         float max = 0f;
+        bool any = false;
 
         foreach (var a in agents)
         {
-            if (a == null) continue;
+            if (a == null || !a.CombatEngaged) continue;
+
+            any = true;
             float d = Vector2.Distance(a.transform.position, playerTransform.position);
             min = Mathf.Min(min, d);
             max = Mathf.Max(max, d);
         }
+
+        if (!any) return;
 
         if (!formationFrozen && min < freezeDistanceToPlayer)
         {
@@ -462,13 +635,8 @@ public class EncounterCoordinator : MonoBehaviour
 
     void HandleAssembleGate()
     {
-        // Only relevant when we are enforcing assemble-before-march discipline.
-        if (!requireAssembleBeforeMarch)
-            return;
-
-        // We track stability in Assemble phase (not March).
-        if (phalanxState != PhalanxState.Assemble)
-            return;
+        if (!requireAssembleBeforeMarch) return;
+        if (phalanxState != PhalanxState.Assemble) return;
 
         float comp = GetFormationCompression();
 
@@ -485,34 +653,41 @@ public class EncounterCoordinator : MonoBehaviour
         }
     }
 
-    bool IsFormationAssembled() =>
-        assembled || !requireAssembleBeforeMarch;
+    bool IsFormationAssembled() => assembled || !requireAssembleBeforeMarch;
 
     float GetFormationCompression()
     {
         if (!useGroupCompression)
         {
             float sum = 0f;
+            int c = 0;
+
             foreach (var a in agents)
             {
-                if (a == null) continue;
+                if (a == null || !a.CombatEngaged) continue;
                 sum += Vector3.Distance(a.transform.position, GetWorldPositionFor(a));
+                c++;
             }
-            return sum / Mathf.Max(1, agents.Count);
+
+            return c == 0 ? 0f : sum / c;
         }
 
         float agg = 0f;
         float max = 0f;
         int count = 0;
 
-        foreach (var g in groups)
+        foreach (var g in _groups)
         {
+            if (g == null) continue;
+
             float sum = 0f;
             int c = 0;
 
-            foreach (var a in g.members)
+            var members = g.Members;
+            for (int i = 0; i < members.Count; i++)
             {
-                if (a == null) continue;
+                var a = members[i];
+                if (a == null || !a.CombatEngaged) continue;
                 sum += Vector3.Distance(a.transform.position, GetWorldPositionFor(a));
                 c++;
             }
@@ -537,8 +712,9 @@ public class EncounterCoordinator : MonoBehaviour
 
         foreach (var a in agents)
         {
-            if (a == null) continue;
+            if (a == null || !a.CombatEngaged) continue;
             if (a.role == EnemyRole.Ranger) continue;
+
             sum += a.transform.position;
             count++;
         }
@@ -547,7 +723,7 @@ public class EncounterCoordinator : MonoBehaviour
         {
             foreach (var a in agents)
             {
-                if (a == null) continue;
+                if (a == null || !a.CombatEngaged) continue;
                 sum += a.transform.position;
                 count++;
             }
@@ -560,24 +736,14 @@ public class EncounterCoordinator : MonoBehaviour
     {
         ordered.Clear();
 
-        // Keep your role layering (front/mid/back) stable
-        foreach (var a in agents) if (a != null && a.role == EnemyRole.Offender) ordered.Add(a);
-        foreach (var a in agents) if (a != null && a.role == EnemyRole.Defender) ordered.Add(a);
-        foreach (var a in agents) if (a != null && a.role == EnemyRole.Ranger) ordered.Add(a);
-    }
-
-    public bool AnyRoleChangingFormation(EnemyRole role, float threshold = -1f)
-    {
-        foreach (var a in agents)
-            if (a != null && a.role == role && a.IsChangingFormation(threshold))
-                return true;
-        return false;
+        foreach (var a in agents) if (a != null && a.CombatEngaged && a.role == EnemyRole.Offender) ordered.Add(a);
+        foreach (var a in agents) if (a != null && a.CombatEngaged && a.role == EnemyRole.Defender) ordered.Add(a);
+        foreach (var a in agents) if (a != null && a.CombatEngaged && a.role == EnemyRole.Ranger) ordered.Add(a);
     }
 
     void UpdateMarchAnchor()
     {
-        if (Time.time < nextMarchAnchorEvalTime)
-            return;
+        if (Time.time < nextMarchAnchorEvalTime) return;
 
         nextMarchAnchorEvalTime = Time.time + marchAnchorRecalcInterval;
 
@@ -589,7 +755,6 @@ public class EncounterCoordinator : MonoBehaviour
 
         marchToPlayerDir = toPlayer.normalized;
 
-        // ✅ Strong chase: keep a stable distance behind the player
         Vector3 desiredAnchor = playerTransform.position - marchToPlayerDir * marchAnchorDistanceFromPlayer;
 
         float t = 1f - Mathf.Exp(-marchAnchorLerp * Time.deltaTime);
@@ -601,34 +766,56 @@ public class EncounterCoordinator : MonoBehaviour
     {
         if (!drawGizmos || !Application.isPlaying) return;
 
-        // March anchor
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(marchAnchor, 0.18f);
 
-        // Groups
-        for (int i = 0; i < groups.Count; i++)
+        int idx = 0;
+        foreach (var g in _groups)
         {
-            var g = groups[i];
             if (g == null) continue;
+            if (!_anchorByGroupId.TryGetValue(g.GroupId, out var st)) continue;
 
-            Color c = Color.HSVToRGB((i * 0.18f) % 1f, 0.9f, 0.9f);
+            Color c = Color.HSVToRGB((idx * 0.18f) % 1f, 0.9f, 0.9f);
             Gizmos.color = c;
 
-            Gizmos.DrawWireSphere(g.anchor, 0.25f);
-            Gizmos.DrawLine(g.anchor, g.rawAnchor);
+            Gizmos.DrawWireSphere(st.anchor, 0.25f);
+            Gizmos.DrawLine(st.anchor, st.rawAnchor);
 
-            Handles.Label(g.anchor + Vector3.up * 0.3f, $"G{i} {g.intent}");
+            Handles.Label(st.anchor + Vector3.up * 0.3f, $"G{g.GroupId} {g.Intent}");
+            idx++;
         }
     }
 #endif
 
     // ─────────────────────────────
-    // LEGACY SURFACE
+    // LEGACY / QUERY HELPERS
     // ─────────────────────────────
+    public bool AnyRoleChangingFormation(EnemyRole role, float threshold = -1f)
+    {
+        for (int i = 0; i < agents.Count; i++)
+        {
+            var a = agents[i];
+            if (a == null || !a.CombatEngaged) continue;
+            if (a.role != role) continue;
+
+            if (a.IsChangingFormation(threshold))
+                return true;
+        }
+
+        return false;
+    }
+
     public List<EnemyAgent> GetEnemies() => new List<EnemyAgent>(agents);
     public bool IsHammer(EnemyAgent agent) => agent == currentHammer;
     public bool SilenceActive => false;
-    public void ApplyDoctrine(DoctrineState state) => doctrine = state;
+
+    public void ApplyDoctrine(DoctrineState state)
+    {
+        doctrine = state;
+
+        for (int i = 0; i < _groups.Count; i++)
+            _groups[i].SetDoctrine(state);
+    }
 
     void SetState(PhalanxState next)
     {
@@ -650,6 +837,18 @@ public class EncounterCoordinator : MonoBehaviour
     void HandleFormationChanged(FormationType newFormation)
     {
         Debug.Log($"[EncounterCoordinator] Formation change → {newFormation}");
+
+        currentFormation = newFormation;
+
+        for (int i = 0; i < _groups.Count; i++)
+        {
+            var g = _groups[i];
+            if (g == null) continue;
+
+            bool phalanxActive = (newFormation == FormationType.Phalanx);
+            g.SetFormation(newFormation, phalanxActive);
+        }
+
         rallyInitialized = false;
         assembled = false;
         assembledStableTimer = 0f;

@@ -38,6 +38,8 @@ public class EnemyDefenderBlock : MonoBehaviour
 
     void Update()
     {
+      
+
         if (agent == null || player == null || playerMotor == null)
             return;
 

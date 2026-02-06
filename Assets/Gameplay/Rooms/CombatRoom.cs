@@ -1,6 +1,7 @@
-﻿using UnityEngine;
-using System;
+﻿using System;
+using System.Collections.Generic;
 using TOF.Rooms.Contracts;
+using UnityEngine;
 
 public class CombatRoom : RoomController
 {
@@ -21,6 +22,12 @@ public class CombatRoom : RoomController
     private int spawnIndex;
     private bool roomCompletionTriggered;
 
+    // 🔒 Phase G1: explicit spawn tracking
+    private readonly List<EnemyAgent> spawnedAgents = new();
+
+    // ⭐ NEW: cache group count at spawn time
+    private int spawnGroupCount = 2;
+
     protected override void Start()
     {
         base.Start();
@@ -35,34 +42,31 @@ public class CombatRoom : RoomController
         if (!contract.enableCombat)
             return;
 
-        int total =
-            contract.offenders +
-            contract.defenders +
-            contract.rangers +
-            contract.activators +
-            contract.jokers;
-
-        if (total <= 0 && applyFallbackIfZeroCounts)
+        if (applyFallbackIfZeroCounts)
         {
-            contract.offenders = 3;
-            contract.defenders = 1;
-            contract.rangers = 1;
+            Debug.Log("[CombatRoom] Applying DEBUG spawn override");
+
+            contract.offenders = 2;
+            contract.defenders = 2;
+            contract.rangers = 4;
+            contract.activators = 0;
+            contract.jokers = 0;
         }
 
         SpawnFromContract();
 
-        // --- Initialize combat context ---
+        // ─── Combat context init ───
         combatTimer = 0f;
 
         combatCtx = new CombatRoomContext
         {
-            roomContext = this.roomContext, // inherited from RoomController
+            roomContext = this.roomContext,
             timeInRoom = 0f,
             enemiesAliveRatio = 1f,
-            formationIntegrity = 1f,   // start cohesive
+            formationIntegrity = 1f,
             playerPressure = 0f,
 
-            shrinePresent = false,     // can be wired later
+            shrinePresent = false,
             shrineActive = false,
             playerLowHealth = false,
 
@@ -74,32 +78,47 @@ public class CombatRoom : RoomController
 
         Debug.Log($"[CombatRoom] Combat started | Alive={aliveEnemies}");
     }
+
+    // ⭐ NEW: per-group spatial seed
+    Vector3 GetGroupSpawnAnchor(int groupIndex, int groupCount)
+    {
+        float spacing = 3.5f;
+        float center = (groupCount - 1) * 0.5f;
+
+        Vector3 basePos = transform.position;
+        Vector3 right = Vector3.right; // top-down
+
+        return basePos + right * ((groupIndex - center) * spacing);
+    }
+
     void Update()
     {
         if (!contract.enableCombat)
             return;
 
         combatTimer += Time.deltaTime;
-
         combatCtx.timeInRoom = combatTimer;
 
-        // Keep this simple for now
         combatCtx.enemiesAliveRatio =
-            aliveEnemies > 0 ? aliveEnemies / (float)(
-                contract.offenders +
-                contract.defenders +
-                contract.rangers +
-                contract.activators +
-                contract.jokers
-            ) : 0f;
+            aliveEnemies > 0
+                ? aliveEnemies / (float)(
+                    contract.offenders +
+                    contract.defenders +
+                    contract.rangers +
+                    contract.activators +
+                    contract.jokers)
+                : 0f;
 
-        // TEMP defaults (we will wire these later)
         combatCtx.playerPressure = 0.5f;
         combatCtx.formationIntegrity = 1f;
 
         if (laneDirector != null)
             laneDirector.SetContext(combatCtx);
     }
+
+    // ─────────────────────────────
+    // SPAWNING
+    // ─────────────────────────────
     void SpawnFromContract()
     {
         if (enemyPrefab == null || enemySpawnPoints.Length == 0)
@@ -110,6 +129,9 @@ public class CombatRoom : RoomController
 
         aliveEnemies = 0;
         spawnIndex = 0;
+        spawnedAgents.Clear();
+
+        spawnGroupCount = 2;
 
         SpawnMany(EnemyRole.Offender, contract.offenders);
         SpawnMany(EnemyRole.Defender, contract.defenders);
@@ -117,29 +139,51 @@ public class CombatRoom : RoomController
         SpawnMany(EnemyRole.Activator, contract.activators);
         SpawnMany(EnemyRole.Joker, contract.jokers);
 
-        Debug.Log($"[CombatRoom] Enemies spawned (active combatants): {aliveEnemies}");
+        Debug.Log($"[CombatRoom] Enemies spawned (tracked): {aliveEnemies}");
+
+        var anchors = FindObjectsByType<SquadAnchor>(FindObjectsSortMode.None);
+        if (anchors != null && anchors.Length > 0)
+        {
+            for (int i = 0; i < anchors.Length; i++)
+                anchors[i].InitializeAfterSpawn();
+
+            Debug.Log($"[CombatRoom] SquadAnchors initialized: {anchors.Length}. (Dormant until triggered)");
+        }
+        else
+        {
+            Debug.Log("[CombatRoom] No SquadAnchor found. Enemies remain dormant until activated.");
+        }
     }
+
 
     void SpawnMany(EnemyRole role, int count)
     {
         for (int i = 0; i < count; i++)
         {
+            int groupIndex = spawnIndex % spawnGroupCount;
+
+            Vector3 groupAnchor = GetGroupSpawnAnchor(groupIndex, spawnGroupCount);
+            Vector3 jitter = UnityEngine.Random.insideUnitCircle * 0.6f;
+
             Transform sp = enemySpawnPoints[spawnIndex % enemySpawnPoints.Length];
             spawnIndex++;
-            SpawnEnemy(role, sp);
+
+            SpawnEnemy(role, groupAnchor + jitter);
         }
     }
 
-    void SpawnEnemy(EnemyRole role, Transform sp)
+    // ⭐ UPDATED: spawn directly at position
+    void SpawnEnemy(EnemyRole role, Vector3 position)
     {
-        // 🔒 ROLE FILTERING HAPPENS HERE
+        Debug.Log($"[SquadAnchor] Scene = {gameObject.scene.name}");
+
         if (!RolePermissionBus.IsRoleAllowed(role))
         {
-            Debug.Log($"[CombatRoom] Skipping spawn of {role} (not allowed in this room)");
+            Debug.Log($"[CombatRoom] Skipping spawn of {role} (not allowed)");
             return;
         }
 
-        var go = Instantiate(enemyPrefab, sp.position, Quaternion.identity);
+        var go = Instantiate(enemyPrefab, position, Quaternion.identity);
 
         var roleCtrl = go.GetComponent<EnemyRoleController>();
         if (roleCtrl != null)
@@ -147,14 +191,23 @@ public class CombatRoom : RoomController
 
         var agent = go.GetComponent<EnemyAgent>();
         if (agent != null)
+        {
             agent.role = role;
+            spawnedAgents.Add(agent);
+            aliveEnemies++;
+        }
 
-        // ✅ COUNT ONLY REAL COMBATANTS
-        aliveEnemies++;
+        
+        Debug.Log($"[CombatRoom] Scene = {gameObject.scene.name}");
 
         var relay = go.AddComponent<EnemyDeathRelay>();
         relay.OnEnemyDestroyed = OnEnemyDestroyed;
+
     }
+
+    // ─────────────────────────────
+    // LIFECYCLE
+    // ─────────────────────────────
     public void NotifyEnemyRejected()
     {
         aliveEnemies--;
@@ -163,6 +216,7 @@ public class CombatRoom : RoomController
         if (aliveEnemies <= 0)
             CompleteRoom();
     }
+
     void OnEnemyDestroyed()
     {
         if (roomCompletionTriggered)

@@ -65,6 +65,14 @@ public class EnemyChase : MonoBehaviour
 
     void FixedUpdate()
     {
+        
+        if (!agent.squadActive)
+            return;
+        if (!agent.IsActivated)
+            return;
+        if (agent.movementLocked)
+            return;
+
         if (agent == null) return;
 
         // Absolute movement ownership

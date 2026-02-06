@@ -41,6 +41,10 @@ public class EnemyMelee : MonoBehaviour
 
     void Update()
     {
+       
+        if (!agent.IsActivated)
+            return;
+
         if (agent == null || player == null)
             return;
 

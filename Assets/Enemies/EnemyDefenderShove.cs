@@ -43,6 +43,8 @@ public class EnemyDefenderShove : MonoBehaviour
 
     void Update()
     {
+       
+
         // 🔒 STEP 1: Defender shove requires Coordinated intelligence
         if (tacticalAuthority == null ||
             !tacticalAuthority.Allows(TacticalLevel.Coordinated))

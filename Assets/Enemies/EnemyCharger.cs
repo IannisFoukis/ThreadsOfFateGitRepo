@@ -36,6 +36,8 @@ public class EnemyCharger : MonoBehaviour
 
     void Update()
     {
+       
+
         if (GameLock.IsLocked)
             return;
 

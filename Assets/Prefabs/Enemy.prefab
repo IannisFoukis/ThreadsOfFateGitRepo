@@ -375,7 +375,7 @@ Transform:
   m_GameObject: {fileID: 8686355838142782365}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.461311, y: -1.0325373, z: -0.14998859}
+  m_LocalPosition: {x: -13.454961, y: 4.209704, z: -0.0814616}
   m_LocalScale: {x: 10, y: 10, z: 10}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -471,6 +471,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   coordinator: {fileID: 0}
+  squadActive: 0
   role: 0
   lane: 0
   slotArrivalThreshold: 0.5
@@ -612,6 +613,8 @@ MonoBehaviour:
   rangerArriveDistance: 0.6
   offenderArriveDistance: 0.45
   slowRadius: 1.25
+  chaseBiasStrength: 0.65
+  formationReadyGrace: 0.2
   separationPushRadius: 1.2
   separationStrength: 1.5
   separationRadius: 2
@@ -626,8 +629,6 @@ MonoBehaviour:
   offenderMass: 1
   frontLanePriority: 1.5
   backLanePriority: 0.6
-  overlapResolveStrength: 0.65
-  overlapMinDistance: 0.01
   obstacleRayDistance: 2
   obstacleAvoidStrength: 1
   obstacleMask:
@@ -680,10 +681,6 @@ MonoBehaviour:
   aimTime: 0.45
   aimLineWidth: 0.05
   aimColor: {r: 0.990566, g: 0, b: 0, a: 0.78431374}
-  firstShotAimMult: 1
-  followUpAimMult: 0.75
-  minDesync: 0.06
-  maxDesync: 0.14
   repositionCooldown: 2
   repositionSpeed: 8
   repositionDuration: 0.25
@@ -699,8 +696,6 @@ MonoBehaviour:
   visionBlockMask:
     serializedVersion: 2
     m_Bits: 256
-  defenderAimBonusMult: 0.7
-  defenderSynergyRange: 6
 --- !u!114 &5515608192190167746
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -715,6 +710,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   chargeForce: 40
   chargeCooldown: 2
+  minCommitDistance: 3.5
 --- !u!114 &8394341910229455449
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -819,20 +815,12 @@ MonoBehaviour:
   commitDelayMin: 0.15
   commitDelayMax: 0.35
   offenderIntentDuration: 2
-  canFakeOut: 0
-  fakeCancelAt: 0.7
-  fakePause: 0.35
-  delayedDash: 0
-  postWindUpDelay: 0.2
-  doubleDash: 0
-  secondDashDelay: 0.15
-  secondDashMultiplier: 1.4
   windUpTime: 0.6
   attackDashForce: 14
   dashDuration: 0.18
   recoverTime: 0.8
-  slotTriggerMultiplier: 1.5
   windUpCircleMaxScale: 0.5
+  groupReadyGrace: 0.15
 --- !u!114 &5253263128070963683
 MonoBehaviour:
   m_ObjectHideFlags: 0
